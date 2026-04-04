@@ -14,16 +14,16 @@ export function LanguageSwitcher() {
   const setLanguage = useAppStore((state) => state.setLanguage)
 
   return (
-    <div className="flex items-center gap-1 p-1 rounded-full bg-muted/50">
+    <div className="flex items-center gap-0.5 p-1 rounded-lg bg-secondary">
       {languages.map((lang) => (
         <button
           key={lang.code}
           onClick={() => setLanguage(lang.code)}
           className={cn(
-            "w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium transition-all",
+            "w-8 h-8 rounded-md flex items-center justify-center text-[13px] font-medium transition-all duration-200",
             language === lang.code
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground hover:bg-accent"
           )}
           title={lang.label}
         >
