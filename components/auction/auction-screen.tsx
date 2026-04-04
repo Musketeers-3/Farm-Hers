@@ -232,7 +232,7 @@ export function AuctionScreen() {
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-muted/50 rounded-xl p-3">
                 <p className="text-xs text-muted-foreground mb-1">{text.basePrice}</p>
-                <p className="text-lg font-bold text-foreground">₹{currentAuction?.basePrice || 2300}</p>
+                <p className="text-lg font-bold text-foreground">₹{currentAuction?.startingPrice || 2300}</p>
               </div>
               <div className="bg-primary/10 rounded-xl p-3">
                 <p className="text-xs text-muted-foreground mb-1">{text.currentBid}</p>
