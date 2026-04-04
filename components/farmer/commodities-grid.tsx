@@ -4,7 +4,6 @@ import { useAppStore, useTranslation, type Crop } from "@/lib/store"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
 
-// Crop emoji/icon mapping for visual representation
 const cropIcons: Record<string, string> = {
   wheat: "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=100&h=100&fit=crop",
   rice: "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=100&h=100&fit=crop",
@@ -29,35 +28,35 @@ export function CommoditiesGrid() {
 
   return (
     <div className="space-y-3">
-      <h3 className="text-lg font-semibold text-foreground">{t.commodities}</h3>
+      <h3 className="text-[15px] font-semibold text-foreground tracking-tight">{t.commodities}</h3>
       
-      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+      <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-hide">
         {crops.map((crop) => (
           <button
             key={crop.id}
             onClick={() => setSelectedCrop(selectedCrop?.id === crop.id ? null : crop)}
             className={cn(
-              "flex flex-col items-center gap-2 p-3 rounded-2xl transition-all min-w-[80px]",
-              "hover:scale-105 active:scale-95",
+              "flex flex-col items-center gap-2 p-3 rounded-xl transition-all duration-200 min-w-[76px]",
+              "hover:scale-[1.03] active:scale-[0.97]",
               selectedCrop?.id === crop.id
-                ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                : "bg-card border border-border hover:border-primary/30"
+                ? "bg-primary text-primary-foreground premium-shadow-lg"
+                : "bg-card border border-border/60 hover:border-primary/30 premium-shadow"
             )}
           >
             <div className={cn(
-              "w-12 h-12 rounded-xl overflow-hidden",
-              selectedCrop?.id === crop.id ? "ring-2 ring-white/30" : ""
+              "w-11 h-11 rounded-lg overflow-hidden",
+              selectedCrop?.id === crop.id ? "ring-2 ring-primary-foreground/20" : ""
             )}>
               <Image
                 src={cropIcons[crop.id] || cropIcons.wheat}
                 alt={crop.name}
-                width={48}
-                height={48}
+                width={44}
+                height={44}
                 className="w-full h-full object-cover"
               />
             </div>
             <span className={cn(
-              "text-xs font-medium text-center",
+              "text-[11px] font-medium text-center leading-tight",
               selectedCrop?.id === crop.id ? "text-primary-foreground" : "text-foreground"
             )}>
               {getCropName(crop)}

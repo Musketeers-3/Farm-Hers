@@ -3,129 +3,127 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* AgriLink - Premium Agricultural Theme */
+/* AgriLink — Premium Luxury Tech Theme */
 :root {
-  /* Warm cream/beige background inspired by wheat fields */
-  --background: oklch(0.97 0.01 90);
-  --foreground: oklch(0.25 0.02 120);
+  /* Near-white with warmth */
+  --background: oklch(0.985 0.003 90);
+  --foreground: oklch(0.13 0.02 150);
   
-  /* Cards with soft cream tones */
-  --card: oklch(0.99 0.005 90);
-  --card-foreground: oklch(0.25 0.02 120);
+  --card: oklch(0.995 0.002 90);
+  --card-foreground: oklch(0.13 0.02 150);
   
-  --popover: oklch(0.99 0.005 90);
-  --popover-foreground: oklch(0.25 0.02 120);
+  --popover: oklch(0.995 0.002 90);
+  --popover-foreground: oklch(0.13 0.02 150);
   
-  /* Primary: Rich olive/forest green */
-  --primary: oklch(0.45 0.12 145);
-  --primary-foreground: oklch(0.98 0 0);
+  /* Primary: Deep emerald — the one rich accent */
+  --primary: oklch(0.42 0.14 155);
+  --primary-foreground: oklch(0.99 0 0);
   
-  /* Secondary: Warm golden wheat */
-  --secondary: oklch(0.85 0.12 85);
-  --secondary-foreground: oklch(0.25 0.02 120);
+  /* Secondary: Warm neutral */
+  --secondary: oklch(0.96 0.005 90);
+  --secondary-foreground: oklch(0.25 0.01 150);
   
-  /* Muted: Soft sage */
-  --muted: oklch(0.92 0.02 140);
-  --muted-foreground: oklch(0.45 0.03 120);
+  /* Muted: Barely-there neutral */
+  --muted: oklch(0.955 0.005 100);
+  --muted-foreground: oklch(0.5 0.01 150);
   
-  /* Accent: Vibrant green for CTAs */
-  --accent: oklch(0.55 0.15 145);
-  --accent-foreground: oklch(0.98 0 0);
+  /* Accent: Soft emerald tint */
+  --accent: oklch(0.95 0.02 155);
+  --accent-foreground: oklch(0.3 0.08 155);
   
-  --destructive: oklch(0.55 0.2 25);
-  --destructive-foreground: oklch(0.98 0 0);
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.99 0 0);
   
-  --border: oklch(0.88 0.02 90);
-  --input: oklch(0.92 0.01 90);
-  --ring: oklch(0.55 0.12 145);
+  --border: oklch(0.93 0.005 100);
+  --input: oklch(0.94 0.005 100);
+  --ring: oklch(0.42 0.14 155);
   
-  /* Chart colors - agricultural palette */
-  --chart-1: oklch(0.55 0.15 145);
-  --chart-2: oklch(0.75 0.15 85);
-  --chart-3: oklch(0.65 0.1 45);
-  --chart-4: oklch(0.6 0.12 180);
-  --chart-5: oklch(0.7 0.08 30);
+  /* Charts — restrained palette */
+  --chart-1: oklch(0.42 0.14 155);
+  --chart-2: oklch(0.72 0.1 90);
+  --chart-3: oklch(0.55 0.06 240);
+  --chart-4: oklch(0.65 0.08 45);
+  --chart-5: oklch(0.5 0.1 155);
   
-  --radius: 1rem;
+  --radius: 0.75rem;
   
-  /* Sidebar - deeper green */
-  --sidebar: oklch(0.35 0.08 145);
-  --sidebar-foreground: oklch(0.95 0.01 90);
-  --sidebar-primary: oklch(0.75 0.12 85);
-  --sidebar-primary-foreground: oklch(0.25 0.02 120);
-  --sidebar-accent: oklch(0.45 0.1 145);
-  --sidebar-accent-foreground: oklch(0.95 0.01 90);
-  --sidebar-border: oklch(0.4 0.06 145);
-  --sidebar-ring: oklch(0.55 0.12 145);
+  /* Sidebar */
+  --sidebar: oklch(0.98 0.003 90);
+  --sidebar-foreground: oklch(0.13 0.02 150);
+  --sidebar-primary: oklch(0.42 0.14 155);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.95 0.02 155);
+  --sidebar-accent-foreground: oklch(0.3 0.08 155);
+  --sidebar-border: oklch(0.93 0.005 100);
+  --sidebar-ring: oklch(0.42 0.14 155);
   
-  /* Custom AgriLink tokens */
-  --agri-wheat: oklch(0.78 0.14 80);
-  --agri-gold: oklch(0.82 0.15 85);
-  --agri-olive: oklch(0.45 0.12 145);
-  --agri-sage: oklch(0.75 0.08 145);
-  --agri-earth: oklch(0.5 0.08 55);
-  --agri-cream: oklch(0.96 0.02 90);
-  --agri-success: oklch(0.6 0.18 145);
+  /* Custom tokens */
+  --agri-wheat: oklch(0.78 0.1 80);
+  --agri-gold: oklch(0.82 0.12 85);
+  --agri-olive: oklch(0.42 0.14 155);
+  --agri-sage: oklch(0.72 0.06 155);
+  --agri-earth: oklch(0.5 0.06 55);
+  --agri-cream: oklch(0.97 0.01 90);
+  --agri-success: oklch(0.55 0.16 155);
   
-  /* Glass effect */
-  --glass: oklch(0.98 0.005 90 / 0.7);
-  --glass-border: oklch(0.9 0.01 90 / 0.5);
+  --glass: oklch(0.99 0.002 90 / 0.65);
+  --glass-border: oklch(0.92 0.005 100 / 0.6);
 }
 
 .dark {
-  --background: oklch(0.18 0.02 145);
-  --foreground: oklch(0.95 0.01 90);
+  --background: oklch(0.12 0.015 155);
+  --foreground: oklch(0.95 0.005 90);
   
-  --card: oklch(0.22 0.025 145);
-  --card-foreground: oklch(0.95 0.01 90);
+  --card: oklch(0.16 0.018 155);
+  --card-foreground: oklch(0.95 0.005 90);
   
-  --popover: oklch(0.22 0.025 145);
-  --popover-foreground: oklch(0.95 0.01 90);
+  --popover: oklch(0.16 0.018 155);
+  --popover-foreground: oklch(0.95 0.005 90);
   
-  --primary: oklch(0.65 0.15 145);
-  --primary-foreground: oklch(0.15 0.02 145);
+  --primary: oklch(0.6 0.16 155);
+  --primary-foreground: oklch(0.1 0.02 155);
   
-  --secondary: oklch(0.75 0.12 85);
-  --secondary-foreground: oklch(0.18 0.02 145);
+  --secondary: oklch(0.2 0.015 155);
+  --secondary-foreground: oklch(0.9 0.005 90);
   
-  --muted: oklch(0.28 0.03 145);
-  --muted-foreground: oklch(0.7 0.02 90);
+  --muted: oklch(0.22 0.015 155);
+  --muted-foreground: oklch(0.65 0.01 90);
   
-  --accent: oklch(0.6 0.15 145);
-  --accent-foreground: oklch(0.15 0.02 145);
+  --accent: oklch(0.22 0.03 155);
+  --accent-foreground: oklch(0.9 0.005 90);
   
   --destructive: oklch(0.5 0.2 25);
   --destructive-foreground: oklch(0.95 0 0);
   
-  --border: oklch(0.32 0.03 145);
-  --input: oklch(0.28 0.025 145);
-  --ring: oklch(0.6 0.15 145);
+  --border: oklch(0.24 0.015 155);
+  --input: oklch(0.2 0.015 155);
+  --ring: oklch(0.6 0.16 155);
   
-  --chart-1: oklch(0.65 0.15 145);
-  --chart-2: oklch(0.75 0.12 85);
-  --chart-3: oklch(0.6 0.1 45);
-  --chart-4: oklch(0.55 0.12 180);
-  --chart-5: oklch(0.65 0.08 30);
+  --chart-1: oklch(0.6 0.16 155);
+  --chart-2: oklch(0.72 0.1 85);
+  --chart-3: oklch(0.55 0.08 240);
+  --chart-4: oklch(0.6 0.08 45);
+  --chart-5: oklch(0.5 0.1 155);
   
-  --sidebar: oklch(0.15 0.02 145);
-  --sidebar-foreground: oklch(0.95 0.01 90);
-  --sidebar-primary: oklch(0.65 0.15 145);
-  --sidebar-primary-foreground: oklch(0.15 0.02 145);
-  --sidebar-accent: oklch(0.28 0.03 145);
-  --sidebar-accent-foreground: oklch(0.95 0.01 90);
-  --sidebar-border: oklch(0.32 0.03 145);
-  --sidebar-ring: oklch(0.6 0.15 145);
+  --sidebar: oklch(0.1 0.015 155);
+  --sidebar-foreground: oklch(0.95 0.005 90);
+  --sidebar-primary: oklch(0.6 0.16 155);
+  --sidebar-primary-foreground: oklch(0.1 0.02 155);
+  --sidebar-accent: oklch(0.22 0.03 155);
+  --sidebar-accent-foreground: oklch(0.9 0.005 90);
+  --sidebar-border: oklch(0.24 0.015 155);
+  --sidebar-ring: oklch(0.6 0.16 155);
   
-  --agri-wheat: oklch(0.72 0.12 80);
-  --agri-gold: oklch(0.78 0.14 85);
-  --agri-olive: oklch(0.55 0.12 145);
-  --agri-sage: oklch(0.5 0.06 145);
-  --agri-earth: oklch(0.45 0.06 55);
-  --agri-cream: oklch(0.25 0.02 90);
-  --agri-success: oklch(0.6 0.18 145);
+  --agri-wheat: oklch(0.7 0.1 80);
+  --agri-gold: oklch(0.75 0.12 85);
+  --agri-olive: oklch(0.5 0.14 155);
+  --agri-sage: oklch(0.45 0.06 155);
+  --agri-earth: oklch(0.4 0.05 55);
+  --agri-cream: oklch(0.2 0.01 90);
+  --agri-success: oklch(0.55 0.16 155);
   
-  --glass: oklch(0.22 0.025 145 / 0.7);
-  --glass-border: oklch(0.35 0.03 145 / 0.5);
+  --glass: oklch(0.16 0.018 155 / 0.65);
+  --glass-border: oklch(0.28 0.02 155 / 0.5);
 }
 
 @theme inline {
@@ -170,7 +168,6 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
   
-  /* AgriLink custom color tokens */
   --color-agri-wheat: var(--agri-wheat);
   --color-agri-gold: var(--agri-gold);
   --color-agri-olive: var(--agri-olive);
@@ -191,21 +188,20 @@
   }
 }
 
-/* AgriLink Custom Utilities */
 @layer utilities {
   .glass {
     background: var(--glass);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border: 1px solid var(--glass-border);
   }
   
   .glass-card {
     background: var(--glass);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
     border: 1px solid var(--glass-border);
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.03);
   }
   
   .text-gradient-gold {
@@ -221,17 +217,29 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
+
+  .premium-shadow {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04),
+                0 4px 12px rgba(0, 0, 0, 0.03),
+                0 16px 40px rgba(0, 0, 0, 0.02);
+  }
+
+  .premium-shadow-lg {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04),
+                0 8px 24px rgba(0, 0, 0, 0.06),
+                0 24px 48px rgba(0, 0, 0, 0.04);
+  }
   
   .animate-pulse-slow {
     animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
   
   .animate-float {
-    animation: float 3s ease-in-out infinite;
+    animation: float 4s ease-in-out infinite;
   }
   
   @keyframes float {
     0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
+    50% { transform: translateY(-8px); }
   }
 }

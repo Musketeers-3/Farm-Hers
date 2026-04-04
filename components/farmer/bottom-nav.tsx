@@ -25,47 +25,49 @@ export function BottomNav() {
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-card/80 backdrop-blur-xl border-t border-border safe-area-pb">
-      <div className="flex items-center justify-around px-2 py-2 max-w-md mx-auto">
-        {navItems.slice(0, 2).map((item) => (
-          <NavItem
-            key={item.id}
-            id={item.id}
-            icon={item.icon}
-            label={labels[item.id]}
-            isActive={activeScreen === item.id}
-            onClick={() => setActiveScreen(item.id)}
-          />
-        ))}
+    <nav className="fixed bottom-0 left-0 right-0 z-40">
+      <div className="glass border-t border-border/40">
+        <div className="flex items-center justify-around px-2 py-2.5 max-w-lg mx-auto">
+          {navItems.slice(0, 2).map((item) => (
+            <NavItem
+              key={item.id}
+              id={item.id}
+              icon={item.icon}
+              label={labels[item.id]}
+              isActive={activeScreen === item.id}
+              onClick={() => setActiveScreen(item.id)}
+            />
+          ))}
 
-        {/* Central Bolo Button */}
-        <button
-          onClick={() => setBoloListening(true)}
-          className={cn(
-            "relative -mt-6 w-16 h-16 rounded-full",
-            "bg-gradient-to-br from-primary to-agri-olive",
-            "flex items-center justify-center",
-            "shadow-lg shadow-primary/30",
-            "hover:scale-105 active:scale-95 transition-transform",
-            "ring-4 ring-card"
-          )}
-        >
-          <Mic className="w-7 h-7 text-white" />
-          <span className="absolute -bottom-5 text-xs font-medium text-primary">
-            {t.bolo}
-          </span>
-        </button>
+          {/* Bolo — the hero button */}
+          <button
+            onClick={() => setBoloListening(true)}
+            className={cn(
+              "relative -mt-7 w-14 h-14 rounded-2xl",
+              "bg-primary",
+              "flex items-center justify-center",
+              "premium-shadow-lg",
+              "hover:scale-105 active:scale-95 transition-all duration-200",
+              "ring-4 ring-background"
+            )}
+          >
+            <Mic className="w-6 h-6 text-primary-foreground" strokeWidth={1.8} />
+            <span className="absolute -bottom-5 text-[10px] font-semibold text-primary tracking-wide">
+              {t.bolo}
+            </span>
+          </button>
 
-        {navItems.slice(2).map((item) => (
-          <NavItem
-            key={item.id}
-            id={item.id}
-            icon={item.icon}
-            label={labels[item.id]}
-            isActive={activeScreen === item.id}
-            onClick={() => setActiveScreen(item.id)}
-          />
-        ))}
+          {navItems.slice(2).map((item) => (
+            <NavItem
+              key={item.id}
+              id={item.id}
+              icon={item.icon}
+              label={labels[item.id]}
+              isActive={activeScreen === item.id}
+              onClick={() => setActiveScreen(item.id)}
+            />
+          ))}
+        </div>
       </div>
     </nav>
   )
@@ -88,17 +90,14 @@ function NavItem({
     <button
       onClick={onClick}
       className={cn(
-        "flex flex-col items-center gap-1 py-2 px-4 rounded-xl transition-all",
+        "flex flex-col items-center gap-1 py-1.5 px-4 rounded-xl transition-all duration-200",
         isActive
           ? "text-primary"
           : "text-muted-foreground hover:text-foreground"
       )}
     >
-      <Icon className={cn("w-6 h-6", isActive && "scale-110")} />
-      <span className={cn("text-xs", isActive && "font-medium")}>{label}</span>
-      {isActive && (
-        <span className="absolute bottom-1 w-1 h-1 rounded-full bg-primary" />
-      )}
+      <Icon className={cn("w-5 h-5 transition-transform duration-200", isActive && "scale-110")} strokeWidth={isActive ? 2.2 : 1.8} />
+      <span className={cn("text-[10px] tracking-wide", isActive ? "font-semibold" : "font-medium")}>{label}</span>
     </button>
   )
 }

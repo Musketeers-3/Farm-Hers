@@ -21,60 +21,58 @@ export function FarmerDashboard() {
   const formattedDate = format(today, "EEEE, dd MMM yyyy")
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border/50">
-        <div className="px-4 py-3 space-y-3">
+    <div className="min-h-screen bg-background pb-28">
+      {/* Header — clean, elevated */}
+      <header className="sticky top-0 z-30 glass border-b border-border/40">
+        <div className="max-w-lg mx-auto px-5 py-4 space-y-4">
           {/* Top Row */}
           <div className="flex items-center justify-between">
             <AgriLinkLogo size="sm" />
             <div className="flex items-center gap-2">
               <LanguageSwitcher />
-              <button className="relative w-10 h-10 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors">
-                <Bell className="w-5 h-5 text-foreground" />
-                <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-destructive border-2 border-background" />
+              <button className="relative w-10 h-10 rounded-xl bg-secondary flex items-center justify-center hover:bg-accent transition-all duration-200">
+                <Bell className="w-[18px] h-[18px] text-foreground" strokeWidth={1.8} />
+                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-destructive" />
               </button>
             </div>
           </div>
 
-          {/* Greeting Row */}
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">{formattedDate}</p>
-              <h1 className="text-2xl font-serif font-bold text-foreground">
-                {t.hello}, <span className="text-gradient-green">{userName.split(' ')[0]}</span>
+          {/* Greeting */}
+          <div className="flex items-end justify-between">
+            <div className="space-y-0.5">
+              <p className="text-[13px] text-muted-foreground tracking-wide uppercase">{formattedDate}</p>
+              <h1 className="text-[28px] font-serif font-bold text-foreground leading-tight tracking-tight">
+                {t.hello}, <span className="text-primary">{userName.split(' ')[0]}</span>
               </h1>
             </div>
             
-            {/* Location Selector */}
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50 hover:bg-muted transition-colors">
-              <MapPin className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium text-foreground">{userLocation}</span>
-              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary hover:bg-accent transition-all duration-200">
+              <MapPin className="w-3.5 h-3.5 text-primary" strokeWidth={2} />
+              <span className="text-[13px] font-medium text-foreground">{userLocation}</span>
+              <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
             </button>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="px-4 py-5 space-y-6">
-        {/* Weather Widget */}
-        <WeatherWidget />
+      {/* Main — Bento Grid Layout */}
+      <main className="max-w-lg mx-auto px-5 py-6 space-y-5">
+        {/* Top bento row: Weather + Market side by side on larger screens */}
+        <div className="grid grid-cols-1 gap-4">
+          <WeatherWidget />
+          <MarketInsightCard />
+        </div>
 
-        {/* Market Insight Card */}
-        <MarketInsightCard />
-
-        {/* Community Pulse */}
+        {/* Community pulse — slim, horizontal */}
         <CommunityPulse />
 
-        {/* Commodities Grid */}
+        {/* Commodities */}
         <CommoditiesGrid />
 
         {/* My Fields */}
         <MyFieldsCard />
       </main>
 
-      {/* Bottom Navigation */}
       <BottomNav />
     </div>
   )
