@@ -176,26 +176,8 @@ export function MarketScreen() {
           </div>
         </div>
 
-        {/* Price Comparison Chart Placeholder */}
-        <div className="glass-card rounded-2xl p-5 space-y-4">
-          <h3 className="font-semibold text-foreground">7-Day Price Trend</h3>
-          <div className="h-40 flex items-end justify-between gap-2">
-            {[65, 72, 68, 75, 80, 78, 85].map((height, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                <div
-                  className={cn(
-                    "w-full rounded-t-lg transition-all",
-                    i === 6 ? "bg-primary" : "bg-muted"
-                  )}
-                  style={{ height: `${height}%` }}
-                />
-                <span className="text-[10px] text-muted-foreground">
-                  {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][i]}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+        {/* Price History Chart */}
+        <PriceHistoryChart />
       </main>
 
       <BottomNav />
