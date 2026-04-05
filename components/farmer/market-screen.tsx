@@ -1,6 +1,7 @@
 "use client"
 
 import { useAppStore, useTranslation } from "@/lib/store"
+import { PriceHistoryChart } from "./price-history-chart"
 import { BottomNav } from "./bottom-nav"
 import { ArrowLeft, TrendingUp, TrendingDown, Minus, MapPin, Search, Filter } from "lucide-react"
 import { cn } from "@/lib/utils"
