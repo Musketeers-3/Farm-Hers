@@ -9,6 +9,9 @@ import { BoloAssistant } from "@/components/bolo/bolo-assistant"
 import { OnboardingScreen } from "@/components/onboarding/onboarding-screen"
 import { TrackingScreen } from "@/components/farmer/tracking-screen"
 import { MarketScreen } from "@/components/farmer/market-screen"
+import { ProfileScreen } from "@/components/farmer/profile-screen"
+import { NotificationsScreen } from "@/components/farmer/notifications-screen"
+import { EarningsScreen } from "@/components/farmer/earnings-screen"
 import { useState, useEffect } from "react"
 
 export default function AgriLinkApp() {
@@ -19,7 +22,6 @@ export default function AgriLinkApp() {
 
   useEffect(() => {
     setMounted(true)
-    // Check if user has completed onboarding
     const hasOnboarded = localStorage.getItem("agrilink-onboarded")
     if (hasOnboarded) {
       setShowOnboarding(false)
@@ -36,7 +38,6 @@ export default function AgriLinkApp() {
     )
   }
 
-  // Show onboarding for new users
   if (showOnboarding) {
     return <OnboardingScreen onComplete={() => {
       localStorage.setItem("agrilink-onboarded", "true")
@@ -44,7 +45,6 @@ export default function AgriLinkApp() {
     }} />
   }
 
-  // Render based on user role
   if (userRole === "buyer") {
     return (
       <>
@@ -54,7 +54,6 @@ export default function AgriLinkApp() {
     )
   }
 
-  // Farmer flow
   const renderFarmerScreen = () => {
     switch (activeScreen) {
       case "sell":
@@ -65,6 +64,12 @@ export default function AgriLinkApp() {
         return <TrackingScreen />
       case "market":
         return <MarketScreen />
+      case "profile":
+        return <ProfileScreen />
+      case "notifications":
+        return <NotificationsScreen />
+      case "earnings":
+        return <EarningsScreen />
       case "home":
       default:
         return <FarmerDashboard />
