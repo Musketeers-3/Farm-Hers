@@ -110,8 +110,6 @@ export function FarmerDashboard() {
           </div>
         </button>
 
-        {/* Premium upsell */}
-        <PremiumInsights />
 
         {/* My Fields */}
         <MyFieldsCard />
