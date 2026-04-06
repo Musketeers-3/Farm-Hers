@@ -1,37 +1,58 @@
-## Features to Build
 
-1. **Profile & Settings screen** — account management, saved locations, payment methods, language prefs
-2. **Notification center** — price alerts, bid updates, order status, payment confirmations
-3. **Search & filters** — find crops, mandis, buyers quickly
-4. **Price history charts** — 7/30/90-day interactive price trend charts (Recharts)
-5. **AI crop recommendation** — suggestions based on weather/soil data
-6. **Earnings dashboard** — total sales, pending payments, monthly revenue
-8. **Transaction history** — full ledger of past sales with receipts
-10. **Push notification preferences** — price drop alerts, auction ending soon toggles
-12. **Dark mode toggle** — header toggle with themed dark mode
-13. **Premium insights tier** — advanced analytics section (UI only)
-14. **Sponsored listings** — buyers can boost visibility (UI only)
 
-## Implementation Plan
+## Plan: Remove Premium Insights + Redesign Buyer Dashboard + Visual Polish
 
-### Phase 1: Foundation
-- Add dark mode toggle to header
-- Create Profile & Settings screen with navigation
-- Add notification center screen
+### 1. Remove Premium Insights from Farmer Dashboard
+- Remove `<PremiumInsights />` import and usage from `farmer-dashboard.tsx` (lines 14, 114)
+- Delete `components/farmer/premium-insights.tsx`
 
-### Phase 2: Data & Intelligence
-- Price history charts on market screen
-- Earnings dashboard screen
-- Transaction history screen
-- AI crop recommendation card on dashboard
+### 2. Full Buyer Dashboard Redesign
+The current buyer dashboard uses `sidebar-*` tokens throughout, creating a flat, dark, unresponsive layout. It will be completely rewritten to match the farmer dashboard's premium aesthetic.
 
-### Phase 3: Engagement & Monetization
-- Search & filters component
-- Notification preferences in settings
-- Premium insights section
-- Sponsored listings badges
+**Layout & Structure:**
+- Replace `sidebar-*` color tokens with standard theme tokens (`bg-background`, `text-foreground`, `glass-card`, etc.)
+- Use `max-w-5xl mx-auto` for desktop, responsive stacking for mobile
+- Add `pb-8` safe area at bottom
 
-### Navigation Updates
-- Add profile screen to bottom nav
-- Add new screens to the router in page.tsx
-- Update store with new screen types
+**Header:**
+- Sticky glass header matching farmer side — logo, company name, dark mode toggle, notification bell, role-switch pill
+- Welcome greeting with serif font heading, date display
+
+**Navigation Tabs:**
+- Pill-style tabs inside a glass container (not underline-border style)
+- Horizontal scrollable on mobile
+
+**Stats Row:**
+- Bento grid with `glass-card` styling, icon accents, and `premium-shadow`
+- Responsive: 4-col on desktop, 2-col on mobile
+
+**Pool Cards:**
+- Glass-card treatment with hover elevation transitions
+- Quality badge with refined colors, star rating, countdown timer
+- Tactile "Buy Now" button with primary gradient
+
+**Auction Cards:**
+- Live pulse indicator with gradient top bar
+- Grid stats (qty, base, current bid, time) inside subtle rounded containers
+- Smooth hover transitions
+
+**Orders Tab:**
+- Timeline-style cards with status-colored left border accent
+- Status chips with proper semantic colors
+
+**Analytics Tab:**
+- 2x2 bento grid with glassmorphism, icon cards, subtle gradients
+
+### 3. Visual Polish Across the App
+- Add CSS keyframe animations to `app/globals.css`: `fade-in-up`, `stagger-in` for card entrance animations
+- Add `.animate-fade-in-up` utility with staggered delays for dashboard content sections
+- Add hover elevation transitions on all interactive cards (`.hover:premium-shadow-lg .hover:-translate-y-0.5`)
+- Add subtle gradient mesh background to the body/main area
+- Refine the farmer dashboard cards with entrance animations on mount
+
+### Files Modified
+1. `components/farmer/farmer-dashboard.tsx` — remove PremiumInsights
+2. `components/farmer/premium-insights.tsx` — delete
+3. `components/buyer/buyer-dashboard.tsx` — full rewrite with premium aesthetic
+4. `app/globals.css` — add entrance animations and visual polish utilities
+
