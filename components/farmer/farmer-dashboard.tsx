@@ -11,7 +11,7 @@ import { MyFieldsCard } from "./my-fields-card"
 import { BottomNav } from "./bottom-nav"
 import { SearchBar } from "./search-bar"
 import { AIRecommendationCard } from "./ai-recommendation-card"
-import { PremiumInsights } from "./premium-insights"
+
 import { Bell, MapPin, ChevronDown, Moon, Sun } from "lucide-react"
 import { format } from "date-fns"
 import { useState } from "react"
