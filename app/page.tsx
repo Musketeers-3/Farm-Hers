@@ -3,39 +3,37 @@
 import { useState, useEffect } from "react";
 import { useAppStore } from "@/lib/store";
 import { useRouter } from "next/navigation";
-import { FarmerDashboard } from "@/components/farmer/farmer-dashboard";
-import { SellFlow } from "@/components/farmer/sell-flow";
-import { AuctionScreen } from "@/components/auction/auction-screen";
 import { BuyerDashboard } from "@/components/buyer/buyer-dashboard";
 import { BoloAssistant } from "@/components/bolo/bolo-assistant";
 import { OnboardingScreen } from "@/components/onboarding/onboarding-screen";
-import { TrackingScreen } from "@/components/farmer/tracking-screen";
-import { MarketScreen } from "@/components/farmer/market-screen";
-import { ProfileScreen } from "@/components/farmer/profile-screen";
-import { NotificationsScreen } from "@/components/farmer/notifications-screen";
-import { EarningsScreen } from "@/components/farmer/earnings-screen";
+import { FarmerDashboard } from "@/components/farmer/farmer-dashboard";
 import { motion, AnimatePresence } from "framer-motion";
 
+// NOTE: SellFlow, AuctionScreen, TrackingScreen, MarketScreen, ProfileScreen,
+// NotificationsScreen, and EarningsScreen are now rendered exclusively by
+// app/farmer/[screen]/client.tsx via URL-based routing. They no longer belong
+// here. Removing them resolved the dual-routing conflict introduced by the merge.
+
 export default function AgriLinkApp() {
+  const setHasOnboarded = useAppStore((state) => state.setHasOnboarded);
   const router = useRouter();
   const userRole = useAppStore((state) => state.userRole);
   const setUserRole = useAppStore((state) => state.setUserRole);
-  const activeScreen = useAppStore((state) => state.activeScreen);
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
 
   useEffect(() => {
     try {
-      // DEVELOPER CHEAT CODE (Stashed logic safely retained)
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.get("reset") === "true") {
         localStorage.removeItem("agrilink-onboarded");
+        setHasOnboarded(false);
         setShowOnboarding(true);
         window.history.replaceState({}, "", "/");
         return;
       }
 
-      // Normal check
       const hasOnboarded = localStorage.getItem("agrilink-onboarded");
+      if (hasOnboarded) setHasOnboarded(true); // ← sync Zustand
       setShowOnboarding(!hasOnboarded);
     } catch (error) {
       console.warn("LocalStorage is disabled or unavailable.", error);
@@ -68,8 +66,8 @@ export default function AgriLinkApp() {
           <OnboardingScreen
             onComplete={(role) => {
               localStorage.setItem("agrilink-onboarded", "true");
+              setHasOnboarded(true); // ← ADD THIS
               setShowOnboarding(false);
-
               if (role) {
                 setUserRole(role);
                 router.push(`/${role}`);
@@ -81,6 +79,9 @@ export default function AgriLinkApp() {
     );
   }
 
+  // FIX: after onboarding completes, router.push already navigated away.
+  // This fallback handles the brief render before navigation commits, and
+  // also covers direct visits to "/" by authenticated users.
   if (userRole === "buyer") {
     return (
       <AnimatePresence mode="wait">
@@ -97,43 +98,19 @@ export default function AgriLinkApp() {
     );
   }
 
-  const renderFarmerScreen = () => {
-    switch (activeScreen) {
-      case "sell":
-        return <SellFlow />;
-      case "auction":
-        return <AuctionScreen />;
-      case "tracking":
-        return <TrackingScreen />;
-      case "market":
-        return <MarketScreen />;
-      case "profile":
-        return <ProfileScreen />;
-      case "notifications":
-        return <NotificationsScreen />;
-      case "earnings":
-        return <EarningsScreen />;
-      case "home":
-      default:
-        return <FarmerDashboard />;
-    }
-  };
-
+  // Default: farmer home (brief fallback before /farmer route takes over)
   return (
-    <>
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activeScreen}
-          initial={{ opacity: 0, y: 10, scale: 0.99 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -10, scale: 0.99 }}
-          transition={{ duration: 0.3, ease: "easeInOut" }}
-          className="w-full min-h-screen"
-        >
-          {renderFarmerScreen()}
-        </motion.div>
-      </AnimatePresence>
-      <BoloAssistant />
-    </>
+    <AnimatePresence mode="wait">
+      <motion.div
+        key="farmer-dashboard"
+        initial={{ opacity: 0, y: 10, scale: 0.99 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: -10, scale: 0.99 }}
+        transition={{ duration: 0.3, ease: "easeInOut" }}
+        className="w-full min-h-screen"
+      >
+        <FarmerDashboard />
+      </motion.div>
+    </AnimatePresence>
   );
 }

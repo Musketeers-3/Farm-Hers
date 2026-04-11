@@ -1,7 +1,8 @@
 "use client";
+
+import { useEffect, useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 import { SellFlow } from "@/components/farmer/sell-flow";
 import { AuctionScreen } from "@/components/auction/auction-screen";
 import { TrackingScreen } from "@/components/farmer/tracking-screen";
@@ -16,10 +17,14 @@ export function FarmerScreenClient({ screen }: { screen: string }) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
-    if (mounted && !hasOnboarded) router.replace("/");
+    if (mounted && !hasOnboarded) {
+      router.replace("/");
+    }
   }, [mounted, hasOnboarded, router]);
 
   if (!mounted || !hasOnboarded) {
@@ -34,14 +39,23 @@ export function FarmerScreenClient({ screen }: { screen: string }) {
 
   const renderScreen = () => {
     switch (screen) {
-      case "sell": return <SellFlow />;
-      case "auction": return <AuctionScreen />;
-      case "tracking": return <TrackingScreen />;
-      case "market": return <MarketScreen />;
-      case "profile": return <ProfileScreen />;
-      case "notifications": return <NotificationsScreen />;
-      case "earnings": return <EarningsScreen />;
-      default: router.replace("/farmer"); return null;
+      case "sell":
+        return <SellFlow />;
+      case "auction":
+        return <AuctionScreen />;
+      case "tracking":
+        return <TrackingScreen />;
+      case "market":
+        return <MarketScreen />;
+      case "profile":
+        return <ProfileScreen />;
+      case "notifications":
+        return <NotificationsScreen />;
+      case "earnings":
+        return <EarningsScreen />;
+      default:
+        router.replace("/farmer");
+        return null;
     }
   };
 
