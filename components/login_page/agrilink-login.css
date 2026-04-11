@@ -1,0 +1,122 @@
+/* ALL PREVIOUS STYLES REMAIN THE SAME */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    font-family: 'Inter', sans-serif;
+}
+
+.parallax-bg {
+    position: fixed;
+    top: -10%; left: -10%; width: 120%; height: 120%;
+    background: linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.1)), 
+                url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=1920') center/cover;
+    z-index: -1;
+    will-change: transform;
+}
+
+.main-wrapper {
+    width: 100%;
+    max-width: 400px;
+    animation: entranceEffect 1.2s cubic-bezier(0.2, 1, 0.3, 1);
+}
+
+@keyframes entranceEffect {
+    from { opacity: 0; transform: translateY(30px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.brand-header {
+    text-align: center;
+    margin-bottom: 25px;
+}
+.logo-leaf { font-size: 2.5rem; margin-bottom: 5px; }
+.brand-header h1 { font-family: 'Playfair Display', serif; font-size: 2.4rem; color: #1a2419; }
+.brand-header p { font-size: 0.85rem; opacity: 0.8; letter-spacing: 0.5px; }
+
+.login-card {
+    background: rgba(255, 255, 255, 0.22);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border-radius: 28px;
+    padding: 30px 35px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 25px 50px rgba(0,0,0,0.1);
+}
+
+.emoji-bar { font-size: 1.5rem; margin-bottom: 10px; text-align: center; }
+h2 { font-family: 'Playfair Display', serif; font-size: 1.7rem; margin-bottom: 5px; text-align: center; }
+.subtitle { font-size: 0.8rem; color: #333; margin-bottom: 25px; text-align: center; }
+
+.input-wrap { margin-bottom: 18px; text-align: left; }
+.label-split { display: flex; justify-content: space-between; align-items: center; }
+label { font-size: 0.75rem; font-weight: 600; color: #2d382c; }
+
+input[type="text"], input[type="password"] {
+    width: 100%;
+    padding: 13px;
+    margin-top: 6px;
+    border-radius: 10px;
+    border: 1px solid rgba(0,0,0,0.08);
+    background: rgba(255,255,255,0.7);
+    outline: none;
+    font-size: 0.9rem;
+}
+
+.forgot-link { font-size: 0.8rem; color: #1e4d2b; text-decoration: none; font-weight: 700; }
+
+/* THE FIX: Remember Me Container */
+.remember-container {
+    width: 100%;
+    display: flex;
+    justify-content: flex-start; /* Keeps it inside on the left */
+    margin-bottom: 20px;
+}
+
+.remember-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: #2d382c;
+}
+
+.remember-content input {
+    margin: 0; /* Prevents default spacing issues */
+    cursor: pointer;
+}
+
+/* Rest of the UI elements */
+.btn-login {
+    width: 100%;
+    padding: 15px;
+    border-radius: 12px;
+    border: none;
+    background: #1e4d2b;
+    color: white;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: 0.3s ease;
+}
+
+.btn-login:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(30,77,43,0.2); }
+
+.divider-ui { display: flex; align-items: center; margin: 20px 0; }
+.line { flex: 1; height: 1px; background: rgba(0,0,0,0.1); }
+.or-badge { 
+    padding: 4px 10px; 
+    border: 1px solid rgba(0,0,0,0.1); 
+    font-size: 0.65rem; 
+    font-weight: 800; 
+    margin: 0 12px; 
+    border-radius: 4px; 
+    background: rgba(255,255,255,0.4);
+}
+
+.footer-note { font-size: 0.85rem; text-align: center; margin-top: 10px; }
+.footer-note a { color: #1e4d2b; font-weight: 700; text-decoration: none; }

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgriLink | Premium Login</title>
+    <link rel="stylesheet" href="agrilink-login.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="parallax-bg" id="bgImage"></div>
+
+    <div class="main-wrapper">
+        <header class="brand-header">
+            <div class="logo-leaf">🌿</div>
+            <h1>AgriLink</h1>
+            <p>Empowering Farmers Digitally</p>
+        </header>
+
+        <main class="login-card">
+            <div class="emoji-bar">🌾 🌽 🌱</div>
+            <h2>Welcome Back 👋</h2>
+            <p class="subtitle">Login to continue managing your crops</p>
+
+            <form>
+                <div class="input-wrap">
+                    <label>Email or Phone Number</label>
+                    <input type="text" placeholder="Enter your email or phone">
+                </div>
+
+                <div class="input-wrap">
+                    <div class="label-split">
+                        <label>Secure Password</label>
+                        <a href="#" class="forgot-link">Forgot Password?</a>
+                    </div>
+                    <input type="password" placeholder="••••••••">
+                </div>
+
+                <div class="remember-container">
+    <div class="remember-content">
+        <input type="checkbox" id="rem">
+        <label for="rem">Remember me</label>
+    </div>
+</div>
+
+                <button type="submit" class="btn-login">Login</button>
+
+                <div class="divider-ui">
+                    <span class="line"></span>
+                    <span class="or-badge">OR</span>
+                    <span class="line"></span>
+                </div>
+
+                <p class="footer-note">Don't have an account? <a href="#">Sign up</a></p>
+            </form>
+        </main>
+    </div>
+
+    <script>
+        const bg = document.getElementById('bgImage');
+        let tX = 0, tY = 0, cX = 0, cY = 0;
+
+        window.addEventListener('mousemove', (e) => {
+            tX = (window.innerWidth / 2 - e.pageX) / 60;
+            tY = (window.innerHeight / 2 - e.pageY) / 60;
+        });
+
+        function smoothMove() {
+            cX += (tX - cX) * 0.06;
+            cY += (tY - cY) * 0.06;
+            bg.style.transform = `translate3d(${cX}px, ${cY}px, 0) scale(1.1)`;
+            requestAnimationFrame(smoothMove);
+        }
+        smoothMove();
+    </script>
+</body>
+</html>
