@@ -1,19 +1,19 @@
 "use client"
-
 import { useAppStore, useTranslation } from "@/lib/store"
+import { useRouter, usePathname } from "next/navigation"
 import { Home, ShoppingBag, BarChart2, User, Mic } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navItems = [
-  { id: "home", icon: Home, labelKey: "home" },
-  { id: "sell", icon: ShoppingBag, labelKey: "sell" },
-  { id: "market", icon: BarChart2, labelKey: "market" },
-  { id: "profile", icon: User, labelKey: "profile" },
+  { id: "home", icon: Home, label: "Home", path: "/farmer" },
+  { id: "sell", icon: ShoppingBag, label: "sell", path: "/farmer/sell" },
+  { id: "market", icon: BarChart2, label: "market", path: "/farmer/market" },
+  { id: "profile", icon: User, label: "Profile", path: "/farmer/profile" },
 ] as const
 
 export function BottomNav() {
-  const activeScreen = useAppStore((state) => state.activeScreen)
-  const setActiveScreen = useAppStore((state) => state.setActiveScreen)
+  const pathname = usePathname()
+  const router = useRouter()
   const setBoloListening = useAppStore((state) => state.setBoloListening)
   const t = useTranslation()
 
@@ -34,12 +34,10 @@ export function BottomNav() {
               id={item.id}
               icon={item.icon}
               label={labels[item.id]}
-              isActive={activeScreen === item.id}
-              onClick={() => setActiveScreen(item.id)}
+              isActive={pathname === item.path}
+              onClick={() => router.push(item.path)}
             />
           ))}
-
-          {/* Bolo — the hero button */}
           <button
             onClick={() => setBoloListening(true)}
             className={cn(
@@ -56,15 +54,14 @@ export function BottomNav() {
               {t.bolo}
             </span>
           </button>
-
           {navItems.slice(2).map((item) => (
             <NavItem
               key={item.id}
               id={item.id}
               icon={item.icon}
               label={labels[item.id]}
-              isActive={activeScreen === item.id}
-              onClick={() => setActiveScreen(item.id)}
+              isActive={pathname === item.path}
+              onClick={() => router.push(item.path)}
             />
           ))}
         </div>
@@ -91,9 +88,7 @@ function NavItem({
       onClick={onClick}
       className={cn(
         "flex flex-col items-center gap-1 py-1.5 px-4 rounded-xl transition-all duration-200",
-        isActive
-          ? "text-primary"
-          : "text-muted-foreground hover:text-foreground"
+        isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
       )}
     >
       <Icon className={cn("w-5 h-5 transition-transform duration-200", isActive && "scale-110")} strokeWidth={isActive ? 2.2 : 1.8} />

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { ArrowLeft, ArrowRight, Package, Users, Gavel, Check, Wheat } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 
 // Crop images for selection
 const cropImages: Record<string, string> = {
@@ -21,6 +22,7 @@ const cropImages: Record<string, string> = {
 type SellStep = "select-crop" | "enter-quantity" | "choose-method" | "pool-details" | "confirm"
 
 export function SellFlow() {
+  const router = useRouter()
   const [step, setStep] = useState<SellStep>("select-crop")
   const [sellMethod, setSellMethod] = useState<"direct" | "pool" | "auction" | null>(null)
   
@@ -29,7 +31,6 @@ export function SellFlow() {
   const setSelectedCrop = useAppStore((state) => state.setSelectedCrop)
   const sellQuantity = useAppStore((state) => state.sellQuantity)
   const setSellQuantity = useAppStore((state) => state.setSellQuantity)
-  const setActiveScreen = useAppStore((state) => state.setActiveScreen)
   const pools = useAppStore((state) => state.pools)
   const language = useAppStore((state) => state.language)
   const t = useTranslation()
@@ -62,7 +63,7 @@ export function SellFlow() {
         setStep(sellMethod === "pool" ? "pool-details" : "choose-method")
         break
       default:
-        setActiveScreen("home")
+        router.push("/farmer")
     }
   }
 
@@ -78,7 +79,7 @@ export function SellFlow() {
         if (sellMethod === "pool") {
           setStep("pool-details")
         } else if (sellMethod === "auction") {
-          setActiveScreen("auction")
+          router.push("/farmer/auction")
         } else {
           setStep("confirm")
         }
@@ -88,7 +89,7 @@ export function SellFlow() {
         break
       case "confirm":
         // Complete transaction
-        setActiveScreen("tracking")
+        router.push("/farmer/tracking")
         break
     }
   }

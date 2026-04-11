@@ -7,6 +7,7 @@ import { ArrowLeft, TrendingUp, TrendingDown, Minus, MapPin, Search, Filter } fr
 import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 
 const cropImages: Record<string, string> = {
   wheat: "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=100&h=100&fit=crop",
@@ -25,7 +26,7 @@ const mandiData = [
 ]
 
 export function MarketScreen() {
-  const setActiveScreen = useAppStore((state) => state.setActiveScreen)
+  const router = useRouter()
   const crops = useAppStore((state) => state.crops)
   const marketInsights = useAppStore((state) => state.marketInsights)
   const t = useTranslation()
@@ -36,7 +37,7 @@ export function MarketScreen() {
       <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border/50 px-4 py-4 space-y-4">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => setActiveScreen("home")}
+            onClick={() => router.push("/farmer")}
             className="w-10 h-10 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
           >
             <ArrowLeft className="w-5 h-5 text-foreground" />

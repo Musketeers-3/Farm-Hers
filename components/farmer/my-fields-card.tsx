@@ -3,6 +3,7 @@
 import { useTranslation, useAppStore } from "@/lib/store"
 import { MapPin, Leaf, BarChart3, ChevronRight } from "lucide-react"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 
 interface Field {
   id: string
@@ -43,14 +44,13 @@ const sampleFields: Field[] = [
 
 export function MyFieldsCard() {
   const t = useTranslation()
-  const setActiveScreen = useAppStore((state) => state.setActiveScreen)
-
+  const router = useRouter()
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="text-[15px] font-semibold text-foreground tracking-tight">{t.myFields}</h3>
         <button 
-          onClick={() => setActiveScreen('fields')}
+          onClick={() => router.push("/farmer")}
           className="text-[13px] text-primary font-medium flex items-center gap-0.5 hover:underline underline-offset-4 transition-all"
         >
           See All

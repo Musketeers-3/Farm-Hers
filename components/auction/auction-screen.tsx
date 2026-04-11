@@ -19,6 +19,7 @@ import {
 } from "lucide-react"
 import { useAppStore } from "@/lib/store"
 import { motion, AnimatePresence } from "framer-motion"
+import { useRouter } from "next/navigation"
 
 interface Bid {
   id: string
@@ -30,7 +31,7 @@ interface Bid {
 
 export function AuctionScreen() {
   const language = useAppStore((state) => state.language)
-  const setActiveScreen = useAppStore((state) => state.setActiveScreen)
+  const router = useRouter()  
   const auctions = useAppStore((state) => state.auctions)
   const currentAuction = auctions[0] // Use first auction for demo
   const [timeLeft, setTimeLeft] = useState(180) // 3 minutes
@@ -182,7 +183,7 @@ export function AuctionScreen() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setActiveScreen("home")}
+            onClick={() => router.push("/farmer")}
             className="rounded-full"
           >
             <ArrowLeft className="h-5 w-5" />

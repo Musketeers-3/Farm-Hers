@@ -19,6 +19,7 @@ import {
 } from "lucide-react"
 import { useAppStore } from "@/lib/store"
 import { motion, AnimatePresence } from "framer-motion"
+import { useRouter } from "next/navigation"
 
 interface SuggestedCommand {
   icon: React.ReactNode
@@ -28,7 +29,7 @@ interface SuggestedCommand {
 
 export function BoloAssistant() {
   const language = useAppStore((state) => state.language)
-  const setActiveScreen = useAppStore((state) => state.setActiveScreen)
+  const router = useRouter()     
   const setLanguage = useAppStore((state) => state.setLanguage)
   const [isOpen, setIsOpen] = useState(false)
   const [isListening, setIsListening] = useState(false)
@@ -84,7 +85,7 @@ export function BoloAssistant() {
         /mera order|my order|order status|ਮੇਰਾ ਆਰਡਰ|मेरा ऑर्डर/i,
         /order kahan|where.*order|tracking/i,
       ],
-      action: () => setActiveScreen("tracking"),
+      action: () => router.push("/farmer/tracking"),
       response: {
         en: "Opening your order tracking...",
         hi: "आपका ऑर्डर ट्रैकिंग खोल रहा हूं...",
@@ -96,7 +97,7 @@ export function BoloAssistant() {
         /mandi|market|bhav|price|rate|मंडी|ਮੰਡੀ/i,
         /mandi dikhao|show market/i,
       ],
-      action: () => setActiveScreen("market"),
+      action: () => router.push("/farmer/market"),
       response: {
         en: "Here are today's market prices...",
         hi: "यहां आज की मंडी भाव हैं...",
@@ -108,7 +109,7 @@ export function BoloAssistant() {
         /becho|sell|bech|फसल बेचो|ਫ਼ਸਲ ਵੇਚੋ/i,
         /gehu becho|sell wheat|गेहूं बेचो/i,
       ],
-      action: () => setActiveScreen("sell"),
+      action: () => router.push("/farmer/sell"),
       response: {
         en: "Opening sell screen. What would you like to sell?",
         hi: "बेचने की स्क्रीन खोल रहा हूं। आप क्या बेचना चाहते हैं?",
@@ -156,7 +157,7 @@ export function BoloAssistant() {
         /home|ghar|घर|ਘਰ/i,
         /dashboard|होम/i,
       ],
-      action: () => setActiveScreen("dashboard"),
+      action: () => router.push("/farmer"),
       response: {
         en: "Going to home screen...",
         hi: "होम स्क्रीन पर जा रहा हूं...",
@@ -168,7 +169,7 @@ export function BoloAssistant() {
         /auction|nilami|नीलामी|ਨਿਲਾਮੀ/i,
         /bid|bidding/i,
       ],
-      action: () => setActiveScreen("auction"),
+      action: () => router.push("/farmer/auction"),
       response: {
         en: "Opening live auctions...",
         hi: "लाइव नीलामी खोल रहा हूं...",
@@ -182,7 +183,7 @@ export function BoloAssistant() {
       icon: <TrendingUp className="h-4 w-4" />,
       text: { en: "Show market prices", hi: "मंडी भाव दिखाओ", pa: "ਮੰਡੀ ਭਾਅ ਦਿਖਾਓ" },
       action: () => {
-        setActiveScreen("market")
+        router.push("/farmer/market")
         setResponse(t[language].howCanIHelp)
         handleClose()
       },
@@ -191,7 +192,7 @@ export function BoloAssistant() {
       icon: <Package className="h-4 w-4" />,
       text: { en: "Track my order", hi: "मेरा ऑर्डर ट्रैक करो", pa: "ਮੇਰਾ ਆਰਡਰ ਟ੍ਰੈਕ ਕਰੋ" },
       action: () => {
-        setActiveScreen("tracking")
+        router.push("/farmer/tracking")
         handleClose()
       },
     },
@@ -199,7 +200,7 @@ export function BoloAssistant() {
       icon: <Home className="h-4 w-4" />,
       text: { en: "Go home", hi: "घर जाओ", pa: "ਘਰ ਜਾਓ" },
       action: () => {
-        setActiveScreen("dashboard")
+        router.push("/farmer")
         handleClose()
       },
     },

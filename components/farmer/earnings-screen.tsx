@@ -5,6 +5,7 @@ import { BottomNav } from "./bottom-nav"
 import { ArrowLeft, TrendingUp, Clock, IndianRupee, ArrowUpRight, ArrowDownRight, Download } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts"
+import { useRouter } from "next/router"
 
 const monthlyData = [
   { month: "Oct", revenue: 45000 },
@@ -32,7 +33,7 @@ const transactions = [
 ]
 
 export function EarningsScreen() {
-  const setActiveScreen = useAppStore((state) => state.setActiveScreen)
+  const router = useRouter()   
 
   const totalRevenue = 420000
   const pendingAmount = 72000
@@ -44,7 +45,7 @@ export function EarningsScreen() {
         <div className="max-w-lg mx-auto px-5 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => setActiveScreen("home")}
+              onClick={() => router.push("/farmer")}
               className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center hover:bg-accent transition-all"
             >
               <ArrowLeft className="w-5 h-5 text-foreground" strokeWidth={1.8} />

@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import { Search, X, TrendingUp, MapPin, Wheat } from "lucide-react"
 import { useAppStore } from "@/lib/store"
 import { cn } from "@/lib/utils"
+import { useRouter } from "next/navigation"
 
 const suggestions = [
   { type: "crop", label: "Wheat", icon: Wheat },
@@ -18,7 +19,7 @@ export function SearchBar() {
   const [query, setQuery] = useState("")
   const [isOpen, setIsOpen] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
-  const setActiveScreen = useAppStore((state) => state.setActiveScreen)
+  const router = useRouter() 
 
   const filtered = query
     ? suggestions.filter(s => s.label.toLowerCase().includes(query.toLowerCase()))
@@ -30,7 +31,7 @@ export function SearchBar() {
 
   const handleSelect = (item: typeof suggestions[0]) => {
     if (item.type === "mandi" || item.type === "trending") {
-      setActiveScreen("market")
+      router.push("/farmer/market")
     }
     setQuery("")
     setIsOpen(false)

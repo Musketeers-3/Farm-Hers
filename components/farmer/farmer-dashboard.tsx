@@ -15,11 +15,12 @@ import { AIRecommendationCard } from "./ai-recommendation-card"
 import { Bell, MapPin, ChevronDown, Moon, Sun } from "lucide-react"
 import { format } from "date-fns"
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 
 export function FarmerDashboard() {
+  const router = useRouter();
   const userName = useAppStore((state) => state.userName)
   const userLocation = useAppStore((state) => state.userLocation)
-  const setActiveScreen = useAppStore((state) => state.setActiveScreen)
   const t = useTranslation()
   const [isDark, setIsDark] = useState(() => typeof document !== 'undefined' && document.documentElement.classList.contains('dark'))
 
@@ -52,7 +53,7 @@ export function FarmerDashboard() {
               </button>
               <LanguageSwitcher />
               <button
-                onClick={() => setActiveScreen("notifications")}
+                onClick={() => router.push("/farmer/notifications")}
                 className="relative w-10 h-10 rounded-xl bg-secondary flex items-center justify-center hover:bg-accent transition-all duration-200"
               >
                 <Bell className="w-[18px] h-[18px] text-foreground" strokeWidth={1.8} />
@@ -98,7 +99,7 @@ export function FarmerDashboard() {
 
         {/* Earnings quick glance */}
         <button
-          onClick={() => setActiveScreen("earnings")}
+          onClick={() => router.push("/farmer/earnings")}
           className="w-full glass-card rounded-2xl p-5 flex items-center justify-between hover:bg-secondary/50 transition-all"
         >
           <div>

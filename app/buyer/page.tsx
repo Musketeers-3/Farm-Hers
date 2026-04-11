@@ -1,14 +1,12 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useAppStore } from "@/lib/store";
-import { OnboardingScreen } from "@/components/onboarding/onboarding-screen";
 import { useRouter } from "next/navigation";
+import { BuyerDashboard } from "@/components/buyer/buyer-dashboard";
+import { BoloAssistant } from "@/components/bolo/bolo-assistant";
 
-export default function Home() {
-  const setHasOnboarded = useAppStore((state) => state.setHasOnboarded);
-  const setUserRole = useAppStore((state) => state.setUserRole);
+export default function BuyerPage() {
   const hasOnboarded = useAppStore((state) => state.hasOnboarded);
-  const userRole = useAppStore((state) => state.userRole);
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
@@ -17,12 +15,12 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (mounted && hasOnboarded) {
-      router.replace(`/${userRole}`);
+    if (mounted && !hasOnboarded) {
+      router.replace("/");
     }
-  }, [mounted, hasOnboarded, userRole, router]);
+  }, [mounted, hasOnboarded, router]);
 
-  if (!mounted) {
+  if (!mounted || !hasOnboarded) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-pulse">
@@ -33,12 +31,9 @@ export default function Home() {
   }
 
   return (
-    <OnboardingScreen
-      onComplete={(role) => {
-        setUserRole(role);
-        setHasOnboarded(true);
-        router.push(`/${role}`);
-      }}
-    />
+    <>
+      <BuyerDashboard />
+      <BoloAssistant />
+    </>
   );
 }

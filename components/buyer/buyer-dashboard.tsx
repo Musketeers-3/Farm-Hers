@@ -28,6 +28,7 @@ import {
 } from "lucide-react"
 import { useAppStore } from "@/lib/store"
 import { AgriLinkLogo } from "@/components/agrilink-logo"
+import { useRouter } from "next/navigation"
 
 interface FarmerPool {
   id: string
@@ -55,7 +56,7 @@ interface LiveAuction {
 
 export function BuyerDashboard() {
   const language = useAppStore((state) => state.language)
-  const setActiveScreen = useAppStore((state) => state.setActiveScreen)
+  const router = useRouter() 
   const setUserRole = useAppStore((state) => state.setUserRole)
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedTab, setSelectedTab] = useState("pools")
@@ -148,7 +149,7 @@ export function BuyerDashboard() {
                 <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-destructive" />
               </button>
               <button
-                onClick={() => { setUserRole("farmer"); setActiveScreen("home") }}
+                onClick={() => { setUserRole("farmer"); router.push("/farmer") }}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-secondary hover:bg-accent text-sm font-medium text-foreground transition-all duration-200"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />

@@ -8,6 +8,7 @@ import {
   CreditCard, CloudRain, Check, Trash2
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useRouter } from "next/navigation"
 
 interface Notification {
   id: string
@@ -46,7 +47,7 @@ const colorMap = {
 }
 
 export function NotificationsScreen() {
-  const setActiveScreen = useAppStore((state) => state.setActiveScreen)
+  const router = useRouter()      
   const [notifications, setNotifications] = useState(sampleNotifications)
   const [filter, setFilter] = useState<string>("all")
 
@@ -73,7 +74,7 @@ export function NotificationsScreen() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
-                onClick={() => setActiveScreen("home")}
+                onClick={() => router.push("/farmer")}
                 className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center hover:bg-accent transition-all"
               >
                 <ArrowLeft className="w-5 h-5 text-foreground" strokeWidth={1.8} />

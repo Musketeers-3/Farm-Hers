@@ -3,6 +3,7 @@
 import { useAppStore, useTranslation } from "@/lib/store"
 import { ArrowLeft, Truck, CheckCircle2, Shield, Package, MapPin, Clock } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useRouter } from "next/navigation"
 
 const trackingSteps = [
   {
@@ -59,7 +60,7 @@ const trackingSteps = [
 ]
 
 export function TrackingScreen() {
-  const setActiveScreen = useAppStore((state) => state.setActiveScreen)
+  const router = useRouter()
   const language = useAppStore((state) => state.language)
   const t = useTranslation()
 
@@ -75,7 +76,7 @@ export function TrackingScreen() {
       <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border/50 px-4 py-4">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => setActiveScreen("home")}
+            onClick={() => router.push("/farmer")}
             className="w-10 h-10 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
           >
             <ArrowLeft className="w-5 h-5 text-foreground" />
