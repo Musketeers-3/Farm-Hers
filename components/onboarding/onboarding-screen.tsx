@@ -5,7 +5,14 @@ import { useAppStore, useTranslation } from "@/lib/store";
 import { AgriLinkLogo } from "@/components/agrilink-logo";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sprout, Users, TrendingUp, Shield ,ArrowLeft} from "lucide-react";
+import {
+  ArrowRight,
+  Sprout,
+  Users,
+  TrendingUp,
+  Shield,
+  ArrowLeft,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 
@@ -56,7 +63,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
           src="/images/hero-wheat.jpg"
           alt="Golden wheat fields"
           fill
-          className="object-cover"
+          className="object-cover opacity-90"
           priority
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
@@ -65,13 +72,13 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
       {/* Content */}
       <div className="relative z-10 min-h-screen flex flex-col">
         {/* Header */}
-        <header className="flex items-center justify-between p-4">
+        <header className="flex items-center justify-between p-6">
           <AgriLinkLogo size="md" />
           <LanguageSwitcher />
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 flex flex-col justify-end px-6 pb-8 pt-20">
+        <main className="flex-1 flex flex-col justify-end px-6 pb-12 pt-20 max-w-md mx-auto w-full">
           {step === 0 ? (
             <HeroStep language={language} t={t} onNext={() => setStep(1)} />
           ) : (
@@ -99,10 +106,10 @@ function HeroStep({
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Hero Text */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         <div className="flex items-center gap-2">
-          <Sprout className="w-6 h-6 text-primary" />
-          <span className="text-sm font-medium text-primary">
+          <Sprout className="w-5 h-5 text-primary" />
+          <span className="text-sm font-bold text-primary tracking-wide uppercase">
             {language === "hi"
               ? "भारत के किसानों के लिए"
               : language === "pa"
@@ -111,7 +118,7 @@ function HeroStep({
           </span>
         </div>
 
-        <h1 className="text-4xl md:text-5xl font-serif font-bold text-foreground leading-tight text-balance">
+        <h1 className="text-4xl md:text-5xl font-serif font-bold tracking-tight text-foreground leading-tight text-balance">
           {language === "hi" ? (
             <>
               खेती का <span className="text-gradient-green">नया युग</span>
@@ -128,12 +135,12 @@ function HeroStep({
           )}
         </h1>
 
-        <p className="text-lg text-muted-foreground max-w-sm text-pretty">
+        <p className="text-base text-muted-foreground max-w-[280px] text-pretty leading-relaxed">
           {language === "hi"
-            ? "बेहतर उपज और फैसलों के लिए स्मार्ट टूल्स के साथ किसानों को सशक्त बनाना"
+            ? "बेहतर उपज और फैसलों के लिए स्मार्ट टूल्स के साथ किसानों को सशक्त बनाना।"
             : language === "pa"
-              ? "ਬਿਹਤਰ ਉਪਜ ਅਤੇ ਫੈਸਲਿਆਂ ਲਈ ਸਮਾਰਟ ਟੂਲਜ਼ ਨਾਲ ਕਿਸਾਨਾਂ ਨੂੰ ਸ਼ਕਤੀਸ਼ਾਲੀ ਬਣਾਉਣਾ"
-              : "Empowering farmers with smart tools for better yields and decisions"}
+              ? "ਬਿਹਤਰ ਉਪਜ ਅਤੇ ਫੈਸਲਿਆਂ ਲਈ ਸਮਾਰਟ ਟੂਲਜ਼ ਨਾਲ ਕਿਸਾਨਾਂ ਨੂੰ ਸ਼ਕਤੀਸ਼ਾਲੀ ਬਣਾਉਣਾ।"
+              : "Empowering farmers with smart tools for better yields and decisions."}
         </p>
       </div>
 
@@ -142,21 +149,23 @@ function HeroStep({
         {features.map((feature, i) => (
           <div
             key={i}
-            className="flex items-center gap-3 p-3 rounded-xl glass-card animate-in fade-in slide-in-from-left-4"
+            className="flex items-center gap-4 p-3.5 rounded-2xl glass-card animate-in fade-in slide-in-from-left-4"
             style={{ animationDelay: `${i * 100}ms` }}
           >
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
               <feature.icon className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h3 className="font-semibold text-foreground text-sm">
+              <h3 className="font-bold text-foreground text-sm tracking-tight">
                 {language === "hi"
                   ? feature.titleHi
                   : language === "pa"
                     ? feature.titlePa
                     : feature.title}
               </h3>
-              <p className="text-xs text-muted-foreground">{feature.desc}</p>
+              <p className="text-xs font-medium text-muted-foreground mt-0.5">
+                {feature.desc}
+              </p>
             </div>
           </div>
         ))}
@@ -166,31 +175,31 @@ function HeroStep({
       <Button
         onClick={onNext}
         size="lg"
-        className="w-full h-14 rounded-2xl bg-gradient-to-r from-primary to-agri-olive text-lg font-semibold shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all"
+        className="w-full h-14 rounded-full bg-gradient-to-r from-primary to-agri-olive text-base font-bold shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all hover-lift"
       >
         {t.getStarted}
         <ArrowRight className="w-5 h-5 ml-2" />
       </Button>
 
-      {/* Floating indicators */}
-      <div className="absolute top-1/4 left-4 glass-card px-3 py-2 rounded-full animate-float">
+      {/* Floating indicators - Hidden on tiny screens to prevent clutter */}
+      <div className="hidden sm:flex absolute top-1/4 -left-4 glass-card px-4 py-2.5 rounded-full animate-float premium-shadow">
         <div className="flex items-center gap-2">
           <Sprout className="w-4 h-4 text-agri-success" />
-          <span className="text-xs font-medium text-foreground">
+          <span className="text-xs font-bold text-foreground tracking-tight">
             Growth: 12 cm
           </span>
         </div>
       </div>
 
       <div
-        className="absolute top-1/3 right-4 glass-card px-3 py-2 rounded-full animate-float"
+        className="hidden sm:flex absolute top-1/3 -right-4 glass-card px-4 py-2.5 rounded-full animate-float premium-shadow"
         style={{ animationDelay: "1s" }}
       >
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded-full bg-agri-sage flex items-center justify-center">
             <span className="text-[8px] text-white font-bold">H2O</span>
           </div>
-          <span className="text-xs font-medium text-foreground">
+          <span className="text-xs font-bold text-foreground tracking-tight">
             Moisture: 75%
           </span>
         </div>
@@ -202,30 +211,31 @@ function HeroStep({
 function RoleSelectStep({
   language,
   onSelect,
-  onBack
+  onBack,
 }: {
   language: string;
   onSelect: (role: "farmer" | "buyer") => void;
   onBack: () => void;
 }) {
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full">
       <button
         onClick={onBack}
-        className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+        className="flex items-center gap-2 text-muted-foreground hover:text-foreground font-semibold transition-colors mb-4"
       >
         <ArrowLeft className="w-4 h-4" />
         <span className="text-sm">Back</span>
       </button>
+
       <div className="space-y-2 text-center">
-        <h2 className="text-2xl font-serif font-bold text-foreground">
+        <h2 className="text-3xl font-serif font-bold tracking-tight text-foreground">
           {language === "hi"
             ? "आप कौन हैं?"
             : language === "pa"
               ? "ਤੁਸੀਂ ਕੌਣ ਹੋ?"
               : "Who are you?"}
         </h2>
-        <p className="text-muted-foreground">
+        <p className="text-sm font-medium text-muted-foreground">
           {language === "hi"
             ? "अपनी भूमिका चुनें"
             : language === "pa"
@@ -287,20 +297,24 @@ function RoleCard({
     <button
       onClick={onClick}
       className={cn(
-        "group relative overflow-hidden rounded-3xl aspect-[3/4]",
-        "hover:scale-[1.02] active:scale-[0.98] transition-all duration-300",
+        "group relative overflow-hidden rounded-3xl aspect-[4/5] w-full",
+        "hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 premium-shadow",
       )}
     >
       <Image
         src={image}
         alt={title}
         fill
-        className="object-cover group-hover:scale-110 transition-transform duration-500"
+        sizes="(max-width: 768px) 50vw, 33vw"
+        className="object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+        priority
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
       <div className="absolute bottom-0 left-0 right-0 p-4 text-left">
-        <h3 className="text-xl font-bold text-white">{title}</h3>
-        <p className="text-sm text-white/70">{desc}</p>
+        <h3 className="text-lg font-bold tracking-tight text-white drop-shadow-sm">
+          {title}
+        </h3>
+        <p className="text-xs font-medium text-white/80 mt-0.5">{desc}</p>
       </div>
     </button>
   );

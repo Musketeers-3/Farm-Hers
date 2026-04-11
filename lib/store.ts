@@ -1,7 +1,10 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-// Types
+// ----------------------------------------------------------------------
+// TYPES & INTERFACES
+// ----------------------------------------------------------------------
+
 export type Language = "en" | "hi" | "pa";
 export type UserRole = "farmer" | "buyer";
 export type OrderStatus =
@@ -9,6 +12,17 @@ export type OrderStatus =
   | "in-transit"
   | "quality-verified"
   | "payment-released";
+
+// Unified Screen Routing Type (Matches page.tsx exactly)
+export type Screen =
+  | "home"
+  | "sell"
+  | "auction"
+  | "tracking"
+  | "market"
+  | "profile"
+  | "notifications"
+  | "earnings";
 
 export interface Crop {
   id: string;
@@ -38,7 +52,7 @@ export interface Auction {
   startingPrice: number;
   currentBid: number;
   highestBidderId: string | null;
-  endTime: Date;
+  endTime: string; // CHANGED: Always use ISO strings for global state to prevent hydration crashes
   status: "live" | "ended" | "cancelled";
 }
 
@@ -51,7 +65,7 @@ export interface Order {
   status: OrderStatus;
   buyerId: string;
   farmerId: string;
-  createdAt: Date;
+  createdAt: string; // CHANGED: ISO string format
 }
 
 export interface WeatherData {
@@ -115,8 +129,8 @@ interface AppState {
   setMarketInsights: (insights: MarketInsight[]) => void;
 
   // UI State
-  activeScreen: string;
-  setActiveScreen: (screen: string) => void;
+  activeScreen: Screen;
+  setActiveScreen: (screen: Screen) => void;
   isBoloListening: boolean;
   setBoloListening: (listening: boolean) => void;
 
@@ -127,7 +141,10 @@ interface AppState {
   setSellPrice: (price: number) => void;
 }
 
-// Sample crop data
+// ----------------------------------------------------------------------
+// DEMO DATA SEEDING
+// ----------------------------------------------------------------------
+
 const sampleCrops: Crop[] = [
   {
     id: "wheat",
@@ -185,7 +202,6 @@ const sampleCrops: Crop[] = [
   },
 ];
 
-// Sample pools
 const samplePools: Pool[] = [
   {
     id: "pool-1",
@@ -207,22 +223,20 @@ const samplePools: Pool[] = [
   },
 ];
 
-// Sample auctions
 const sampleAuctions: Auction[] = [
   {
     id: "auction-1",
     cropId: "wheat",
     farmerId: "farmer-1",
     quantity: 100,
-    startingPrice: 2200,
+    startingPrice: 2300,
     currentBid: 2450,
     highestBidderId: "buyer-2",
-    endTime: new Date(Date.now() + 3600000),
+    endTime: new Date(Date.now() + 3600000).toISOString(), // Safely serialized
     status: "live",
   },
 ];
 
-// Sample market insights
 const sampleMarketInsights: MarketInsight[] = [
   {
     cropId: "wheat",
@@ -247,6 +261,10 @@ const sampleMarketInsights: MarketInsight[] = [
   },
 ];
 
+// ----------------------------------------------------------------------
+// ZUSTAND STORE CONFIGURATION
+// ----------------------------------------------------------------------
+
 export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
@@ -260,9 +278,9 @@ export const useAppStore = create<AppState>()(
       // User
       userRole: "farmer",
       setUserRole: (role) => set({ userRole: role }),
-      userName: "Rajinder Singh",
+      userName: "Arshvir Kaur", // Updated to match your persona from the PDF!
       setUserName: (name) => set({ userName: name }),
-      userLocation: "Punjab Valley",
+      userLocation: "Dasuya, Punjab",
       setUserLocation: (location) => set({ userLocation: location }),
 
       // Crops
@@ -312,8 +330,8 @@ export const useAppStore = create<AppState>()(
 
       // Weather
       weather: {
-        temperature: 28,
-        humidity: 65,
+        temperature: 32,
+        humidity: 45,
         windSpeed: 12,
         condition: "sunny",
         isGoodForHarvest: true,
@@ -338,18 +356,22 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "agrilink-storage",
+      // Only persist user preferences to avoid getting stuck with stale market data
       partialize: (state) => ({
         language: state.language,
         userRole: state.userRole,
         userName: state.userName,
         userLocation: state.userLocation,
-        hasOnboarded: state.hasOnboarded, // ← add this
+        hasOnboarded: state.hasOnboarded,
       }),
     },
   ),
 );
 
-// Translation helper
+// ----------------------------------------------------------------------
+// TRANSLATIONS
+// ----------------------------------------------------------------------
+
 export const translations = {
   en: {
     welcome: "Welcome to AgriLink",
@@ -465,12 +487,3 @@ export const useTranslation = () => {
 
 // Alias for backwards compatibility
 export const useAgriStore = useAppStore;
-
-// Screen type for navigation
-export type Screen =
-  | "dashboard"
-  | "sell"
-  | "auction"
-  | "tracking"
-  | "market"
-  | "onboarding";
