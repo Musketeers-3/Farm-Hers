@@ -8,7 +8,6 @@ import { MarketInsightCard } from "./market-insight-card";
 import { CommoditiesGrid } from "./commodities-grid";
 import { CommunityPulse } from "./community-pulse";
 import { MyFieldsCard } from "./my-fields-card";
-import { BottomNav } from "./bottom-nav";
 import { SearchBar } from "./search-bar";
 import { AIRecommendationCard } from "./ai-recommendation-card";
 
@@ -24,7 +23,6 @@ export function FarmerDashboard() {
   const userLocation = useAppStore((state) => state.userLocation);
   const t = useTranslation();
 
-  // Hydration-safe state for Dark Mode
   const [mounted, setMounted] = useState(false);
   const [isDark, setIsDark] = useState(
     () =>
@@ -50,10 +48,9 @@ export function FarmerDashboard() {
   const formattedDate = format(today, "EEEE, dd MMM yyyy");
 
   return (
-    <div className="min-h-screen bg-background pb-24 lg:pb-8">
-      {/* ---------------------------------------------------------------------- */}
-      {/* 1. HEADER (Identity & Global Actions) */}
-      {/* ---------------------------------------------------------------------- */}
+    // pb-28 gives breathing room above the fixed BottomNav on mobile
+    <div className="min-h-screen bg-background pb-28 lg:pb-8">
+      {/* HEADER */}
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-2xl border-b border-border/40 shadow-sm transition-all duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4.5 space-y-3">
           <div className="flex items-center justify-between">
@@ -67,15 +64,9 @@ export function FarmerDashboard() {
                   aria-label="Toggle Dark Mode"
                 >
                   {isDark ? (
-                    <Sun
-                      className="w-5.5 h-5.5 text-foreground"
-                      strokeWidth={1.8}
-                    />
+                    <Sun className="w-5.5 h-5.5 text-foreground" strokeWidth={1.8} />
                   ) : (
-                    <Moon
-                      className="w-5.5 h-5.5 text-foreground"
-                      strokeWidth={1.8}
-                    />
+                    <Moon className="w-5.5 h-5.5 text-foreground" strokeWidth={1.8} />
                   )}
                 </button>
               )}
@@ -88,10 +79,7 @@ export function FarmerDashboard() {
                 onClick={() => router.push("/farmer/notifications")}
                 className="relative w-10.5 h-10.5 rounded-xl bg-secondary/80 flex items-center justify-center hover:bg-accent transition-all duration-200 shadow-sm"
               >
-                <Bell
-                  className="w-5.5 h-5.5 text-foreground"
-                  strokeWidth={1.8}
-                />
+                <Bell className="w-5.5 h-5.5 text-foreground" strokeWidth={1.8} />
                 <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full bg-destructive border-2 border-background" />
               </button>
             </div>
@@ -124,16 +112,14 @@ export function FarmerDashboard() {
         </div>
       </header>
 
-      {/* ---------------------------------------------------------------------- */}
-      {/* 2. MAIN BENTO GRID ARCHITECTURE */}
-      {/* ---------------------------------------------------------------------- */}
+      {/* MAIN GRID */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 lg:space-y-8">
         <div className="w-full">
           <SearchBar />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-          {/* SIDEBAR BLOCK */}
+          {/* SIDEBAR */}
           <div className="lg:col-span-4 flex flex-col gap-6 lg:gap-8 order-1 lg:order-2 lg:sticky lg:top-36">
             <div className="w-full">
               <WeatherWidget />
@@ -182,11 +168,9 @@ export function FarmerDashboard() {
             <div className="w-full">
               <AIRecommendationCard />
             </div>
-
             <div className="w-full">
               <CommoditiesGrid />
             </div>
-
             <div className="w-full">
               <MyFieldsCard />
             </div>
@@ -194,9 +178,8 @@ export function FarmerDashboard() {
         </div>
       </main>
 
-      <div className="lg:hidden">
-        <BottomNav />
-      </div>
+      {/* BottomNav is intentionally NOT rendered here.
+          app/farmer/layout.tsx renders it once for all farmer routes. */}
     </div>
   );
 }

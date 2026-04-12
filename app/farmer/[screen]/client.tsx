@@ -14,6 +14,7 @@ import { BoloAssistant } from "@/components/bolo/bolo-assistant";
 
 export function FarmerScreenClient({ screen }: { screen: string }) {
   const hasOnboarded = useAppStore((state) => state.hasOnboarded);
+  const isLoggedIn = useAppStore((state) => state.isLoggedIn);
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
@@ -22,12 +23,13 @@ export function FarmerScreenClient({ screen }: { screen: string }) {
   }, []);
 
   useEffect(() => {
-    if (mounted && !hasOnboarded) {
+    if (!mounted) return;
+    if (!hasOnboarded || !isLoggedIn) {
       router.replace("/");
     }
-  }, [mounted, hasOnboarded, router]);
+  }, [mounted, hasOnboarded, isLoggedIn, router]);
 
-  if (!mounted || !hasOnboarded) {
+  if (!mounted || !hasOnboarded || !isLoggedIn) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-pulse">
@@ -39,20 +41,13 @@ export function FarmerScreenClient({ screen }: { screen: string }) {
 
   const renderScreen = () => {
     switch (screen) {
-      case "sell":
-        return <SellFlow />;
-      case "auction":
-        return <AuctionScreen />;
-      case "tracking":
-        return <TrackingScreen />;
-      case "market":
-        return <MarketScreen />;
-      case "profile":
-        return <ProfileScreen />;
-      case "notifications":
-        return <NotificationsScreen />;
-      case "earnings":
-        return <EarningsScreen />;
+      case "sell": return <SellFlow />;
+      case "auction": return <AuctionScreen />;
+      case "tracking": return <TrackingScreen />;
+      case "market": return <MarketScreen />;
+      case "profile": return <ProfileScreen />;
+      case "notifications": return <NotificationsScreen />;
+      case "earnings": return <EarningsScreen />;
       default:
         router.replace("/farmer");
         return null;

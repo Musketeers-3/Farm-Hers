@@ -5,52 +5,55 @@ import { useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store";
 import { BuyerDashboard } from "@/components/buyer/buyer-dashboard";
 import { BoloAssistant } from "@/components/bolo/bolo-assistant";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function BuyerPage() {
   const hasOnboarded = useAppStore((state) => state.hasOnboarded);
-  const userRole = useAppStore((state) => state.userRole);
-  const setHasOnboarded = useAppStore((state) => state.setHasOnboarded);
-  const setUserRole = useAppStore((state) => state.setUserRole);
-
+  const isLoggedIn = useAppStore((state) => state.isLoggedIn);
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
-  const [isAuthorized, setIsAuthorized] = useState(false);
 
+  // 1. Hydration guard
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  // 2. Route protection — uses isLoggedIn (the actual login flow)
+  // instead of userRole which was never reliably set at this point
   useEffect(() => {
-    if (mounted) {
-      const session = localStorage.getItem("agrilink-session");
-      const savedRole = localStorage.getItem("agrilink-user-role");
-
-      if (session !== "active" || savedRole !== "buyer") {
-        router.replace("/");
-        return;
-      }
-
-      if (!hasOnboarded || userRole !== "buyer") {
-        setHasOnboarded(true);
-        setUserRole("buyer");
-      }
-
-      setIsAuthorized(true);
+    if (mounted && (!hasOnboarded || !isLoggedIn)) {
+      router.replace("/");
     }
-  }, [mounted, hasOnboarded, userRole, router, setHasOnboarded, setUserRole]);
+  }, [mounted, hasOnboarded, isLoggedIn, router]);
 
-  if (!mounted || !isAuthorized) {
+  // 3. Premium loading state
+  if (!mounted || !hasOnboarded || !isLoggedIn) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-pulse w-16 h-16 rounded-full bg-primary/20" />
+        <div className="relative flex items-center justify-center">
+          <div className="w-12 h-12 rounded-full bg-primary/10 animate-ping absolute" />
+          <div className="w-8 h-8 rounded-full bg-primary/40 animate-pulse relative z-10 border border-primary/20" />
+        </div>
       </div>
     );
   }
 
+  // 4. Application shell
   return (
-    <div className="min-h-screen animate-in fade-in duration-500">
-      <BuyerDashboard />
+    <main className="relative min-h-screen bg-background overflow-hidden">
+      <AnimatePresence mode="wait">
+        <motion.div
+          key="buyer-dashboard"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          className="w-full h-full"
+        >
+          <BuyerDashboard />
+        </motion.div>
+      </AnimatePresence>
       <BoloAssistant />
-    </div>
+    </main>
   );
 }
