@@ -44,8 +44,6 @@ export default function AgriLinkApp() {
       if (state.hasOnboarded && state.isLoggedIn) {
         setStep("redirecting");
         router.replace(`/${state.userRole}`);
-      } else if (state.hasOnboarded && !state.isLoggedIn) {
-        setStep("login");
       } else {
         setStep("onboarding");
       }

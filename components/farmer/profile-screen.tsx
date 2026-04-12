@@ -71,7 +71,7 @@ export function ProfileScreen() {
 
   const handleSignOut = () => {
     setIsLoggedIn(false);
-    // Don't call setHasOnboarded(false) — that resets the whole store
+    setHasOnboarded(false); // ← add this back
     router.replace("/");
   };
 
