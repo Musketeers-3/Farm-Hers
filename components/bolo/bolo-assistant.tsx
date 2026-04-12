@@ -54,139 +54,215 @@ export function BoloAssistant() {
   );
 
   // 2. 🧠 MULTILINGUAL INTENT RESOLVER
+  // 🧠 THE GEMINI BRAIN: Dynamic Intent Parsing
   const handleIntent = useCallback(
-    (input: string) => {
+    async (input: string) => {
       setIsProcessing(true);
 
-      // 🚀 UPDATED: Regex now contains actual Hindi and Punjabi characters
-      const socialCommands = [
-        {
-          // Matches Hi, Hello, Namaste (Hindi), Sat Shri Akal (Punjabi)
-          regex: /hello|hi|hey|नमस्ते|नमस्कार|सत श्री अकाल|ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ/i,
-          msg: {
-            en: "Hello! How can I help you today?",
-            hi: "नमस्ते! मैं आपकी क्या मदद कर सकता हूँ?",
-            pa: "ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ! ਮੈਂ ਤੁਹਾਡੀ ਕੀ ਮਦਦ ਕਰ ਸਕਦਾ ਹਾਂ?",
-          },
-        },
-        {
-          // Language Switching via Voice
-          regex: /hindi|हिंदी|हिन्दी/i,
-          action: () => setLanguage("hi"),
-          msg: {
-            en: "Switching to Hindi.",
-            hi: "अब मैं हिंदी में बात करूँगा।",
-            pa: "ਹੁਣ ਮੈਂ ਹਿੰਦੀ ਵਿੱਚ ਗੱਲ ਕਰਾਂਗਾ।",
-          },
-        },
-        {
-          regex: /punjabi|ਪੰਜਾਬੀ/i,
-          action: () => setLanguage("pa"),
-          msg: {
-            en: "Switching to Punjabi.",
-            hi: "अब मैं पंजाबी में बात करूँगा।",
-            pa: "ਹੁਣ ਮੈਂ ਪੰਜਾਬੀ ਵਿੱਚ ਗੱਲ ਕਰਾਂਗਾ।",
-          },
-        },
-      ];
+      try {
+        // 1. Call your secure Gemini API Route
+        const response = await fetch("/api/parse-bid", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ transcript: input, language }),
+        });
 
-      // 🚀 UPDATED: Bidding Regex (Supports Devanagari and Gurmukhi script)
-      const bidMatch = input.match(
-        /(?:bid|bol|price|set|lagao|बोली|बोलो|ਭਾਅ|ਬੋਲੀ)\s*(\d+)\s*(?:on|par|for|पर|ਤੇ)?\s*([a-zA-Z\u0900-\u097F\u0A00-\u0A7F]+)/i,
-      );
+        const result = await response.json();
 
-      const socialMatch = socialCommands.find((c) => c.regex.test(input));
-      if (socialMatch) {
-        const reply = socialMatch.msg[language as keyof typeof socialMatch.msg];
-        setResponse(reply);
-        speak(reply);
-        setShowResponse(true);
-        if (socialMatch.action) socialMatch.action();
-        setIsProcessing(false);
-        return;
-      }
+        if (result.success && result.data) {
+          const ai = result.data; // { intent, target, crop, amount, reply }
 
-      if (bidMatch) {
-        const amount = parseInt(bidMatch[1]);
-        const cropQuery = bidMatch[2].toLowerCase();
-
-        // Match crop name (Standardized across scripts)
-        const targetCrop = crops.find(
-          (c) =>
-            c.name.toLowerCase().includes(cropQuery) ||
-            (cropQuery.includes("गेहूं") && c.id === "wheat") ||
-            (cropQuery.includes("ਕਣਕ") && c.id === "wheat") ||
-            (cropQuery.includes("चावल") && c.id === "rice"),
-        );
-
-        const targetAuction = auctions.find((a) => a.cropId === targetCrop?.id);
-
-        if (targetAuction) {
-          if (amount > targetAuction.currentBid) {
-            placeBid(targetAuction.id, amount, "buyer-pam-001");
-            const successMsg =
-              language === "en"
-                ? `Bid of ${amount} placed on ${targetCrop?.name}.`
-                : `${targetCrop?.name} पर ${amount} की बोली लगा दी गई है।`;
-            setResponse(successMsg);
-            speak(successMsg);
-            setShowResponse(true);
-            setIsProcessing(false);
-            router.push(`/buyer/auctions/${targetAuction.id}`);
-            return;
-          }
-        }
-      }
-
-      // 🚀 UPDATED: Navigation (Supports Devanagari and Gurmukhi characters)
-      const navCommands = [
-        {
-          regex: /mandi|price|bhav|market|ਭਾਅ|भाव|मंडी/i,
-          action: () => router.push("/buyer/analytics"),
-          msg: {
-            en: "Showing market rates",
-            hi: "मंडी भाव दिखा रहा हूँ",
-            pa: "ਮੰਡੀ ਭਾਅ ਦੇਖ ਰਿਹਾ ਹਾਂ",
-          },
-        },
-        {
-          regex: /auction|nilami|bid|ਬੋਲੀ|ਨੀਲਾਮੀ|नीलामी|बोली/i,
-          action: () => router.push("/buyer/auctions"),
-          msg: {
-            en: "Opening auctions",
-            hi: "नीलामी खोल रहा हूँ",
-            pa: "ਨਿਲਾਮੀ ਖੋਲ ਰਿਹਾ ਹਾਂ",
-          },
-        },
-      ];
-
-      const navMatch = navCommands.find((c) => c.regex.test(input));
-
-      setTimeout(() => {
-        setIsProcessing(false);
-        if (navMatch) {
-          const reply = navMatch.msg[language as keyof typeof navMatch.msg];
-          setResponse(reply);
-          speak(reply);
+          setResponse(ai.reply);
+          speak(ai.reply);
           setShowResponse(true);
-          navMatch.action();
+
+          // 2. Logic Branching based on AI Intent
+          if (ai.intent === "bid" && ai.amount && ai.crop) {
+            const targetCrop = crops.find(
+              (c) => c.name.toLowerCase() === ai.crop,
+            );
+            const targetAuction = auctions.find(
+              (a) => a.cropId === targetCrop?.id,
+            );
+
+            if (targetAuction && ai.amount > targetAuction.currentBid) {
+              placeBid(targetAuction.id, ai.amount, "buyer-pam-001");
+              router.push(`/buyer/auctions/${targetAuction.id}`);
+            } else if (targetAuction) {
+              // Handle bid too low verbally (optional enhancement)
+              const failMsg =
+                language === "hi"
+                  ? `बोली कम है। वर्तमान मूल्य ₹${targetAuction.currentBid} है।`
+                  : `Bid too low. Current price is ₹${targetAuction.currentBid}.`;
+              setResponse(failMsg);
+              speak(failMsg);
+            }
+          } else if (ai.intent === "navigation" && ai.target) {
+            router.push(`/buyer/${ai.target}`);
+          }
         } else {
+          // API returned success false or bad data
           const errorMsg =
-            language === "en"
-              ? "I didn't catch that."
-              : "क्षमा करें, मैं समझ नहीं पाया।";
+            language === "hi"
+              ? "मैं समझ नहीं पाया। कृपया फिर से कहें।"
+              : "I didn't catch that. Please try again.";
           setResponse(errorMsg);
           speak(errorMsg);
           setShowResponse(true);
         }
+      } catch (error) {
+        console.error("Bolo AI Error:", error);
+        const errorMsg =
+          language === "hi"
+            ? "मेरे सर्वर में समस्या है।"
+            : "I'm having trouble connecting to my brain.";
+        setResponse(errorMsg);
+        speak(errorMsg);
+        setShowResponse(true);
+      } finally {
+        setIsProcessing(false);
         setTimeout(() => {
           setShowResponse(false);
           setTranscript("");
-        }, 3000);
-      }, 800);
+        }, 4000);
+      }
     },
-    [language, router, auctions, crops, placeBid, speak, setLanguage],
+    [language, router, auctions, crops, placeBid, speak],
   );
+  
+  // const handleIntent = useCallback(
+  //   (input: string) => {
+  //     setIsProcessing(true);
+
+  //     // 🚀 UPDATED: Regex now contains actual Hindi and Punjabi characters
+  //     const socialCommands = [
+  //       {
+  //         // Matches Hi, Hello, Namaste (Hindi), Sat Shri Akal (Punjabi)
+  //         regex: /hello|hi|hey|नमस्ते|नमस्कार|सत श्री अकाल|ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ/i,
+  //         msg: {
+  //           en: "Hello! How can I help you today?",
+  //           hi: "नमस्ते! मैं आपकी क्या मदद कर सकता हूँ?",
+  //           pa: "ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ! ਮੈਂ ਤੁਹਾਡੀ ਕੀ ਮਦਦ ਕਰ ਸਕਦਾ ਹਾਂ?",
+  //         },
+  //       },
+  //       {
+  //         // Language Switching via Voice
+  //         regex: /hindi|हिंदी|हिन्दी/i,
+  //         action: () => setLanguage("hi"),
+  //         msg: {
+  //           en: "Switching to Hindi.",
+  //           hi: "अब मैं हिंदी में बात करूँगा।",
+  //           pa: "ਹੁਣ ਮੈਂ ਹਿੰਦੀ ਵਿੱਚ ਗੱਲ ਕਰਾਂਗਾ।",
+  //         },
+  //       },
+  //       {
+  //         regex: /punjabi|ਪੰਜਾਬੀ/i,
+  //         action: () => setLanguage("pa"),
+  //         msg: {
+  //           en: "Switching to Punjabi.",
+  //           hi: "अब मैं पंजाबी में बात करूँगा।",
+  //           pa: "ਹੁਣ ਮੈਂ ਪੰਜਾਬੀ ਵਿੱਚ ਗੱਲ ਕਰਾਂਗਾ।",
+  //         },
+  //       },
+  //     ];
+
+  //     // 🚀 UPDATED: Bidding Regex (Supports Devanagari and Gurmukhi script)
+  //     const bidMatch = input.match(
+  //       /(?:bid|bol|price|set|lagao|बोली|बोलो|ਭਾਅ|ਬੋਲੀ)\s*(\d+)\s*(?:on|par|for|पर|ਤੇ)?\s*([a-zA-Z\u0900-\u097F\u0A00-\u0A7F]+)/i,
+  //     );
+
+  //     const socialMatch = socialCommands.find((c) => c.regex.test(input));
+  //     if (socialMatch) {
+  //       const reply = socialMatch.msg[language as keyof typeof socialMatch.msg];
+  //       setResponse(reply);
+  //       speak(reply);
+  //       setShowResponse(true);
+  //       if (socialMatch.action) socialMatch.action();
+  //       setIsProcessing(false);
+  //       return;
+  //     }
+
+  //     if (bidMatch) {
+  //       const amount = parseInt(bidMatch[1]);
+  //       const cropQuery = bidMatch[2].toLowerCase();
+
+  //       // Match crop name (Standardized across scripts)
+  //       const targetCrop = crops.find(
+  //         (c) =>
+  //           c.name.toLowerCase().includes(cropQuery) ||
+  //           (cropQuery.includes("गेहूं") && c.id === "wheat") ||
+  //           (cropQuery.includes("ਕਣਕ") && c.id === "wheat") ||
+  //           (cropQuery.includes("चावल") && c.id === "rice"),
+  //       );
+
+  //       const targetAuction = auctions.find((a) => a.cropId === targetCrop?.id);
+
+  //       if (targetAuction) {
+  //         if (amount > targetAuction.currentBid) {
+  //           placeBid(targetAuction.id, amount, "buyer-pam-001");
+  //           const successMsg =
+  //             language === "en"
+  //               ? `Bid of ${amount} placed on ${targetCrop?.name}.`
+  //               : `${targetCrop?.name} पर ${amount} की बोली लगा दी गई है।`;
+  //           setResponse(successMsg);
+  //           speak(successMsg);
+  //           setShowResponse(true);
+  //           setIsProcessing(false);
+  //           router.push(`/buyer/auctions/${targetAuction.id}`);
+  //           return;
+  //         }
+  //       }
+  //     }
+
+  //     // 🚀 UPDATED: Navigation (Supports Devanagari and Gurmukhi characters)
+  //     const navCommands = [
+  //       {
+  //         regex: /mandi|price|bhav|market|ਭਾਅ|भाव|मंडी/i,
+  //         action: () => router.push("/buyer/analytics"),
+  //         msg: {
+  //           en: "Showing market rates",
+  //           hi: "मंडी भाव दिखा रहा हूँ",
+  //           pa: "ਮੰਡੀ ਭਾਅ ਦੇਖ ਰਿਹਾ ਹਾਂ",
+  //         },
+  //       },
+  //       {
+  //         regex: /auction|nilami|bid|ਬੋਲੀ|ਨੀਲਾਮੀ|नीलामी|बोली/i,
+  //         action: () => router.push("/buyer/auctions"),
+  //         msg: {
+  //           en: "Opening auctions",
+  //           hi: "नीलामी खोल रहा हूँ",
+  //           pa: "ਨਿਲਾਮੀ ਖੋਲ ਰਿਹਾ ਹਾਂ",
+  //         },
+  //       },
+  //     ];
+
+  //     const navMatch = navCommands.find((c) => c.regex.test(input));
+
+  //     setTimeout(() => {
+  //       setIsProcessing(false);
+  //       if (navMatch) {
+  //         const reply = navMatch.msg[language as keyof typeof navMatch.msg];
+  //         setResponse(reply);
+  //         speak(reply);
+  //         setShowResponse(true);
+  //         navMatch.action();
+  //       } else {
+  //         const errorMsg =
+  //           language === "en"
+  //             ? "I didn't catch that."
+  //             : "क्षमा करें, मैं समझ नहीं पाया।";
+  //         setResponse(errorMsg);
+  //         speak(errorMsg);
+  //         setShowResponse(true);
+  //       }
+  //       setTimeout(() => {
+  //         setShowResponse(false);
+  //         setTranscript("");
+  //       }, 3000);
+  //     }, 800);
+  //   },
+  //   [language, router, auctions, crops, placeBid, speak, setLanguage],
+  // );
 
   // 3. 🎙️ SPEECH ENGINE - reactive to language
   useEffect(() => {
