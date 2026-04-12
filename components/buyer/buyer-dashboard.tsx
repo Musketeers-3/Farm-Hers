@@ -25,7 +25,7 @@ import { motion, AnimatePresence } from "framer-motion"; // 🚀 Added Framer Mo
 import { BuyerAuctions } from "./buyer-auctions";
 import { BuyerPools } from "./buyer-pools";
 import { BuyerOrders } from "./buyer-orders";
-import { BuyerAnalytics } from "./buyer-analytics";
+import StrategicAnalyticsHub from "@/app/buyer/analytics/page";
 
 export function BuyerDashboard({
   activeTab = "pools",
@@ -193,7 +193,7 @@ export function BuyerDashboard({
               {currentTab === "pools" && <BuyerPools />}
               {currentTab === "auctions" && <BuyerAuctions />}
               {currentTab === "orders" && <BuyerOrders />}
-              {currentTab === "analytics" && <BuyerAnalytics />}
+              {currentTab === "analytics" && <StrategicAnalyticsHub />}
             </motion.div>
           </AnimatePresence>
         </div>

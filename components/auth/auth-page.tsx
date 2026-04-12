@@ -1,17 +1,25 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { LoginComponent } from "./login-component";
 import { SignupComponent } from "./signup-component";
-import { useAppStore } from "@/lib/store"; // ✅ add this
+import { useAppStore } from "@/lib/store";
 
-export default function AuthPage({ defaultView = "login" }: { defaultView?: "login" | "signup" }) {
+interface AuthPageProps {
+  defaultView?: "login" | "signup";
+  selectedRole: "farmer" | "buyer";
+}
+
+export default function AuthPage({
+  defaultView = "login",
+  selectedRole,
+}: AuthPageProps) {
   const [view, setView] = useState<"login" | "signup">(defaultView);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const router = useRouter();
 
-  // ✅ add these
   const setIsLoggedIn = useAppStore((state) => state.setIsLoggedIn);
   const setUserRole = useAppStore((state) => state.setUserRole);
   const setHasOnboarded = useAppStore((state) => state.setHasOnboarded);
@@ -28,7 +36,6 @@ export default function AuthPage({ defaultView = "login" }: { defaultView?: "log
   }, []);
 
   const handleLoginSuccess = (role: "farmer" | "buyer") => {
-    // ✅ update Zustand store so app/page.tsx redirect logic works
     setIsLoggedIn(true);
     setUserRole(role);
     setHasOnboarded(true);
@@ -62,7 +69,8 @@ export default function AuthPage({ defaultView = "login" }: { defaultView?: "log
               className="w-full"
             >
               <LoginComponent
-                onSignupClick={() => router.push("/signup")}
+                role={selectedRole}
+                onSignupClick={() => setView("signup")}
                 onLogin={(role) => handleLoginSuccess(role)}
                 mousePos={mousePos}
               />
@@ -79,11 +87,11 @@ export default function AuthPage({ defaultView = "login" }: { defaultView?: "log
               className="w-full"
             >
               <SignupComponent
-                role="farmer"
-                onLoginClick={() => router.push("/login")}
+                role={selectedRole}
+                onLoginClick={() => setView("login")}
                 onSignup={(data) => {
                   console.log("Signup success:", data);
-                  handleLoginSuccess("farmer");
+                  handleLoginSuccess(data.role);
                 }}
               />
             </motion.div>
