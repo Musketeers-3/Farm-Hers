@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useAppStore, useTranslation } from "@/lib/store";
-import { BottomNav } from "./bottom-nav";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -32,6 +31,8 @@ export function ProfileScreen() {
   const language = useAppStore((state) => state.language);
   const setLanguage = useAppStore((state) => state.setLanguage);
   const setHasOnboarded = useAppStore((state) => state.setHasOnboarded);
+  // FIX 1: pull setIsLoggedIn so logout actually clears auth state
+  const setIsLoggedIn = useAppStore((state) => state.setIsLoggedIn);
 
   const t = useTranslation();
 
@@ -46,7 +47,6 @@ export function ProfileScreen() {
   const [editName, setEditName] = useState(userName);
   const [editLocation, setEditLocation] = useState(userLocation);
 
-  // Notification prefs
   const [priceAlerts, setPriceAlerts] = useState(true);
   const [auctionAlerts, setAuctionAlerts] = useState(true);
   const [orderUpdates, setOrderUpdates] = useState(true);
@@ -70,23 +70,16 @@ export function ProfileScreen() {
   };
 
   const handleSignOut = () => {
-    // 1. Wipe local storage
-    localStorage.removeItem("agrilink-session");
-    localStorage.removeItem("agrilink-onboarded");
-    localStorage.removeItem("agrilink-user-role");
-
-    // 2. Clear Zustand state
-    setHasOnboarded(false);
-
-    // 3. Route to root
+    setIsLoggedIn(false);
+    // Don't call setHasOnboarded(false) — that resets the whole store
     router.replace("/");
   };
 
   const languageLabels = { en: "English", hi: "हिंदी", pa: "ਪੰਜਾਬੀ" };
 
   return (
+    // FIX 3: removed <BottomNav /> — app/farmer/layout.tsx renders it already
     <div className="min-h-screen bg-background pb-28">
-      {/* Header */}
       <header className="sticky top-0 z-30 glass border-b border-border/40">
         <div className="max-w-lg mx-auto px-5 py-4 flex items-center gap-4">
           <button
@@ -152,7 +145,6 @@ export function ProfileScreen() {
             )}
           </div>
 
-          {/* Quick stats */}
           <div className="grid grid-cols-3 gap-3">
             {[
               { label: "Crops Sold", value: "24" },
@@ -211,7 +203,7 @@ export function ProfileScreen() {
           </div>
         </div>
 
-        {/* Notification Preferences */}
+        {/* Notifications */}
         <div className="glass-card rounded-2xl overflow-hidden">
           <button
             onClick={() => setShowNotifPrefs(!showNotifPrefs)}
@@ -257,7 +249,7 @@ export function ProfileScreen() {
           )}
         </div>
 
-        {/* More Settings */}
+        {/* Account */}
         <div className="glass-card rounded-2xl overflow-hidden">
           <h3 className="px-5 pt-4 pb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Account
@@ -301,8 +293,6 @@ export function ProfileScreen() {
           Sign Out
         </button>
       </main>
-
-      <BottomNav />
     </div>
   );
 }
