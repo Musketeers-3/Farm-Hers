@@ -11,14 +11,10 @@ type AppStep = "loading" | "onboarding" | "login" | "redirecting";
 
 export default function AgriLinkApp() {
   const hydrated = useHydrated();
-  const isLoggedIn = useAppStore((state) => state.isLoggedIn);
   const router = useRouter();
-  const userRole = useAppStore((state) => state.userRole);
   const setUserRole = useAppStore((state) => state.setUserRole);
   const setHasOnboarded = useAppStore((state) => state.setHasOnboarded);
   const setIsLoggedIn = useAppStore((state) => state.setIsLoggedIn);
-  const setUserName = useAppStore((state) => state.setUserName);
-  const setUserEmail = useAppStore((state) => state.setUserEmail);
 
   const [step, setStep] = useState<AppStep>("loading");
   const [selectedRole, setSelectedRole] = useState<"farmer" | "buyer">(
@@ -27,7 +23,6 @@ export default function AgriLinkApp() {
 
   useEffect(() => {
     if (!hydrated) return;
-
     try {
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.get("reset") === "true") {
@@ -38,12 +33,13 @@ export default function AgriLinkApp() {
         return;
       }
 
-      // Read directly from Zustand — agrilink-storage is the single source of truth
       const state = useAppStore.getState();
 
       if (state.hasOnboarded && state.isLoggedIn) {
         setStep("redirecting");
         router.replace(`/${state.userRole}`);
+      } else if (state.hasOnboarded && !state.isLoggedIn) {
+        window.location.href = "/login";
       } else {
         setStep("onboarding");
       }
@@ -55,21 +51,15 @@ export default function AgriLinkApp() {
   const handleOnboardingComplete = (role: "farmer" | "buyer") => {
     setHasOnboarded(true);
     setUserRole(role);
-    setSelectedRole(role);
-    // Give Zustand persist one tick to write before showing login
-    setTimeout(() => {
-      setStep("login");
-    }, 100);
+    // Using router.push is better for Next.js performance than window.location
+    router.push("/login");
   };
-
   const handleLogin = (role: "farmer" | "buyer") => {
     setIsLoggedIn(true);
     setUserRole(role);
-    // Give Zustand persist one tick to write to localStorage before navigating
-    setTimeout(() => {
-      router.push(`/${role}`);
-    }, 100);
+    setTimeout(() => router.push(`/${role}`), 300);
   };
+
   if (step === "loading" || step === "redirecting") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">

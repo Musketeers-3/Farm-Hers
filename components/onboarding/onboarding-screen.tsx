@@ -58,32 +58,13 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const t = useTranslation();
 
   const handleRoleSelect = (role: "farmer" | "buyer") => {
-    setSelectedRole(role);
+    // 1. Update the store
     setUserRole(role);
-    setStep(2); // Move to the integrated Login step
+    // 2. Tell the parent (page.tsx) we are done with onboarding
+    onComplete(role);
   };
-
   // STEP 2: Full Screen Login Mode
   // We return early here so the login component has total control over the screen and background
-  if (step === 2 && selectedRole) {
-    return (
-      <AnimatePresence mode="wait">
-        <motion.div
-          key="login-flow"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="w-full min-h-screen"
-        >
-          <LoginComponent
-            role={selectedRole}
-            onBack={() => setStep(1)}
-            onLogin={onComplete}
-          />
-        </motion.div>
-      </AnimatePresence>
-    );
-  }
 
   // STEPS 0 & 1: Hero and Role Selection Mode
   return (
