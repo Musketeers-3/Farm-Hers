@@ -6,26 +6,28 @@ interface LoginComponentProps {
   role?: "farmer" | "buyer";
   onLogin: (role: "farmer" | "buyer") => void;
   onSignupClick: () => void;
+  mousePos: { x: number; y: number };
 }
 
 export function LoginComponent({
   role = "farmer",
   onLogin,
   onSignupClick,
+  mousePos,
 }: LoginComponentProps) {
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  // const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [rememberMe, setRememberMe] = useState(false);
 
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePos({
-        x: (window.innerWidth / 2 - e.pageX) / 60,
-        y: (window.innerHeight / 2 - e.pageY) / 60,
-      });
-    };
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
+  // useEffect(() => {
+  //   const handleMouseMove = (e: MouseEvent) => {
+  //     setMousePos({
+  //       x: (window.innerWidth / 2 - e.pageX) / 60,
+  //       y: (window.innerHeight / 2 - e.pageY) / 60,
+  //     });
+  //   };
+  //   window.addEventListener("mousemove", handleMouseMove);
+  //   return () => window.removeEventListener("mousemove", handleMouseMove);
+  // }, []);
 
   return (
     <motion.div
@@ -51,15 +53,23 @@ export function LoginComponent({
         {/* Logo */}
         <header className="text-center mb-6">
           <div className="text-4xl mb-2">🌿</div>
-          <h1 className="font-serif text-[2.4rem] font-bold text-[#1a2419]">AgriLink</h1>
-          <p className="text-sm text-[#1a2419]/70 mt-1">Empowering Farmers Digitally</p>
+          <h1 className="font-serif text-[2.4rem] font-bold text-[#1a2419]">
+            AgriLink
+          </h1>
+          <p className="text-sm text-[#1a2419]/70 mt-1">
+            Empowering Farmers Digitally
+          </p>
         </header>
 
         <main className="bg-white/20 backdrop-blur-[25px] border border-white/30 rounded-[28px] p-[30px_35px] shadow-xl">
           {/* Icons */}
           <div className="text-center text-2xl mb-2">🌾 🌽 🌱</div>
-          <h2 className="text-center text-[1.7rem] font-bold mb-1 text-[#1a2419]">Welcome Back 👋</h2>
-          <p className="text-center text-sm text-[#1a2419]/60 mb-6">Login to continue managing your crops</p>
+          <h2 className="text-center text-[1.7rem] font-bold mb-1 text-[#1a2419]">
+            Welcome Back 👋
+          </h2>
+          <p className="text-center text-sm text-[#1a2419]/60 mb-6">
+            Login to continue managing your crops
+          </p>
 
           <form className="space-y-4">
             {/* Email or Phone */}
@@ -77,8 +87,13 @@ export function LoginComponent({
             {/* Password */}
             <div>
               <div className="flex justify-between items-center mb-1">
-                <label className="text-sm font-semibold text-[#1a2419]">Secure Password</label>
-                <button type="button" className="text-sm text-[#1e4d2b] font-semibold hover:underline">
+                <label className="text-sm font-semibold text-[#1a2419]">
+                  Secure Password
+                </label>
+                <button
+                  type="button"
+                  className="text-sm text-[#1e4d2b] font-semibold hover:underline"
+                >
                   Forgot Password?
                 </button>
               </div>
@@ -98,7 +113,9 @@ export function LoginComponent({
                 onChange={(e) => setRememberMe(e.target.checked)}
                 className="w-4 h-4 accent-[#1e4d2b]"
               />
-              <label htmlFor="remember" className="text-sm text-[#1a2419]">Remember me</label>
+              <label htmlFor="remember" className="text-sm text-[#1a2419]">
+                Remember me
+              </label>
             </div>
 
             <button

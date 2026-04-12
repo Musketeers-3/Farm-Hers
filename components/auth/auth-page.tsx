@@ -85,7 +85,6 @@ export default function AuthPage({ defaultView = "login" }: { defaultView?: "log
                   console.log("Signup success:", data);
                   handleLoginSuccess("farmer");
                 }}
-                mousePos={mousePos}
               />
             </motion.div>
           )}
