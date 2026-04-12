@@ -15,55 +15,26 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-
-// Mock Data (To be replaced by Zustand store)
-const farmerPools = [
-  {
-    id: "1",
-    crop: "Wheat",
-    availableQty: 500,
-    pricePerQuintal: 2350,
-    location: "Ludhiana, Punjab",
-    farmersCount: 24,
-    quality: "Premium",
-    rating: 4.8,
-    isHot: true,
-    expiresIn: "2h 30m",
-  },
-  {
-    id: "2",
-    crop: "Mustard",
-    availableQty: 320,
-    pricePerQuintal: 5200,
-    location: "Alwar, Rajasthan",
-    farmersCount: 18,
-    quality: "Standard",
-    rating: 4.5,
-    isHot: false,
-    expiresIn: "5h 15m",
-  },
-  {
-    id: "3",
-    crop: "Rice (Basmati)",
-    availableQty: 750,
-    pricePerQuintal: 3800,
-    location: "Karnal, Haryana",
-    farmersCount: 32,
-    quality: "Premium",
-    rating: 4.9,
-    isHot: true,
-    expiresIn: "1h 45m",
-  },
-];
+import { useAppStore } from "@/lib/store"; // 🚀 Import the global store
 
 export function BuyerPools() {
+  // 1. 🚀 PULL REAL DATA FROM ZUSTAND
+  const pools = useAppStore((state) => state.pools);
+  const crops = useAppStore((state) => state.crops);
+  const addOrder = useAppStore((state) => state.addOrder);
+
+  // 2. 🚀 MOVED STATE INSIDE THE COMPONENT
   const [activePoolId, setActivePoolId] = useState<string | null>(null);
   const [selectedQty, setSelectedQty] = useState<number>(0);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [contractSigned, setContractSigned] = useState<string | null>(null);
 
-  const getCropEmoji = (crop: string) => {
-    if (crop.includes("Wheat")) return "🌾";
-    if (crop.includes("Basmati")) return "🍚";
-    if (crop.includes("Mustard")) return "🌻";
+  const getCropEmoji = (cropName: string) => {
+    if (!cropName) return "🌱";
+    if (cropName.includes("Wheat")) return "🌾";
+    if (cropName.includes("Rice")) return "🍚";
+    if (cropName.includes("Mustard")) return "🌻";
+    if (cropName.includes("Corn")) return "🌽";
     return "🌱";
   };
 
@@ -78,7 +49,6 @@ export function BuyerPools() {
     }
   };
 
-  // Handle opening a pool card and resetting the slider
   const togglePool = (poolId: string, maxQty: number) => {
     if (activePoolId === poolId) {
       setActivePoolId(null);
@@ -88,11 +58,54 @@ export function BuyerPools() {
     }
   };
 
+  // 3. 🚀 THE REAL BUSINESS LOGIC (Creates an order in Zustand)
+  const handleInitiateContract = (
+    poolId: string,
+    cropId: string,
+    price: number,
+    qty: number,
+  ) => {
+    setIsProcessing(true);
+
+    // Simulate network delay for realism
+    setTimeout(() => {
+      // Create the global order in the Zustand store
+      addOrder({
+        id: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
+        cropId: cropId,
+        quantity: qty,
+        pricePerQuintal: price,
+        totalAmount: qty * price,
+        status: "pending",
+        buyerId: "buyer-pam-001",
+        farmerId: "pool-collective",
+        createdAt: new Date().toISOString(),
+      });
+
+      setIsProcessing(false);
+      setContractSigned(poolId);
+    }, 1500);
+  };
+
   return (
     <div className="space-y-4">
-      {farmerPools.map((pool, i) => {
+      {/* 4. 🚀 MAP OVER ZUSTAND POOLS INSTEAD OF MOCK DATA */}
+      {pools.map((pool) => {
+        // Link the pool to its actual crop details in the store
+        const cropDetails = crops.find((c) => c.id === pool.cropId);
+        const cropName = cropDetails?.name || "Unknown Crop";
+        const finalPrice =
+          (cropDetails?.currentPrice || 0) + pool.bonusPerQuintal;
+
         const isActive = activePoolId === pool.id;
-        const totalValue = (selectedQty * pool.pricePerQuintal) / 100000; // Convert to Lakhs
+        const totalValue = (selectedQty * finalPrice) / 100000; // Convert to Lakhs
+
+        // UI Embellishments (we mock these for now until they are added to store)
+        const mockLocation =
+          pool.cropId === "wheat" ? "Ludhiana, Punjab" : "Alwar, Rajasthan";
+        const mockQuality = pool.totalQuantity > 300 ? "Premium" : "Standard";
+        const mockRating = pool.totalQuantity > 300 ? 4.8 : 4.5;
+        const isHot = pool.contributors > 5;
 
         return (
           <motion.div
@@ -100,14 +113,14 @@ export function BuyerPools() {
             key={pool.id}
             className="glass-card rounded-2xl overflow-hidden premium-shadow transition-all border border-border/50 hover:border-primary/30"
           >
-            {/* The Main Card (Always Visible) */}
+            {/* The Main Card */}
             <div
               className="p-4 sm:p-5 cursor-pointer hover:bg-secondary/10 transition-colors"
-              onClick={() => togglePool(pool.id, pool.availableQty)}
+              onClick={() => togglePool(pool.id, pool.totalQuantity)}
             >
               <div className="flex gap-4">
                 <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-secondary flex items-center justify-center text-2xl sm:text-3xl shrink-0">
-                  {getCropEmoji(pool.crop)}
+                  {getCropEmoji(cropName)}
                 </div>
 
                 <div className="flex-1 min-w-0">
@@ -115,9 +128,9 @@ export function BuyerPools() {
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold text-foreground text-base sm:text-lg">
-                          {pool.crop}
+                          {cropName}
                         </h3>
-                        {pool.isHot && (
+                        {isHot && (
                           <Badge className="bg-destructive/10 text-destructive border-0 text-[10px] gap-0.5 px-1.5 py-0.5 uppercase tracking-wider font-bold">
                             <Flame className="w-3 h-3" /> Hot Pool
                           </Badge>
@@ -125,13 +138,13 @@ export function BuyerPools() {
                       </div>
                       <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
                         <MapPin className="w-3.5 h-3.5 text-primary/70" />
-                        <span>{pool.location}</span>
+                        <span>{mockLocation}</span>
                       </div>
                     </div>
                     <Badge
-                      className={`${getQualityStyle(pool.quality)} border text-[10px] font-bold`}
+                      className={`${getQualityStyle(mockQuality)} border text-[10px] font-bold`}
                     >
-                      {pool.quality}
+                      {mockQuality}
                     </Badge>
                   </div>
 
@@ -141,7 +154,7 @@ export function BuyerPools() {
                         Available
                       </p>
                       <p className="text-sm font-bold text-foreground">
-                        {pool.availableQty}q
+                        {pool.totalQuantity}q
                       </p>
                     </div>
                     <div className="bg-secondary/60 rounded-xl p-2.5">
@@ -149,7 +162,7 @@ export function BuyerPools() {
                         Price
                       </p>
                       <p className="text-sm font-bold text-primary">
-                        ₹{pool.pricePerQuintal}/q
+                        ₹{finalPrice}/q
                       </p>
                     </div>
                     <div className="bg-secondary/60 rounded-xl p-2.5">
@@ -159,7 +172,7 @@ export function BuyerPools() {
                       <div className="flex items-center gap-1">
                         <Users className="w-3.5 h-3.5 text-muted-foreground" />
                         <span className="text-sm font-bold text-foreground">
-                          {pool.farmersCount}
+                          {pool.contributors}
                         </span>
                       </div>
                     </div>
@@ -174,12 +187,12 @@ export function BuyerPools() {
                     <div className="flex items-center gap-1">
                       <Star className="w-4 h-4 text-agri-gold fill-agri-gold" />
                       <span className="text-xs font-bold text-foreground">
-                        {pool.rating}
+                        {mockRating}
                       </span>
                     </div>
                     <div className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
                       <Clock className="w-3.5 h-3.5" />
-                      <span>Closes in {pool.expiresIn}</span>
+                      <span>Closes today</span>
                     </div>
                   </div>
                   <Button
@@ -219,14 +232,13 @@ export function BuyerPools() {
                           Select Procurement Volume
                         </label>
                         <span className="text-sm font-mono font-bold text-primary bg-primary/10 px-2 py-1 rounded-md">
-                          {selectedQty} / {pool.availableQty}q
+                          {selectedQty} / {pool.totalQuantity}q
                         </span>
                       </div>
 
-                      {/* Note: Ensure you have the Shadcn UI Slider component installed! */}
                       <Slider
                         defaultValue={[selectedQty]}
-                        max={pool.availableQty}
+                        max={pool.totalQuantity}
                         step={10}
                         className="w-full py-2"
                         onValueChange={(val) => setSelectedQty(val[0])}
@@ -234,7 +246,7 @@ export function BuyerPools() {
 
                       <div className="flex justify-between text-[10px] text-muted-foreground font-semibold">
                         <span>Min: 10q</span>
-                        <span>Max: {pool.availableQty}q</span>
+                        <span>Max: {pool.totalQuantity}q</span>
                       </div>
                     </div>
 
@@ -252,10 +264,42 @@ export function BuyerPools() {
                         </p>
                       </div>
 
-                      <Button className="h-12 px-6 bg-primary text-white font-bold text-base hover:shadow-lg hover:shadow-primary/30 transition-all rounded-xl">
-                        <Package className="w-5 h-5 mr-2" />
-                        Initiate Contract
-                      </Button>
+                      {contractSigned === pool.id ? (
+                        <motion.div
+                          initial={{ scale: 0.9, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          className="h-12 px-6 bg-agri-success/10 border border-agri-success text-agri-success font-bold text-base rounded-xl flex items-center justify-center w-full sm:w-auto"
+                        >
+                          <ShieldCheck className="w-5 h-5 mr-2" />
+                          Smart Contract Active
+                        </motion.div>
+                      ) : (
+                        <Button
+                          // 🚀 PASSING THE GLOBAL DATA INTO THE FUNCTION
+                          onClick={() =>
+                            handleInitiateContract(
+                              pool.id,
+                              pool.cropId,
+                              finalPrice,
+                              selectedQty,
+                            )
+                          }
+                          disabled={isProcessing || selectedQty === 0}
+                          className="h-12 px-6 bg-primary text-white font-bold text-base hover:shadow-lg hover:shadow-primary/30 transition-all rounded-xl w-full sm:w-auto"
+                        >
+                          {isProcessing ? (
+                            <span className="flex items-center animate-pulse">
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                              Locking Escrow...
+                            </span>
+                          ) : (
+                            <span className="flex items-center">
+                              <Package className="w-5 h-5 mr-2" />
+                              Initiate Contract
+                            </span>
+                          )}
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </motion.div>
