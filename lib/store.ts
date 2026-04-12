@@ -278,9 +278,9 @@ export const useAppStore = create<AppState>()(
       // User
       userRole: "farmer",
       setUserRole: (role) => set({ userRole: role }),
-      userName: "Arshvir Kaur",
+      userName: "",
       setUserName: (name) => set({ userName: name }),
-      userLocation: "Dasuya, Punjab",
+      userLocation: "",
       setUserLocation: (location) => set({ userLocation: location }),
 
       // Crops

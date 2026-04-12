@@ -10,12 +10,13 @@ import { CommunityPulse } from "./community-pulse";
 import { MyFieldsCard } from "./my-fields-card";
 import { SearchBar } from "./search-bar";
 import { AIRecommendationCard } from "./ai-recommendation-card";
-
 import { Bell, MapPin, ChevronDown, Moon, Sun, Wallet } from "lucide-react";
 import { format } from "date-fns";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { auth, db } from "@/lib/firebase";
+import { collection, query, where, getDocs } from "firebase/firestore";
 
 export function FarmerDashboard() {
   const router = useRouter();
@@ -24,14 +25,68 @@ export function FarmerDashboard() {
   const t = useTranslation();
 
   const [mounted, setMounted] = useState(false);
-  const [isDark, setIsDark] = useState(
-    () =>
-      typeof document !== "undefined" &&
-      document.documentElement.classList.contains("dark"),
-  );
+  const [isDark, setIsDark] = useState(false);
+  const [earnings, setEarnings] = useState<number | null>(null);
+  const [earningsGrowth, setEarningsGrowth] = useState<number | null>(null);
+  const [earningsLoading, setEarningsLoading] = useState(true);
 
   useEffect(() => {
     setMounted(true);
+    setIsDark(document.documentElement.classList.contains("dark"));
+  }, []);
+
+  // Fetch real earnings from Firestore orders
+  // Replace the fetchEarnings useEffect with this simpler version
+  useEffect(() => {
+    const fetchEarnings = async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      try {
+        const ordersRef = collection(db, "orders");
+
+        // Single where clause — no composite index needed
+        const q = query(ordersRef, where("farmerId", "==", user.uid));
+
+        const snap = await getDocs(q);
+        const now = new Date();
+        const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const lastMonthStart = new Date(
+          now.getFullYear(),
+          now.getMonth() - 1,
+          1,
+        );
+        const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+
+        let thisTotal = 0;
+        let lastTotal = 0;
+
+        snap.docs.forEach((doc) => {
+          const data = doc.data();
+          if (data.status !== "payment-released") return;
+          const createdAt = new Date(data.createdAt);
+          if (createdAt >= thisMonthStart) {
+            thisTotal += data.totalAmount || 0;
+          } else if (createdAt >= lastMonthStart && createdAt <= lastMonthEnd) {
+            lastTotal += data.totalAmount || 0;
+          }
+        });
+
+        setEarnings(thisTotal);
+        if (lastTotal > 0) {
+          const growth = ((thisTotal - lastTotal) / lastTotal) * 100;
+          setEarningsGrowth(Math.round(growth * 10) / 10);
+        } else {
+          setEarningsGrowth(null);
+        }
+      } catch (err) {
+        console.error("Failed to fetch earnings:", err);
+      } finally {
+        setEarningsLoading(false);
+      }
+    };
+
+    fetchEarnings();
   }, []);
 
   const toggleDarkMode = () => {
@@ -44,18 +99,22 @@ export function FarmerDashboard() {
     setIsDark(!isDark);
   };
 
+  const formatEarnings = (amount: number) => {
+    if (amount >= 100000) return `₹${(amount / 100000).toFixed(2)}L`;
+    if (amount >= 1000) return `₹${(amount / 1000).toFixed(1)}K`;
+    return `₹${amount}`;
+  };
+
   const today = new Date();
   const formattedDate = format(today, "EEEE, dd MMM yyyy");
 
   return (
-    // pb-28 gives breathing room above the fixed BottomNav on mobile
     <div className="min-h-screen bg-background pb-28 lg:pb-8">
       {/* HEADER */}
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-2xl border-b border-border/40 shadow-sm transition-all duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4.5 space-y-3">
           <div className="flex items-center justify-between">
             <AgriLinkLogo size="sm" className="scale-105 origin-left" />
-
             <div className="flex items-center gap-3.5">
               {mounted && (
                 <button
@@ -64,22 +123,29 @@ export function FarmerDashboard() {
                   aria-label="Toggle Dark Mode"
                 >
                   {isDark ? (
-                    <Sun className="w-5.5 h-5.5 text-foreground" strokeWidth={1.8} />
+                    <Sun
+                      className="w-5.5 h-5.5 text-foreground"
+                      strokeWidth={1.8}
+                    />
                   ) : (
-                    <Moon className="w-5.5 h-5.5 text-foreground" strokeWidth={1.8} />
+                    <Moon
+                      className="w-5.5 h-5.5 text-foreground"
+                      strokeWidth={1.8}
+                    />
                   )}
                 </button>
               )}
-
               <div className="hidden sm:block scale-105">
                 <LanguageSwitcher />
               </div>
-
               <button
                 onClick={() => router.push("/farmer/notifications")}
                 className="relative w-10.5 h-10.5 rounded-xl bg-secondary/80 flex items-center justify-center hover:bg-accent transition-all duration-200 shadow-sm"
               >
-                <Bell className="w-5.5 h-5.5 text-foreground" strokeWidth={1.8} />
+                <Bell
+                  className="w-5.5 h-5.5 text-foreground"
+                  strokeWidth={1.8}
+                />
                 <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full bg-destructive border-2 border-background" />
               </button>
             </div>
@@ -89,7 +155,9 @@ export function FarmerDashboard() {
             <div className="flex flex-col">
               <h1 className="text-xl sm:text-2xl font-bold text-foreground leading-tight tracking-tight">
                 {t.hello},{" "}
-                <span className="text-primary">{userName.split(" ")[0]}</span>
+                <span className="text-primary">
+                  {userName ? userName.split(" ")[0] : "Farmer"}
+                </span>
               </h1>
               <p className="text-[11px] sm:text-[12px] text-muted-foreground tracking-widest uppercase font-bold opacity-90">
                 {formattedDate}
@@ -103,7 +171,7 @@ export function FarmerDashboard() {
               <button className="flex items-center gap-2 px-3 py-2 rounded-xl bg-primary/5 border border-primary/10 hover:bg-primary/10 transition-all shadow-sm">
                 <MapPin className="w-4 h-4 text-primary" strokeWidth={2.5} />
                 <span className="text-[13px] font-bold text-foreground truncate max-w-[110px]">
-                  {userLocation}
+                  {userLocation || "Location"}
                 </span>
                 <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
               </button>
@@ -124,11 +192,11 @@ export function FarmerDashboard() {
             <div className="w-full">
               <WeatherWidget />
             </div>
-
             <div className="w-full">
               <MarketInsightCard />
             </div>
 
+            {/* EARNINGS CARD */}
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -145,13 +213,26 @@ export function FarmerDashboard() {
                   </p>
                 </div>
                 <p className="text-3xl font-mono font-bold text-foreground group-hover:text-primary transition-colors">
-                  ₹1.12L
+                  {earningsLoading
+                    ? "..."
+                    : earnings !== null
+                      ? formatEarnings(earnings)
+                      : "₹0"}
                 </p>
               </div>
               <div className="flex flex-col items-end gap-2">
-                <div className="px-3 py-1.5 rounded-full bg-agri-success/15 text-agri-success text-xs font-bold shadow-sm">
-                  +14.2%
-                </div>
+                {!earningsLoading && earningsGrowth !== null && (
+                  <div
+                    className={`px-3 py-1.5 rounded-full text-xs font-bold shadow-sm ${
+                      earningsGrowth >= 0
+                        ? "bg-agri-success/15 text-agri-success"
+                        : "bg-red-100 text-red-600"
+                    }`}
+                  >
+                    {earningsGrowth >= 0 ? "+" : ""}
+                    {earningsGrowth}%
+                  </div>
+                )}
                 <span className="text-[10px] text-muted-foreground">
                   vs last month
                 </span>
@@ -177,9 +258,6 @@ export function FarmerDashboard() {
           </div>
         </div>
       </main>
-
-      {/* BottomNav is intentionally NOT rendered here.
-          app/farmer/layout.tsx renders it once for all farmer routes. */}
     </div>
   );
 }

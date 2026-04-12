@@ -19,8 +19,6 @@ export default function AuthPage({
 }: AuthPageProps) {
   const [view, setView] = useState<"login" | "signup">(defaultView);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-
-  // Auth States
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
   const [signupError, setSignupError] = useState("");
@@ -30,6 +28,9 @@ export default function AuthPage({
   const setIsLoggedIn = useAppStore((state) => state.setIsLoggedIn);
   const setUserRole = useAppStore((state) => state.setUserRole);
   const setHasOnboarded = useAppStore((state) => state.setHasOnboarded);
+  const setUserName = useAppStore((state) => state.setUserName);
+  const setUserLocation = useAppStore((state) => state.setUserLocation);
+  const setUserEmail = useAppStore((state) => state.setUserEmail);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -42,10 +43,16 @@ export default function AuthPage({
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
-  const handleLoginSuccess = (role: "farmer" | "buyer") => {
+  const populateStore = (profile: any) => {
     setIsLoggedIn(true);
-    setUserRole(role);
+    setUserRole(profile.role as "farmer" | "buyer");
     setHasOnboarded(true);
+    setUserName(profile.fullName);
+    setUserLocation(profile.location);
+    setUserEmail(profile.email);
+  };
+
+  const handleLoginSuccess = (role: "farmer" | "buyer") => {
     router.push(`/${role}`);
     router.refresh();
   };
@@ -59,17 +66,16 @@ export default function AuthPage({
     setLoginError("");
     try {
       const profile = await login(email, password);
-      // Safety check: verify if the user logging in matches the role they intended
+      populateStore(profile);
       handleLoginSuccess(profile.role as "farmer" | "buyer");
     } catch (err: any) {
       const code = err?.code;
-      if (
-        code === "auth/user-not-found" ||
-        code === "auth/invalid-credential"
-      ) {
+      if (code === "auth/user-not-found" || code === "auth/invalid-credential") {
         setLoginError("No account found. Please sign up first.");
       } else if (code === "auth/wrong-password") {
         setLoginError("Incorrect password.");
+      } else if (code === "auth/too-many-requests") {
+        setLoginError("Too many attempts. Please try again later.");
       } else {
         setLoginError("Login failed. Please check your details.");
       }
@@ -87,13 +93,21 @@ export default function AuthPage({
         phone: data.phone,
         email: data.email,
         location: data.location,
-        role: selectedRole, // Uses the role passed from Onboarding
+        role: selectedRole,
         farmSize: data.farmSize,
         primaryCrop: data.cropType,
       });
+      populateStore(profile);
       handleLoginSuccess(profile.role as "farmer" | "buyer");
     } catch (err: any) {
-      setSignupError(err?.message || "Signup failed. Please try again.");
+      const code = err?.code;
+      if (code === "auth/email-already-in-use") {
+        setSignupError("An account with this email already exists. Please log in.");
+      } else if (code === "auth/weak-password") {
+        setSignupError("Password is too weak. Use at least 6 characters.");
+      } else {
+        setSignupError(err?.message || "Signup failed. Please try again.");
+      }
     } finally {
       setSignupLoading(false);
     }
