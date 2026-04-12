@@ -17,25 +17,31 @@ import {
   Smartphone,
   Mail,
   Edit2,
+  CheckCircle,
+  BadgeCheck,
+  Star,
+  Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
+import { motion, AnimatePresence } from "framer-motion";
+import { logout } from "@/lib/auth";
 
 export function ProfileScreen() {
   const router = useRouter();
-  const userName = useAppStore((state) => state.userName);
-  const setUserName = useAppStore((state) => state.setUserName);
-  const userLocation = useAppStore((state) => state.userLocation);
-  const setUserLocation = useAppStore((state) => state.setUserLocation);
-  const language = useAppStore((state) => state.language);
-  const setLanguage = useAppStore((state) => state.setLanguage);
-  const setHasOnboarded = useAppStore((state) => state.setHasOnboarded);
-  // FIX 1: pull setIsLoggedIn so logout actually clears auth state
-  const setIsLoggedIn = useAppStore((state) => state.setIsLoggedIn);
+  const {
+    userProfile,
+    setUserRole,
+    setIsLoggedIn,
+    setHasOnboarded,
+    language,
+    setLanguage,
+  } = useAppStore();
 
   const t = useTranslation();
 
+  // Dark Mode Logic
   const [isDark, setIsDark] = useState(() => {
     if (typeof document !== "undefined") {
       return document.documentElement.classList.contains("dark");
@@ -44,13 +50,6 @@ export function ProfileScreen() {
   });
 
   const [isEditing, setIsEditing] = useState(false);
-  const [editName, setEditName] = useState(userName);
-  const [editLocation, setEditLocation] = useState(userLocation);
-
-  const [priceAlerts, setPriceAlerts] = useState(true);
-  const [auctionAlerts, setAuctionAlerts] = useState(true);
-  const [orderUpdates, setOrderUpdates] = useState(true);
-  const [weatherAlerts, setWeatherAlerts] = useState(false);
   const [showNotifPrefs, setShowNotifPrefs] = useState(false);
 
   const toggleDarkMode = () => {
@@ -63,138 +62,116 @@ export function ProfileScreen() {
     setIsDark(!isDark);
   };
 
-  const handleSaveProfile = () => {
-    setUserName(editName);
-    setUserLocation(editLocation);
-    setIsEditing(false);
-  };
-
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
+    await logout();
     setIsLoggedIn(false);
-    setHasOnboarded(false); // ← add this back
+    setHasOnboarded(false);
     router.replace("/");
   };
 
   const languageLabels = { en: "English", hi: "हिंदी", pa: "ਪੰਜਾਬੀ" };
 
   return (
-    // FIX 3: removed <BottomNav /> — app/farmer/layout.tsx renders it already
-    <div className="min-h-screen bg-background pb-28">
-      <header className="sticky top-0 z-30 glass border-b border-border/40">
-        <div className="max-w-lg mx-auto px-5 py-4 flex items-center gap-4">
+    <div className="min-h-screen bg-background pb-32 selection:bg-primary/30">
+      {/* 🟢 TOP NAV */}
+      <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/80 border-b border-border/40">
+        <div className="max-w-2xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => router.back()}
+              className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center hover:scale-110 transition-transform"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <h1 className="text-xl font-bold tracking-tight">
+              Account Settings
+            </h1>
+          </div>
           <button
-            onClick={() => router.push("/farmer")}
-            className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center hover:bg-accent transition-all"
+            onClick={toggleDarkMode}
+            className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary"
           >
-            <ArrowLeft className="w-5 h-5 text-foreground" strokeWidth={1.8} />
+            {isDark ? (
+              <Sun className="w-5 h-5" />
+            ) : (
+              <Moon className="w-5 h-5" />
+            )}
           </button>
-          <h1 className="text-xl font-serif font-bold text-foreground">
-            Profile & Settings
-          </h1>
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-5 py-6 space-y-5">
-        {/* Profile Card */}
-        <div className="glass-card rounded-2xl p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-                <User className="w-8 h-8 text-primary" strokeWidth={1.5} />
-              </div>
-              <div>
-                {isEditing ? (
-                  <Input
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    className="h-8 text-lg font-semibold mb-1"
-                  />
-                ) : (
-                  <h2 className="text-lg font-semibold text-foreground">
-                    {userName}
-                  </h2>
-                )}
-                <div className="flex items-center gap-1.5 text-muted-foreground">
-                  <MapPin className="w-3.5 h-3.5" />
-                  {isEditing ? (
-                    <Input
-                      value={editLocation}
-                      onChange={(e) => setEditLocation(e.target.value)}
-                      className="h-7 text-sm"
-                    />
-                  ) : (
-                    <span className="text-sm">{userLocation}</span>
-                  )}
-                </div>
-              </div>
-            </div>
-            {isEditing ? (
-              <button
-                onClick={handleSaveProfile}
-                className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-all"
-              >
-                Save
-              </button>
-            ) : (
-              <button
-                onClick={() => setIsEditing(true)}
-                className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center hover:bg-accent transition-all"
-              >
-                <Edit2 className="w-4 h-4 text-foreground" />
-              </button>
-            )}
+      <main className="max-w-2xl mx-auto px-6 py-8 space-y-6">
+        {/* 🚀 PREMIUM PROFILE CARD */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-primary/10 via-background to-background border border-primary/20 p-8 shadow-2xl shadow-primary/5"
+        >
+          <div className="absolute top-0 right-0 p-6">
+            <BadgeCheck className="w-8 h-8 text-primary opacity-20" />
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="flex flex-col md:flex-row items-center gap-6 relative z-10">
+            <div className="relative">
+              <div className="w-24 h-24 rounded-3xl bg-primary flex items-center justify-center shadow-2xl shadow-primary/40">
+                <User className="w-12 h-12 text-white" strokeWidth={1.5} />
+              </div>
+              <div className="absolute -bottom-2 -right-2 bg-background border-2 border-primary w-8 h-8 rounded-full flex items-center justify-center">
+                <CheckCircle className="w-4 h-4 text-primary fill-primary/10" />
+              </div>
+            </div>
+
+            <div className="text-center md:text-left space-y-1">
+              <div className="flex items-center gap-2 justify-center md:justify-start">
+                <h2 className="text-2xl font-bold tracking-tight">
+                  {userProfile?.fullName || "AgriLink User"}
+                </h2>
+                <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest">
+                  {userProfile?.role || "Member"}
+                </span>
+              </div>
+              <p className="text-muted-foreground flex items-center gap-1.5 justify-center md:justify-start font-medium">
+                <MapPin className="w-4 h-4" />{" "}
+                {userProfile?.location || "India"}
+              </p>
+            </div>
+          </div>
+
+          {/* Stats Bento Row */}
+          <div className="grid grid-cols-3 gap-4 mt-8">
             {[
-              { label: "Crops Sold", value: "24" },
-              { label: "Revenue", value: "₹4.2L" },
-              { label: "Rating", value: "4.8★" },
+              { label: "Auctions", value: "12", icon: Star },
+              { label: "Earnings", value: "₹2.4L", icon: Wallet },
+              { label: "Rating", value: "4.9", icon: BadgeCheck },
             ].map((stat) => (
               <div
                 key={stat.label}
-                className="text-center p-3 rounded-xl bg-secondary"
+                className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-4 text-center"
               >
-                <p className="text-lg font-bold text-foreground">
-                  {stat.value}
-                </p>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-lg font-black">{stat.value}</p>
+                <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-tighter">
                   {stat.label}
                 </p>
               </div>
             ))}
           </div>
-        </div>
+        </motion.div>
 
-        {/* Appearance */}
-        <div className="glass-card rounded-2xl overflow-hidden">
-          <h3 className="px-5 pt-4 pb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Appearance
+        {/* 🌍 LANGUAGE SELECTOR (SMOOTHER) */}
+        <div className="space-y-3">
+          <h3 className="px-2 text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
+            App Language
           </h3>
-          <SettingsRow
-            icon={isDark ? Moon : Sun}
-            label={isDark ? "Dark Mode" : "Light Mode"}
-            trailing={
-              <Switch checked={isDark} onCheckedChange={toggleDarkMode} />
-            }
-          />
-        </div>
-
-        {/* Language */}
-        <div className="glass-card rounded-2xl overflow-hidden">
-          <h3 className="px-5 pt-4 pb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Language
-          </h3>
-          <div className="px-5 pb-4 flex gap-2">
+          <div className="grid grid-cols-3 gap-2 bg-secondary/30 p-1.5 rounded-2xl border border-border/40">
             {(["en", "hi", "pa"] as const).map((lang) => (
               <button
                 key={lang}
                 onClick={() => setLanguage(lang)}
                 className={cn(
-                  "flex-1 py-2.5 rounded-xl text-sm font-medium transition-all",
+                  "py-3 rounded-xl text-sm font-bold transition-all",
                   language === lang
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-secondary text-foreground hover:bg-accent",
+                    ? "bg-background text-primary shadow-lg"
+                    : "text-muted-foreground hover:text-foreground",
                 )}
               >
                 {languageLabels[lang]}
@@ -203,141 +180,88 @@ export function ProfileScreen() {
           </div>
         </div>
 
-        {/* Notifications */}
-        <div className="glass-card rounded-2xl overflow-hidden">
+        {/* 🔔 NOTIFICATIONS (COLLAPSIBLE BENTO) */}
+        <div
+          className={cn(
+            "rounded-3xl border border-border/40 bg-secondary/20 transition-all duration-300 overflow-hidden",
+            showNotifPrefs ? "pb-4" : "",
+          )}
+        >
           <button
             onClick={() => setShowNotifPrefs(!showNotifPrefs)}
-            className="w-full px-5 py-4 flex items-center justify-between"
+            className="w-full px-6 py-5 flex items-center justify-between group"
           >
-            <div className="flex items-center gap-3">
-              <Bell className="w-5 h-5 text-primary" strokeWidth={1.8} />
-              <span className="font-medium text-foreground">
-                Notification Preferences
-              </span>
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Bell className="w-5 h-5 text-primary" />
+              </div>
+              <span className="font-bold">Notification Pulse</span>
             </div>
             <ChevronRight
               className={cn(
-                "w-5 h-5 text-muted-foreground transition-transform",
+                "w-5 h-5 transition-transform",
                 showNotifPrefs && "rotate-90",
               )}
             />
           </button>
 
-          {showNotifPrefs && (
-            <div className="px-5 pb-4 space-y-1 border-t border-border/40">
-              <NotifToggle
-                label="Price drop alerts"
-                checked={priceAlerts}
-                onChange={setPriceAlerts}
-              />
-              <NotifToggle
-                label="Auction ending soon"
-                checked={auctionAlerts}
-                onChange={setAuctionAlerts}
-              />
-              <NotifToggle
-                label="Order status updates"
-                checked={orderUpdates}
-                onChange={setOrderUpdates}
-              />
-              <NotifToggle
-                label="Weather warnings"
-                checked={weatherAlerts}
-                onChange={setWeatherAlerts}
-              />
-            </div>
-          )}
+          <AnimatePresence>
+            {showNotifPrefs && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="px-6 space-y-4"
+              >
+                <NotifToggle label="Market Price Volatility" />
+                <NotifToggle label="Smart Pool Invites" />
+                <NotifToggle label="Instant Payment Success" />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
-        {/* Account */}
-        <div className="glass-card rounded-2xl overflow-hidden">
-          <h3 className="px-5 pt-4 pb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Account
-          </h3>
-          <SettingsRow
-            icon={CreditCard}
-            label="Payment Methods"
-            trailing={
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
-            }
-          />
-          <SettingsRow
-            icon={Shield}
-            label="Privacy & Security"
-            trailing={
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
-            }
-          />
-          <SettingsRow
-            icon={Smartphone}
-            label="Connected Devices"
-            trailing={
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
-            }
-          />
-          <SettingsRow
-            icon={Mail}
-            label="Support & Help"
-            trailing={
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
-            }
-          />
+        {/* 🛠 SETTINGS GRID */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <SettingsBox icon={CreditCard} label="Wallet & Payouts" />
+          <SettingsBox icon={Shield} label="Security Vault" />
+          <SettingsBox icon={Smartphone} label="Device Link" />
+          <SettingsBox icon={Mail} label="AgriLink Helpdesk" />
         </div>
 
-        {/* Logout */}
+        {/* 🛑 LOGOUT */}
         <button
           onClick={handleSignOut}
-          className="w-full py-4 rounded-2xl border-2 border-destructive/20 text-destructive font-medium hover:bg-destructive/5 transition-all flex items-center justify-center gap-2"
+          className="w-full mt-10 py-5 rounded-[2rem] bg-destructive/5 border-2 border-destructive/10 text-destructive font-bold hover:bg-destructive hover:text-white transition-all flex items-center justify-center gap-3 group"
         >
-          <LogOut className="w-5 h-5" />
-          Sign Out
+          <LogOut className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+          Sign Out of AgriLink
         </button>
       </main>
     </div>
   );
 }
 
-function SettingsRow({
-  icon: Icon,
-  label,
-  trailing,
-  onClick,
-}: {
-  icon: React.ElementType;
-  label: string;
-  trailing?: React.ReactNode;
-  onClick?: () => void;
-}) {
+// --- HELPER COMPONENTS ---
+
+function SettingsBox({ icon: Icon, label }: { icon: any; label: string }) {
   return (
-    <div
-      onClick={onClick}
-      className={cn(
-        "flex items-center justify-between px-5 py-3.5 hover:bg-secondary/50 transition-colors",
-        onClick && "cursor-pointer",
-      )}
-    >
-      <div className="flex items-center gap-3">
-        <Icon className="w-5 h-5 text-primary" strokeWidth={1.8} />
-        <span className="text-sm font-medium text-foreground">{label}</span>
+    <button className="flex items-center justify-between p-5 rounded-3xl bg-secondary/20 border border-border/40 hover:border-primary/40 transition-all group">
+      <div className="flex items-center gap-4">
+        <Icon className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+        <span className="font-bold text-sm">{label}</span>
       </div>
-      {trailing}
-    </div>
+      <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all" />
+    </button>
   );
 }
 
-function NotifToggle({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-}) {
+function NotifToggle({ label }: { label: string }) {
+  const [enabled, setEnabled] = useState(true);
   return (
-    <div className="flex items-center justify-between py-3">
-      <span className="text-sm text-foreground">{label}</span>
-      <Switch checked={checked} onCheckedChange={onChange} />
+    <div className="flex items-center justify-between py-2">
+      <span className="text-sm font-medium text-foreground/80">{label}</span>
+      <Switch checked={enabled} onCheckedChange={setEnabled} />
     </div>
   );
 }

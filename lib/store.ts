@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import type { UserProfile } from "./auth"; // 🚀 Imported UserProfile
 
 export type Language = "en" | "hi" | "pa";
 export type UserRole = "farmer" | "buyer";
@@ -89,6 +90,10 @@ interface AppState {
   setIsLoggedIn: (v: boolean) => void;
   userEmail: string;
   setUserEmail: (email: string) => void;
+
+  // 🚀 User Profile State
+  userProfile: UserProfile | null;
+  setUserProfile: (profile: UserProfile | null) => void;
 
   // Language
   language: Language;
@@ -271,6 +276,10 @@ export const useAppStore = create<AppState>()(
       userEmail: "",
       setUserEmail: (email) => set({ userEmail: email }),
 
+      // 🚀 User Profile
+      userProfile: null,
+      setUserProfile: (profile) => set({ userProfile: profile }),
+
       // Language
       language: "en",
       setLanguage: (lang) => set({ language: lang }),
@@ -359,7 +368,6 @@ export const useAppStore = create<AppState>()(
       version: 1, // bump from 0 to 1
       migrate: (persistedState: any, version: number) => {
         if (version === 0) {
-          // Fresh migration — keep existing fields, default isLoggedIn to false
           return { ...persistedState, isLoggedIn: false };
         }
         return persistedState;
@@ -372,6 +380,8 @@ export const useAppStore = create<AppState>()(
         userLocation: state.userLocation,
         hasOnboarded: state.hasOnboarded,
         isLoggedIn: state.isLoggedIn,
+        // 🚀 Ensure profile saves to local storage!
+        userProfile: state.userProfile,
       }),
     },
   ),
@@ -493,12 +503,10 @@ export const useTranslation = () => {
 export const useHydrated = () => {
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
-    // Check first — if already hydrated, set immediately and don't bother with listener
     if (useAppStore.persist.hasHydrated()) {
       setHydrated(true);
       return;
     }
-    // Not yet hydrated — listen for when it finishes
     const unsub = useAppStore.persist.onFinishHydration(() =>
       setHydrated(true),
     );
@@ -506,4 +514,5 @@ export const useHydrated = () => {
   }, []);
   return hydrated;
 };
+
 export const useAgriStore = useAppStore;

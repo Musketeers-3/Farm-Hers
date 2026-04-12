@@ -15,6 +15,7 @@ import {
   User,
   ShieldCheck,
   Activity,
+  CheckCircle2,
 } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { motion, AnimatePresence } from "framer-motion";
