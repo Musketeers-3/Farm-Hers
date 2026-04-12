@@ -1,470 +1,352 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useRef } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { 
-  Mic, 
-  MicOff, 
-  X, 
-  Volume2,
-  MessageSquare,
+import { useState, useEffect, useCallback } from "react";
+import {
+  Mic,
+  MicOff,
+  X,
   Sparkles,
-  ArrowRight,
-  Home,
+  Loader2,
+  Volume2,
   TrendingUp,
+  Gavel,
   Package,
-  Settings,
-  Loader2
-} from "lucide-react"
-import { useAppStore } from "@/lib/store"
-import { motion, AnimatePresence } from "framer-motion"
-import { useRouter } from "next/navigation"
-
-interface SuggestedCommand {
-  icon: React.ReactNode
-  text: { en: string; hi: string; pa: string }
-  action: () => void
-}
+} from "lucide-react";
+import { useAppStore } from "@/lib/store";
+import { motion, AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 export function BoloAssistant() {
-  const language = useAppStore((state) => state.language)
-  const router = useRouter()     
-  const setLanguage = useAppStore((state) => state.setLanguage)
-  const [isOpen, setIsOpen] = useState(false)
-  const [isListening, setIsListening] = useState(false)
-  const [transcript, setTranscript] = useState("")
-  const [response, setResponse] = useState("")
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [showResponse, setShowResponse] = useState(false)
-  const pulseRef = useRef<HTMLDivElement>(null)
+  const router = useRouter();
+  const {
+    language,
+    setLanguage,
+    isBoloListening,
+    setBoloListening,
+    auctions,
+    crops,
+    placeBid,
+  } = useAppStore();
 
-  const t = {
-    en: {
-      bolo: "Bolo",
-      tapToSpeak: "Tap to speak",
-      listening: "Listening...",
-      processing: "Processing...",
-      suggestions: "Try saying:",
-      close: "Close",
-      speakNow: "Speak now",
-      howCanIHelp: "How can I help you today?",
-    },
-    hi: {
-      bolo: "बोलो",
-      tapToSpeak: "बोलने के लिए टैप करें",
-      listening: "सुन रहा हूं...",
-      processing: "प्रोसेसिंग...",
-      suggestions: "यह कहें:",
-      close: "बंद करें",
-      speakNow: "अभी बोलें",
-      howCanIHelp: "आज मैं आपकी कैसे मदद कर सकता हूं?",
-    },
-    pa: {
-      bolo: "ਬੋਲੋ",
-      tapToSpeak: "ਬੋਲਣ ਲਈ ਟੈਪ ਕਰੋ",
-      listening: "ਸੁਣ ਰਿਹਾ ਹਾਂ...",
-      processing: "ਪ੍ਰੋਸੈਸਿੰਗ...",
-      suggestions: "ਇਹ ਕਹੋ:",
-      close: "ਬੰਦ ਕਰੋ",
-      speakNow: "ਹੁਣੇ ਬੋਲੋ",
-      howCanIHelp: "ਅੱਜ ਮੈਂ ਤੁਹਾਡੀ ਕਿਵੇਂ ਮਦਦ ਕਰ ਸਕਦਾ ਹਾਂ?",
-    },
-  }
+  const [transcript, setTranscript] = useState("");
+  const [response, setResponse] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [showResponse, setShowResponse] = useState(false);
 
-  const text = t[language]
+  // 1. 🔊 TEXT-TO-SPEECH (TTS) - Native Voice Output
+  const speak = useCallback(
+    (textToSpeak: string) => {
+      if (typeof window !== "undefined" && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(textToSpeak);
 
-  // Command patterns for voice recognition
-  const commandPatterns: Array<{
-    patterns: RegExp[]
-    action: () => void
-    response: { en: string; hi: string; pa: string }
-  }> = [
-    {
-      patterns: [
-        /mera order|my order|order status|ਮੇਰਾ ਆਰਡਰ|मेरा ऑर्डर/i,
-        /order kahan|where.*order|tracking/i,
-      ],
-      action: () => router.push("/farmer/tracking"),
-      response: {
-        en: "Opening your order tracking...",
-        hi: "आपका ऑर्डर ट्रैकिंग खोल रहा हूं...",
-        pa: "ਤੁਹਾਡੀ ਆਰਡਰ ਟ੍ਰੈਕਿੰਗ ਖੋਲ ਰਿਹਾ ਹਾਂ...",
-      },
-    },
-    {
-      patterns: [
-        /mandi|market|bhav|price|rate|मंडी|ਮੰਡੀ/i,
-        /mandi dikhao|show market/i,
-      ],
-      action: () => router.push("/farmer/market"),
-      response: {
-        en: "Here are today's market prices...",
-        hi: "यहां आज की मंडी भाव हैं...",
-        pa: "ਇੱਥੇ ਅੱਜ ਦੇ ਮੰਡੀ ਭਾਅ ਹਨ...",
-      },
-    },
-    {
-      patterns: [
-        /becho|sell|bech|फसल बेचो|ਫ਼ਸਲ ਵੇਚੋ/i,
-        /gehu becho|sell wheat|गेहूं बेचो/i,
-      ],
-      action: () => router.push("/farmer/sell"),
-      response: {
-        en: "Opening sell screen. What would you like to sell?",
-        hi: "बेचने की स्क्रीन खोल रहा हूं। आप क्या बेचना चाहते हैं?",
-        pa: "ਵੇਚਣ ਦੀ ਸਕ੍ਰੀਨ ਖੋਲ ਰਿਹਾ ਹਾਂ। ਤੁਸੀਂ ਕੀ ਵੇਚਣਾ ਚਾਹੁੰਦੇ ਹੋ?",
-      },
-    },
-    {
-      patterns: [
-        /punjabi|ਪੰਜਾਬੀ/i,
-        /punjabi mein|in punjabi/i,
-      ],
-      action: () => setLanguage("pa"),
-      response: {
-        en: "Changed to Punjabi",
-        hi: "पंजाबी में बदल गया",
-        pa: "ਪੰਜਾਬੀ ਵਿੱਚ ਬਦਲ ਗਿਆ",
-      },
-    },
-    {
-      patterns: [
-        /hindi|हिंदी/i,
-        /hindi mein|in hindi/i,
-      ],
-      action: () => setLanguage("hi"),
-      response: {
-        en: "Changed to Hindi",
-        hi: "हिंदी में बदल गया",
-        pa: "ਹਿੰਦੀ ਵਿੱਚ ਬਦਲ ਗਿਆ",
-      },
-    },
-    {
-      patterns: [
-        /english|इंग्लिश|ਅੰਗਰੇਜ਼ੀ/i,
-        /english mein|in english/i,
-      ],
-      action: () => setLanguage("en"),
-      response: {
-        en: "Changed to English",
-        hi: "English में बदल गया",
-        pa: "English ਵਿੱਚ ਬਦਲ ਗਿਆ",
-      },
-    },
-    {
-      patterns: [
-        /home|ghar|घर|ਘਰ/i,
-        /dashboard|होम/i,
-      ],
-      action: () => router.push("/farmer"),
-      response: {
-        en: "Going to home screen...",
-        hi: "होम स्क्रीन पर जा रहा हूं...",
-        pa: "ਹੋਮ ਸਕ੍ਰੀਨ ਤੇ ਜਾ ਰਿਹਾ ਹਾਂ...",
-      },
-    },
-    {
-      patterns: [
-        /auction|nilami|नीलामी|ਨਿਲਾਮੀ/i,
-        /bid|bidding/i,
-      ],
-      action: () => router.push("/farmer/auction"),
-      response: {
-        en: "Opening live auctions...",
-        hi: "लाइव नीलामी खोल रहा हूं...",
-        pa: "ਲਾਈਵ ਨਿਲਾਮੀ ਖੋਲ ਰਿਹਾ ਹਾਂ...",
-      },
-    },
-  ]
+        if (language === "hi") utterance.lang = "hi-IN";
+        else if (language === "pa") utterance.lang = "pa-IN";
+        else utterance.lang = "en-IN";
 
-  const suggestedCommands: SuggestedCommand[] = [
-    {
-      icon: <TrendingUp className="h-4 w-4" />,
-      text: { en: "Show market prices", hi: "मंडी भाव दिखाओ", pa: "ਮੰਡੀ ਭਾਅ ਦਿਖਾਓ" },
-      action: () => {
-        router.push("/farmer/market")
-        setResponse(t[language].howCanIHelp)
-        handleClose()
-      },
+        utterance.pitch = 1.0;
+        utterance.rate = 1.0;
+        window.speechSynthesis.speak(utterance);
+      }
     },
-    {
-      icon: <Package className="h-4 w-4" />,
-      text: { en: "Track my order", hi: "मेरा ऑर्डर ट्रैक करो", pa: "ਮੇਰਾ ਆਰਡਰ ਟ੍ਰੈਕ ਕਰੋ" },
-      action: () => {
-        router.push("/farmer/tracking")
-        handleClose()
-      },
-    },
-    {
-      icon: <Home className="h-4 w-4" />,
-      text: { en: "Go home", hi: "घर जाओ", pa: "ਘਰ ਜਾਓ" },
-      action: () => {
-        router.push("/farmer")
-        handleClose()
-      },
-    },
-    {
-      icon: <Settings className="h-4 w-4" />,
-      text: { en: "Change to Punjabi", hi: "पंजाबी में बदलो", pa: "ਪੰਜਾਬੀ ਵਿੱਚ ਬਦਲੋ" },
-      action: () => {
-        setLanguage("pa")
-        setResponse("ਪੰਜਾਬੀ ਵਿੱਚ ਬਦਲ ਗਿਆ")
-        setShowResponse(true)
-        setTimeout(() => setShowResponse(false), 2000)
-      },
-    },
-  ]
+    [language],
+  );
 
-  const processCommand = (input: string) => {
-    setIsProcessing(true)
-    
-    // Simulate processing delay
-    setTimeout(() => {
-      let matched = false
-      
-      for (const command of commandPatterns) {
-        for (const pattern of command.patterns) {
-          if (pattern.test(input)) {
-            setResponse(command.response[language])
-            setShowResponse(true)
-            command.action()
-            matched = true
-            break
+  // 2. 🧠 MULTILINGUAL INTENT RESOLVER
+  const handleIntent = useCallback(
+    (input: string) => {
+      setIsProcessing(true);
+
+      // 🚀 UPDATED: Regex now contains actual Hindi and Punjabi characters
+      const socialCommands = [
+        {
+          // Matches Hi, Hello, Namaste (Hindi), Sat Shri Akal (Punjabi)
+          regex: /hello|hi|hey|नमस्ते|नमस्कार|सत श्री अकाल|ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ/i,
+          msg: {
+            en: "Hello! How can I help you today?",
+            hi: "नमस्ते! मैं आपकी क्या मदद कर सकता हूँ?",
+            pa: "ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ! ਮੈਂ ਤੁਹਾਡੀ ਕੀ ਮਦਦ ਕਰ ਸਕਦਾ ਹਾਂ?",
+          },
+        },
+        {
+          // Language Switching via Voice
+          regex: /hindi|हिंदी|हिन्दी/i,
+          action: () => setLanguage("hi"),
+          msg: {
+            en: "Switching to Hindi.",
+            hi: "अब मैं हिंदी में बात करूँगा।",
+            pa: "ਹੁਣ ਮੈਂ ਹਿੰਦੀ ਵਿੱਚ ਗੱਲ ਕਰਾਂਗਾ।",
+          },
+        },
+        {
+          regex: /punjabi|ਪੰਜਾਬੀ/i,
+          action: () => setLanguage("pa"),
+          msg: {
+            en: "Switching to Punjabi.",
+            hi: "अब मैं पंजाबी में बात करूँगा।",
+            pa: "ਹੁਣ ਮੈਂ ਪੰਜਾਬੀ ਵਿੱਚ ਗੱਲ ਕਰਾਂਗਾ।",
+          },
+        },
+      ];
+
+      // 🚀 UPDATED: Bidding Regex (Supports Devanagari and Gurmukhi script)
+      const bidMatch = input.match(
+        /(?:bid|bol|price|set|lagao|बोली|बोलो|ਭਾਅ|ਬੋਲੀ)\s*(\d+)\s*(?:on|par|for|पर|ਤੇ)?\s*([a-zA-Z\u0900-\u097F\u0A00-\u0A7F]+)/i,
+      );
+
+      const socialMatch = socialCommands.find((c) => c.regex.test(input));
+      if (socialMatch) {
+        const reply = socialMatch.msg[language as keyof typeof socialMatch.msg];
+        setResponse(reply);
+        speak(reply);
+        setShowResponse(true);
+        if (socialMatch.action) socialMatch.action();
+        setIsProcessing(false);
+        return;
+      }
+
+      if (bidMatch) {
+        const amount = parseInt(bidMatch[1]);
+        const cropQuery = bidMatch[2].toLowerCase();
+
+        // Match crop name (Standardized across scripts)
+        const targetCrop = crops.find(
+          (c) =>
+            c.name.toLowerCase().includes(cropQuery) ||
+            (cropQuery.includes("गेहूं") && c.id === "wheat") ||
+            (cropQuery.includes("ਕਣਕ") && c.id === "wheat") ||
+            (cropQuery.includes("चावल") && c.id === "rice"),
+        );
+
+        const targetAuction = auctions.find((a) => a.cropId === targetCrop?.id);
+
+        if (targetAuction) {
+          if (amount > targetAuction.currentBid) {
+            placeBid(targetAuction.id, amount, "buyer-pam-001");
+            const successMsg =
+              language === "en"
+                ? `Bid of ${amount} placed on ${targetCrop?.name}.`
+                : `${targetCrop?.name} पर ${amount} की बोली लगा दी गई है।`;
+            setResponse(successMsg);
+            speak(successMsg);
+            setShowResponse(true);
+            setIsProcessing(false);
+            router.push(`/buyer/auctions/${targetAuction.id}`);
+            return;
           }
         }
-        if (matched) break
       }
-      
-      if (!matched) {
-        setResponse(
-          language === "en" 
-            ? "I didn't understand that. Please try again."
-            : language === "hi"
-            ? "मुझे समझ नहीं आया। कृपया फिर से कोशिश करें।"
-            : "ਮੈਨੂੰ ਸਮਝ ਨਹੀਂ ਆਇਆ। ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ।"
-        )
-        setShowResponse(true)
-      }
-      
-      setIsProcessing(false)
-      setIsListening(false)
-      
-      // Hide response after delay
-      setTimeout(() => {
-        setShowResponse(false)
-        handleClose()
-      }, 2500)
-    }, 1000)
-  }
 
-  const handleMicClick = () => {
-    if (isListening) {
-      setIsListening(false)
-      if (transcript) {
-        processCommand(transcript)
+      // 🚀 UPDATED: Navigation (Supports Devanagari and Gurmukhi characters)
+      const navCommands = [
+        {
+          regex: /mandi|price|bhav|market|ਭਾਅ|भाव|मंडी/i,
+          action: () => router.push("/buyer/analytics"),
+          msg: {
+            en: "Showing market rates",
+            hi: "मंडी भाव दिखा रहा हूँ",
+            pa: "ਮੰਡੀ ਭਾਅ ਦੇਖ ਰਿਹਾ ਹਾਂ",
+          },
+        },
+        {
+          regex: /auction|nilami|bid|ਬੋਲੀ|ਨੀਲਾਮੀ|नीलामी|बोली/i,
+          action: () => router.push("/buyer/auctions"),
+          msg: {
+            en: "Opening auctions",
+            hi: "नीलामी खोल रहा हूँ",
+            pa: "ਨਿਲਾਮੀ ਖੋਲ ਰਿਹਾ ਹਾਂ",
+          },
+        },
+      ];
+
+      const navMatch = navCommands.find((c) => c.regex.test(input));
+
+      setTimeout(() => {
+        setIsProcessing(false);
+        if (navMatch) {
+          const reply = navMatch.msg[language as keyof typeof navMatch.msg];
+          setResponse(reply);
+          speak(reply);
+          setShowResponse(true);
+          navMatch.action();
+        } else {
+          const errorMsg =
+            language === "en"
+              ? "I didn't catch that."
+              : "क्षमा करें, मैं समझ नहीं पाया।";
+          setResponse(errorMsg);
+          speak(errorMsg);
+          setShowResponse(true);
+        }
+        setTimeout(() => {
+          setShowResponse(false);
+          setTranscript("");
+        }, 3000);
+      }, 800);
+    },
+    [language, router, auctions, crops, placeBid, speak, setLanguage],
+  );
+
+  // 3. 🎙️ SPEECH ENGINE - reactive to language
+  useEffect(() => {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.lang =
+      language === "hi" ? "hi-IN" : language === "pa" ? "pa-IN" : "en-IN";
+    recognition.continuous = false;
+    recognition.interimResults = true;
+
+    recognition.onresult = (event: any) => {
+      const current = event.results[event.results.length - 1][0].transcript;
+      setTranscript(current);
+      if (event.results[0].isFinal) {
+        handleIntent(current); // Pass raw transcript directly
       }
+    };
+
+    recognition.onend = () => {
+      if (isBoloListening) setBoloListening(false);
+    };
+
+    if (isBoloListening) {
+      try {
+        recognition.start();
+      } catch (e) {}
     } else {
-      setIsListening(true)
-      setTranscript("")
-      setResponse("")
-      setShowResponse(false)
-      
-      // Simulate voice recognition (in production, use Web Speech API)
-      // For demo, we'll use simulated input
-      const demoCommands = [
-        "mandi dikhao",
-        "mera order kahan hai",
-        "punjabi mein karo",
-        "gehu becho",
-      ]
-      
-      setTimeout(() => {
-        const randomCommand = demoCommands[Math.floor(Math.random() * demoCommands.length)]
-        setTranscript(randomCommand)
-      }, 1500)
+      recognition.stop();
     }
-  }
 
-  const handleClose = () => {
-    setIsOpen(false)
-    setIsListening(false)
-    setTranscript("")
-    setResponse("")
-    setShowResponse(false)
-  }
+    return () => recognition.stop();
+  }, [isBoloListening, language, handleIntent, setBoloListening]);
+
+  const isVisible =
+    isBoloListening || isProcessing || showResponse || transcript !== "";
 
   return (
     <>
-      {/* Floating Bolo Button */}
-      <motion.div
-        className="fixed bottom-24 right-4 z-50"
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ type: "spring", stiffness: 260, damping: 20 }}
-      >
-        <Button
-          onClick={() => setIsOpen(true)}
-          className="w-14 h-14 rounded-full bg-primary hover:bg-primary/90 shadow-lg shadow-primary/30 relative overflow-hidden"
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-primary to-agri-olive" />
-          <div className="relative flex items-center justify-center">
-            <Mic className="h-6 w-6 text-primary-foreground" />
-          </div>
-          {/* Pulse rings */}
-          <div className="absolute inset-0 rounded-full animate-ping bg-primary/30" style={{ animationDuration: '2s' }} />
-        </Button>
-        <span className="absolute -top-1 -right-1 px-2 py-0.5 bg-agri-gold text-agri-earth text-xs font-bold rounded-full">
-          {text.bolo}
-        </span>
-      </motion.div>
-
-      {/* Full Screen Modal */}
       <AnimatePresence>
-        {isOpen && (
+        {isVisible && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-gradient-to-b from-primary/95 via-agri-olive/95 to-primary/95 backdrop-blur-xl"
-          >
-            {/* Close Button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleClose}
-              className="absolute top-4 right-4 text-primary-foreground/80 hover:text-primary-foreground hover:bg-white/10"
-            >
-              <X className="h-6 w-6" />
-            </Button>
-
-            <div className="flex flex-col items-center justify-center min-h-screen p-6">
-              {/* Title */}
-              <motion.div
-                initial={{ y: -20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                className="text-center mb-8"
-              >
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <Sparkles className="h-5 w-5 text-agri-gold" />
-                  <h1 className="text-2xl font-bold text-primary-foreground">{text.bolo}</h1>
-                  <Sparkles className="h-5 w-5 text-agri-gold" />
-                </div>
-                <p className="text-primary-foreground/70">{text.howCanIHelp}</p>
-              </motion.div>
-
-              {/* Microphone Button */}
-              <motion.div
-                className="relative mb-8"
-                animate={isListening ? { scale: [1, 1.05, 1] } : {}}
-                transition={{ repeat: Infinity, duration: 1.5 }}
-              >
-                {/* Animated rings */}
-                {isListening && (
-                  <>
-                    <div className="absolute inset-0 rounded-full bg-white/20 animate-ping" />
-                    <div className="absolute -inset-4 rounded-full bg-white/10 animate-pulse" />
-                    <div className="absolute -inset-8 rounded-full bg-white/5 animate-pulse" style={{ animationDelay: '0.5s' }} />
-                  </>
-                )}
-                
-                <Button
-                  onClick={handleMicClick}
-                  disabled={isProcessing}
-                  className={`w-32 h-32 rounded-full transition-all duration-300 ${
-                    isListening 
-                      ? 'bg-destructive hover:bg-destructive/90' 
-                      : 'bg-white hover:bg-white/90'
-                  } shadow-2xl`}
-                >
-                  {isProcessing ? (
-                    <Loader2 className="h-12 w-12 text-primary animate-spin" />
-                  ) : isListening ? (
-                    <MicOff className="h-12 w-12 text-white" />
-                  ) : (
-                    <Mic className="h-12 w-12 text-primary" />
-                  )}
-                </Button>
-              </motion.div>
-
-              {/* Status Text */}
-              <motion.p
-                key={isListening ? "listening" : "tap"}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-primary-foreground/80 text-lg mb-4"
-              >
-                {isProcessing 
-                  ? text.processing 
-                  : isListening 
-                  ? text.listening 
-                  : text.tapToSpeak}
-              </motion.p>
-
-              {/* Transcript */}
-              <AnimatePresence mode="wait">
-                {transcript && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    className="bg-white/10 backdrop-blur-sm rounded-2xl px-6 py-3 mb-6"
-                  >
-                    <div className="flex items-center gap-2">
-                      <MessageSquare className="h-4 w-4 text-agri-gold" />
-                      <p className="text-primary-foreground font-medium">{transcript}</p>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Response */}
-              <AnimatePresence>
-                {showResponse && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    className="bg-agri-gold/20 backdrop-blur-sm rounded-2xl px-6 py-3 mb-6"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Volume2 className="h-4 w-4 text-agri-gold" />
-                      <p className="text-primary-foreground">{response}</p>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Suggestions */}
-              {!isListening && !isProcessing && !showResponse && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.3 }}
-                  className="w-full max-w-sm"
-                >
-                  <p className="text-primary-foreground/60 text-sm text-center mb-4">{text.suggestions}</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {suggestedCommands.map((cmd, index) => (
-                      <motion.button
-                        key={index}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 * index }}
-                        onClick={cmd.action}
-                        className="flex items-center gap-2 bg-white/10 hover:bg-white/20 rounded-xl px-4 py-3 text-left transition-colors"
-                      >
-                        <span className="text-agri-gold">{cmd.icon}</span>
-                        <span className="text-primary-foreground text-sm">{cmd.text[language]}</span>
-                      </motion.button>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </div>
-          </motion.div>
+            className="fixed inset-0 z-[90] bg-black/40 backdrop-blur-sm pointer-events-none"
+          />
         )}
       </AnimatePresence>
+
+      <div className="fixed bottom-6 right-6 z-[100] flex flex-col items-end gap-4">
+        <AnimatePresence>
+          {isVisible && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="w-80 rounded-[2.5rem] p-6 shadow-2xl border border-white/20 bg-black/80 backdrop-blur-3xl pointer-events-auto"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2 text-primary">
+                  <Sparkles className="w-5 h-5" />
+                  <span className="font-bold text-white tracking-wide text-xs uppercase">
+                    Bolo Assistant
+                  </span>
+                </div>
+                <button
+                  onClick={() => {
+                    setBoloListening(false);
+                    setTranscript("");
+                    setShowResponse(false);
+                  }}
+                  className="text-white/40 hover:text-white transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="min-h-[120px] flex flex-col justify-center text-center">
+                <AnimatePresence mode="wait">
+                  {isBoloListening && !isProcessing && (
+                    <motion.div
+                      key="listen"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="flex flex-col items-center gap-4"
+                    >
+                      <div className="flex gap-1.5 items-center h-10">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                          <motion.div
+                            key={i}
+                            animate={{ height: [8, 36, 8] }}
+                            transition={{
+                              repeat: Infinity,
+                              duration: 0.8,
+                              delay: i * 0.1,
+                            }}
+                            className="w-1.5 bg-primary rounded-full shadow-[0_0_15px_rgba(30,77,43,0.6)]"
+                          />
+                        ))}
+                      </div>
+                      <p className="text-white font-serif italic text-lg leading-tight">
+                        "{transcript || "Listening..."}"
+                      </p>
+                    </motion.div>
+                  )}
+
+                  {isProcessing && (
+                    <motion.div
+                      key="proc"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                    >
+                      <Loader2 className="w-10 h-10 text-primary animate-spin mx-auto" />
+                    </motion.div>
+                  )}
+
+                  {showResponse && (
+                    <motion.div
+                      key="resp"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex flex-col items-center gap-3"
+                    >
+                      <div className="p-3 rounded-full bg-primary/20 shadow-[0_0_20px_rgba(30,77,43,0.2)]">
+                        <Volume2 className="w-6 h-6 text-primary" />
+                      </div>
+                      <p className="text-white font-medium px-2 leading-relaxed">
+                        {response}
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <motion.button
+          onClick={() => {
+            setBoloListening(!isBoloListening);
+            setTranscript("");
+          }}
+          whileTap={{ scale: 0.9 }}
+          className={cn(
+            "w-16 h-16 rounded-full flex items-center justify-center shadow-2xl border-2 transition-all duration-500 relative",
+            isBoloListening
+              ? "bg-red-500 border-red-400"
+              : "bg-primary border-primary/50",
+          )}
+        >
+          {isBoloListening ? (
+            <X className="w-7 h-7 text-white" />
+          ) : (
+            <Mic className="w-7 h-7 text-white" />
+          )}
+        </motion.button>
+      </div>
     </>
-  )
+  );
 }
