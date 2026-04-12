@@ -1,3 +1,4 @@
+// components/onboarding/onboarding-screen.tsx
 "use client";
 
 import { useState } from "react";
@@ -5,6 +6,7 @@ import { useAppStore, useTranslation } from "@/lib/store";
 import { AgriLinkLogo } from "@/components/agrilink-logo";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { Button } from "@/components/ui/button";
+import { LoginComponent } from "@/components/auth/login-component";
 import {
   ArrowRight,
   Sprout,
@@ -15,6 +17,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface OnboardingScreenProps {
   onComplete: (role: "farmer" | "buyer") => void;
@@ -46,15 +49,43 @@ const features = [
 
 export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const [step, setStep] = useState(0);
+  const [selectedRole, setSelectedRole] = useState<"farmer" | "buyer" | null>(
+    null,
+  );
+
   const language = useAppStore((state) => state.language);
   const setUserRole = useAppStore((state) => state.setUserRole);
   const t = useTranslation();
 
   const handleRoleSelect = (role: "farmer" | "buyer") => {
+    setSelectedRole(role);
     setUserRole(role);
-    onComplete(role);
+    setStep(2); // Move to the integrated Login step
   };
 
+  // STEP 2: Full Screen Login Mode
+  // We return early here so the login component has total control over the screen and background
+  if (step === 2 && selectedRole) {
+    return (
+      <AnimatePresence mode="wait">
+        <motion.div
+          key="login-flow"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="w-full min-h-screen"
+        >
+          <LoginComponent
+            role={selectedRole}
+            onBack={() => setStep(1)}
+            onLogin={onComplete}
+          />
+        </motion.div>
+      </AnimatePresence>
+    );
+  }
+
+  // STEPS 0 & 1: Hero and Role Selection Mode
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Background Image */}
@@ -69,30 +100,49 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
       </div>
 
-      {/* Content */}
       <div className="relative z-10 min-h-screen flex flex-col">
-        {/* Header */}
         <header className="flex items-center justify-between p-6">
           <AgriLinkLogo size="md" />
           <LanguageSwitcher />
         </header>
 
-        {/* Main Content */}
         <main className="flex-1 flex flex-col justify-end px-6 pb-12 pt-20 max-w-md mx-auto w-full">
-          {step === 0 ? (
-            <HeroStep language={language} t={t} onNext={() => setStep(1)} />
-          ) : (
-            <RoleSelectStep
-              language={language}
-              onSelect={handleRoleSelect}
-              onBack={() => setStep(0)}
-            />
-          )}
+          <AnimatePresence mode="wait">
+            {step === 0 && (
+              <motion.div
+                key="hero"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+              >
+                <HeroStep language={language} t={t} onNext={() => setStep(1)} />
+              </motion.div>
+            )}
+
+            {step === 1 && (
+              <motion.div
+                key="role"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+              >
+                <RoleSelectStep
+                  language={language}
+                  onSelect={handleRoleSelect}
+                  onBack={() => setStep(0)}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </main>
       </div>
     </div>
   );
 }
+
+// ---------------------------------------------------------------------------
+// SUB-COMPONENTS
+// ---------------------------------------------------------------------------
 
 function HeroStep({
   language,

@@ -3,12 +3,11 @@
 import { useState } from "react";
 import { useAppStore, useTranslation } from "@/lib/store";
 import { BottomNav } from "./bottom-nav";
-import { useRouter } from "next/navigation"
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   User,
   MapPin,
-  Globe,
   Moon,
   Sun,
   Bell,
@@ -16,7 +15,6 @@ import {
   Shield,
   CreditCard,
   LogOut,
-  Settings,
   Smartphone,
   Mail,
   Edit2,
@@ -25,10 +23,8 @@ import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 
-
-
 export function ProfileScreen() {
-  const router = useRouter()
+  const router = useRouter();
   const userName = useAppStore((state) => state.userName);
   const setUserName = useAppStore((state) => state.setUserName);
   const userLocation = useAppStore((state) => state.userLocation);
@@ -36,12 +32,16 @@ export function ProfileScreen() {
   const language = useAppStore((state) => state.language);
   const setLanguage = useAppStore((state) => state.setLanguage);
   const setHasOnboarded = useAppStore((state) => state.setHasOnboarded);
-  
+
   const t = useTranslation();
 
-  const [isDark, setIsDark] = useState(() =>
-    document.documentElement.classList.contains("dark"),
-  );
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof document !== "undefined") {
+      return document.documentElement.classList.contains("dark");
+    }
+    return false;
+  });
+
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(userName);
   const [editLocation, setEditLocation] = useState(userLocation);
@@ -70,9 +70,16 @@ export function ProfileScreen() {
   };
 
   const handleSignOut = () => {
-    router.push("/farmer");
+    // 1. Wipe local storage
+    localStorage.removeItem("agrilink-session");
+    localStorage.removeItem("agrilink-onboarded");
+    localStorage.removeItem("agrilink-user-role");
+
+    // 2. Clear Zustand state
     setHasOnboarded(false);
-    router.push("/")
+
+    // 3. Route to root
+    router.replace("/");
   };
 
   const languageLabels = { en: "English", hi: "हिंदी", pa: "ਪੰਜਾਬੀ" };
@@ -283,7 +290,6 @@ export function ProfileScreen() {
               <ChevronRight className="w-5 h-5 text-muted-foreground" />
             }
           />
-          
         </div>
 
         {/* Logout */}
