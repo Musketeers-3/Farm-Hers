@@ -1,27 +1,21 @@
-// components/auth/login-component.tsx
 "use client";
-
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft } from "lucide-react";
 
 interface LoginComponentProps {
   role?: "farmer" | "buyer";
-  onBack?: () => void;
   onLogin: (role: "farmer" | "buyer") => void;
+  onSignupClick: () => void;
 }
 
 export function LoginComponent({
   role = "farmer",
-  onBack,
   onLogin,
+  onSignupClick,
 }: LoginComponentProps) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [rememberMe, setRememberMe] = useState(false);
 
-  // Replaces the vanilla JS requestAnimationFrame script
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       setMousePos({
@@ -33,14 +27,14 @@ export function LoginComponent({
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onLogin(role);
-  };
-
   return (
-    <div className="relative w-full min-h-screen flex items-center justify-center font-sans overflow-hidden text-[#1a2419] z-50">
-      {/* Fixed Parallax Background */}
+    <motion.div
+      className="relative w-full min-h-screen flex items-center justify-center font-sans overflow-hidden text-[#1a2419]"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.4 }}
+    >
       <motion.div
         animate={{ x: mousePos.x, y: mousePos.y, scale: 1.1 }}
         transition={{ type: "tween", ease: "linear", duration: 0.1 }}
@@ -53,121 +47,87 @@ export function LoginComponent({
         }}
       />
 
-      <div className="w-full max-w-[400px] px-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        {/* Back Button */}
-        {onBack && (
-          <button
-            onClick={onBack}
-            className="flex items-center gap-2 text-[#1a2419] hover:text-[#1e4d2b] font-bold mb-4 drop-shadow-sm transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back</span>
-          </button>
-        )}
-
-        {/* Brand Header */}
-        <header className="text-center mb-[25px]">
-          <div className="text-[2.5rem] mb-[5px]">🌿</div>
-          <h1 className="font-serif text-[2.4rem] font-bold text-[#1a2419] leading-tight">
-            AgriLink
-          </h1>
-          <p className="text-[0.85rem] opacity-80 tracking-[0.5px]">
-            Empowering Farmers Digitally
-          </p>
+      <div className="w-full max-w-[420px] px-6">
+        {/* Logo */}
+        <header className="text-center mb-6">
+          <div className="text-4xl mb-2">🌿</div>
+          <h1 className="font-serif text-[2.4rem] font-bold text-[#1a2419]">AgriLink</h1>
+          <p className="text-sm text-[#1a2419]/70 mt-1">Empowering Farmers Digitally</p>
         </header>
 
-        {/* Login Card */}
-        <main className="bg-white/20 backdrop-blur-[25px] border border-white/30 rounded-[28px] p-[30px_35px] shadow-[0_25px_50px_rgba(0,0,0,0.1)]">
-          <div className="text-[1.5rem] text-center mb-[10px]">🌾 🌽 🌱</div>
-          <h2 className="font-serif text-[1.7rem] font-bold text-center mb-[5px]">
-            Welcome Back 👋
-          </h2>
-          <p className="text-[0.8rem] text-[#333] text-center mb-[25px]">
-            Login to continue managing your crops
-          </p>
+        <main className="bg-white/20 backdrop-blur-[25px] border border-white/30 rounded-[28px] p-[30px_35px] shadow-xl">
+          {/* Icons */}
+          <div className="text-center text-2xl mb-2">🌾 🌽 🌱</div>
+          <h2 className="text-center text-[1.7rem] font-bold mb-1 text-[#1a2419]">Welcome Back 👋</h2>
+          <p className="text-center text-sm text-[#1a2419]/60 mb-6">Login to continue managing your crops</p>
 
-          <form onSubmit={handleSubmit}>
-            {/* Email / Phone Input */}
-            <div className="mb-[18px]">
-              <label className="block text-[0.75rem] font-semibold text-[#2d382c] mb-[6px]">
+          <form className="space-y-4">
+            {/* Email or Phone */}
+            <div>
+              <label className="text-sm font-semibold text-[#1a2419] mb-1 block">
                 Email or Phone Number
               </label>
               <input
                 type="text"
                 placeholder="Enter your email or phone"
-                className="w-full p-[13px] rounded-[10px] border border-black/10 bg-white/70 outline-none text-[0.9rem] text-black focus:border-[#1e4d2b] transition-colors"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
+                className="w-full p-3 rounded-xl bg-white/70 border border-black/10 outline-none text-[#1a2419] placeholder-[#1a2419]/40"
               />
             </div>
 
-            {/* Password Input */}
-            <div className="mb-[18px]">
-              <div className="flex justify-between items-center mb-[6px]">
-                <label className="text-[0.75rem] font-semibold text-[#2d382c]">
-                  Secure Password
-                </label>
-                <a
-                  href="#"
-                  className="text-[0.8rem] font-bold text-[#1e4d2b] hover:underline"
-                >
+            {/* Password */}
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <label className="text-sm font-semibold text-[#1a2419]">Secure Password</label>
+                <button type="button" className="text-sm text-[#1e4d2b] font-semibold hover:underline">
                   Forgot Password?
-                </a>
+                </button>
               </div>
               <input
                 type="password"
                 placeholder="••••••••"
-                className="w-full p-[13px] rounded-[10px] border border-black/10 bg-white/70 outline-none text-[0.9rem] text-black focus:border-[#1e4d2b] transition-colors"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
+                className="w-full p-3 rounded-xl bg-white/70 border border-black/10 outline-none text-[#1a2419]"
               />
             </div>
 
-            {/* Remember Me */}
-            <div className="flex justify-start mb-[20px]">
-              <div className="flex items-center gap-[8px] text-[0.85rem] text-[#2d382c]">
-                <input
-                  type="checkbox"
-                  id="rem"
-                  className="m-0 cursor-pointer w-4 h-4 accent-[#1e4d2b]"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                />
-                <label htmlFor="rem" className="cursor-pointer">
-                  Remember me
-                </label>
-              </div>
+            {/* Remember me */}
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="remember"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-4 h-4 accent-[#1e4d2b]"
+              />
+              <label htmlFor="remember" className="text-sm text-[#1a2419]">Remember me</label>
             </div>
 
-            {/* Submit Button */}
             <button
-              type="submit"
-              className="w-full p-[15px] rounded-[12px] border-none bg-[#1e4d2b] text-white font-semibold text-[1rem] cursor-pointer transition-all duration-300 hover:-translate-y-[2px] hover:shadow-[0_10px_20px_rgba(30,77,43,0.2)] active:translate-y-0"
+              type="button"
+              onClick={() => onLogin(role)}
+              className="w-full p-4 rounded-xl bg-[#1e4d2b] text-white font-bold hover:bg-[#153a20] transition-colors"
             >
               Login
             </button>
 
-            {/* Divider */}
-            <div className="flex items-center my-[20px]">
-              <span className="flex-1 h-[1px] bg-black/10"></span>
-              <span className="px-[10px] py-[4px] border border-black/10 text-[0.65rem] font-extrabold mx-[12px] rounded-[4px] bg-white/40">
-                OR
-              </span>
-              <span className="flex-1 h-[1px] bg-black/10"></span>
+            <div className="flex items-center gap-3 my-1">
+              <div className="flex-1 h-px bg-[#1a2419]/20" />
+              <span className="text-xs text-[#1a2419]/50 font-medium">OR</span>
+              <div className="flex-1 h-px bg-[#1a2419]/20" />
             </div>
 
-            {/* Footer Note */}
-            <p className="text-[0.85rem] text-center mt-[10px]">
+            <p className="text-center text-sm text-[#1a2419]">
               Don't have an account?{" "}
-              <a href="#" className="text-[#1e4d2b] font-bold hover:underline">
+              <button
+                type="button"
+                onClick={onSignupClick}
+                className="font-bold text-[#1e4d2b] underline cursor-pointer"
+              >
                 Sign up
-              </a>
+              </button>
             </p>
           </form>
         </main>
       </div>
-    </div>
+    </motion.div>
   );
 }

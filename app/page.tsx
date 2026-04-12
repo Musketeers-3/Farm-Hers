@@ -4,10 +4,8 @@ import { useState, useEffect } from "react";
 import { useAppStore, useHydrated } from "@/lib/store";
 import { useRouter } from "next/navigation";
 import { OnboardingScreen } from "@/components/onboarding/onboarding-screen";
-import { LoginComponent } from "@/components/auth/login-component";
-import { motion, AnimatePresence } from "framer-motion";
 
-type AppStep = "loading" | "onboarding" | "login" | "redirecting";
+type AppStep = "loading" | "onboarding" | "redirecting";
 
 export default function AgriLinkApp() {
   const hydrated = useHydrated();
@@ -17,9 +15,6 @@ export default function AgriLinkApp() {
   const setIsLoggedIn = useAppStore((state) => state.setIsLoggedIn);
 
   const [step, setStep] = useState<AppStep>("loading");
-  const [selectedRole, setSelectedRole] = useState<"farmer" | "buyer">(
-    "farmer",
-  );
 
   useEffect(() => {
     if (!hydrated) return;
@@ -39,7 +34,7 @@ export default function AgriLinkApp() {
         setStep("redirecting");
         router.replace(`/${state.userRole}`);
       } else if (state.hasOnboarded && !state.isLoggedIn) {
-        window.location.href = "/login";
+        router.replace("/login");
       } else {
         setStep("onboarding");
       }
@@ -51,13 +46,7 @@ export default function AgriLinkApp() {
   const handleOnboardingComplete = (role: "farmer" | "buyer") => {
     setHasOnboarded(true);
     setUserRole(role);
-    // Using router.push is better for Next.js performance than window.location
     router.push("/login");
-  };
-  const handleLogin = (role: "farmer" | "buyer") => {
-    setIsLoggedIn(true);
-    setUserRole(role);
-    setTimeout(() => router.push(`/${role}`), 300);
   };
 
   if (step === "loading" || step === "redirecting") {
@@ -71,37 +60,5 @@ export default function AgriLinkApp() {
     );
   }
 
-  if (step === "login") {
-    return (
-      <AnimatePresence mode="wait">
-        <motion.div
-          key="login"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          transition={{ duration: 0.4 }}
-        >
-          <LoginComponent
-            role={selectedRole}
-            onBack={() => setStep("onboarding")}
-            onLogin={handleLogin}
-          />
-        </motion.div>
-      </AnimatePresence>
-    );
-  }
-
-  return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key="onboarding"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0, y: -20 }}
-        transition={{ duration: 0.4 }}
-      >
-        <OnboardingScreen onComplete={handleOnboardingComplete} />
-      </motion.div>
-    </AnimatePresence>
-  );
+  return <OnboardingScreen onComplete={handleOnboardingComplete} />;
 }
