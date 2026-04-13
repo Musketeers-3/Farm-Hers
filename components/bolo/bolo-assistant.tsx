@@ -137,16 +137,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import {
-  Mic,
-  MicOff,
-  X,
-  Sparkles,
-  Loader2,
-  Volume2,
-  Send,
-  Ear,
-} from "lucide-react";
+import { Mic, X, Sparkles, Loader2, Volume2, Send, Moon } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -154,6 +145,8 @@ import { cn } from "@/lib/utils";
 
 export function BoloAssistant() {
   const router = useRouter();
+
+  // --- GLOBAL STORE ---
   const {
     language,
     userRole,
@@ -166,27 +159,26 @@ export function BoloAssistant() {
     addAuction,
   } = useAppStore();
 
+  // --- LOCAL STATE ---
   const [transcript, setTranscript] = useState("");
-  const [textInput, setTextInput] = useState(""); // 🚀 New: Text Chat State
+  const [textInput, setTextInput] = useState("");
   const [response, setResponse] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [showResponse, setShowResponse] = useState(false);
 
-  // 🚀 New: Wake Word State
-  const [wakeWordEnabled, setWakeWordEnabled] = useState(false);
+  // --- WATCHDOG STATE (Battery Saver) ---
+  const [isBoloSleeping, setIsBoloSleeping] = useState(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const passiveRecRef = useRef<any>(null);
 
-  // 1. 🔊 TEXT-TO-SPEECH (TTS)
+  // --- 1. TEXT-TO-SPEECH ---
   const speak = useCallback(
     (textToSpeak: string) => {
       if (typeof window !== "undefined" && window.speechSynthesis) {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(textToSpeak);
-
-        if (language === "hi") utterance.lang = "hi-IN";
-        else if (language === "pa") utterance.lang = "pa-IN";
-        else utterance.lang = "en-IN";
-
+        utterance.lang =
+          language === "hi" ? "hi-IN" : language === "pa" ? "pa-IN" : "en-IN";
         utterance.pitch = 1.0;
         utterance.rate = 1.0;
         window.speechSynthesis.speak(utterance);
@@ -195,12 +187,46 @@ export function BoloAssistant() {
     [language],
   );
 
-  // 2. 🧠 HYBRID INTENT RESOLVER (Handles both Voice & Text)
+  // --- 2. INACTIVITY WATCHDOG ---
+  const resetInactivityTimer = useCallback(() => {
+    if (isBoloSleeping) {
+      setIsBoloSleeping(false);
+    }
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
+    // Sleep after 2 minutes of zero mouse/keyboard/scroll movement
+    timeoutRef.current = setTimeout(() => {
+      setIsBoloSleeping(true);
+      if (passiveRecRef.current) passiveRecRef.current.stop();
+    }, 120000);
+  }, [isBoloSleeping]);
+
+  useEffect(() => {
+    const events = [
+      "mousedown",
+      "mousemove",
+      "keypress",
+      "scroll",
+      "touchstart",
+    ];
+    const handleActivity = () => resetInactivityTimer();
+    events.forEach((event) => window.addEventListener(event, handleActivity));
+    resetInactivityTimer();
+
+    return () => {
+      events.forEach((event) =>
+        window.removeEventListener(event, handleActivity),
+      );
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, [resetInactivityTimer]);
+
+  // --- 3. INTENT RESOLVER (BRAIN) ---
   const handleIntent = useCallback(
     async (input: string) => {
       if (!input.trim()) return;
       setIsProcessing(true);
-      setTranscript(input); // Show what was typed/spoken
+      setTranscript(input);
 
       try {
         const res = await fetch("/api/parse-bid", {
@@ -213,12 +239,11 @@ export function BoloAssistant() {
 
         if (result.success && result.data) {
           const ai = result.data;
-
           setResponse(ai.reply);
           speak(ai.reply);
           setShowResponse(true);
 
-          // Handle Farmer "Sell" Intent
+          // FARMER SELL INTENT
           if (ai.intent === "sell" && ai.crop && ai.amount && ai.price) {
             if (userRole !== "farmer") {
               const errorMsg =
@@ -246,7 +271,7 @@ export function BoloAssistant() {
               }
             }
           }
-          // Handle Buyer "Bid" Intent
+          // BUYER BID INTENT
           else if (ai.intent === "bid" && ai.amount && ai.crop) {
             if (userRole !== "buyer") {
               const errorMsg =
@@ -283,7 +308,7 @@ export function BoloAssistant() {
               }
             }
           }
-          // Handle Navigation
+          // NAVIGATION INTENT
           else if (ai.intent === "navigation" && ai.target) {
             const basePath = userRole === "farmer" ? "/farmer" : "/buyer";
             setTimeout(() => router.push(`${basePath}/${ai.target}`), 2000);
@@ -297,13 +322,12 @@ export function BoloAssistant() {
         }
       } catch (error) {
         console.error("Bolo AI Error:", error);
-        const errorMsg = "Network error. Try again.";
-        setResponse(errorMsg);
-        speak(errorMsg);
+        setResponse("Network error. Try again.");
+        speak("Network error. Try again.");
         setShowResponse(true);
       } finally {
         setIsProcessing(false);
-        setTextInput(""); // Clear text input after processing
+        setTextInput("");
         setTimeout(() => {
           setShowResponse(false);
           setTranscript("");
@@ -323,86 +347,100 @@ export function BoloAssistant() {
     ],
   );
 
-  // 3. 🎙️ ACTIVE SPEECH ENGINE (Main Dictation)
+  // --- 4. THE UNIFIED AUDIO ENGINE (Bulletproof Hackathon Fix) ---
+  // We use refs so React state changes don't assassinate the microphone loop
+  const isListeningRef = useRef(isBoloListening);
+  const languageRef = useRef(language);
+  const handleIntentRef = useRef(handleIntent);
+
+  // Sync state to refs instantly
+  useEffect(() => {
+    isListeningRef.current = isBoloListening;
+  }, [isBoloListening]);
+  useEffect(() => {
+    languageRef.current = language;
+  }, [language]);
+  useEffect(() => {
+    handleIntentRef.current = handleIntent;
+  }, [handleIntent]);
+
   useEffect(() => {
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) return;
 
     const recognition = new SpeechRecognition();
-    recognition.lang =
-      language === "hi" ? "hi-IN" : language === "pa" ? "pa-IN" : "en-IN";
-    recognition.continuous = false;
+    recognition.continuous = true; // Always continuous to stop the ping-pong effect
     recognition.interimResults = true;
+
+    const startMic = () => {
+      if (isBoloSleeping) return;
+      try {
+        recognition.lang =
+          languageRef.current === "hi"
+            ? "hi-IN"
+            : languageRef.current === "pa"
+              ? "pa-IN"
+              : "en-IN";
+        recognition.start();
+      } catch (e) {}
+    };
+
+    recognition.onstart = () => {
+      if (isListeningRef.current)
+        console.log("🟢 Bolo is actively listening...");
+    };
 
     recognition.onresult = (event: any) => {
       const current = event.results[event.results.length - 1][0].transcript;
-      setTranscript(current);
-      if (event.results[0].isFinal) {
-        handleIntent(current);
+      const lower = current.toLowerCase();
+
+      // MODE 1: PASSIVE (Waiting for "Hey Bolo")
+      if (!isListeningRef.current) {
+        if (lower.includes("bolo") || lower.includes("hey bolo")) {
+          recognition.stop(); // Pause mic so we don't hear our own TTS reply
+          speak(languageRef.current === "hi" ? "हाँ जी?" : "Yes?");
+          setBoloListening(true);
+          resetInactivityTimer();
+        }
       }
+      // MODE 2: ACTIVE (Dictating command)
+      else {
+        setTranscript(current);
+
+        if (event.results[event.results.length - 1].isFinal) {
+          console.log("✅ Final Command:", current);
+          recognition.stop(); // Pause mic to process AI
+          handleIntentRef.current(current);
+        }
+      }
+    };
+
+    recognition.onerror = (e: any) => {
+      if (e.error !== "no-speech") console.warn("🚨 Mic Error:", e.error);
     };
 
     recognition.onend = () => {
-      if (isBoloListening) setBoloListening(false);
+      // The absolute failsafe: If it dies, force it back to life instantly
+      if (!isBoloSleeping) {
+        setTimeout(startMic, 100);
+      }
     };
 
-    if (isBoloListening) {
-      try {
-        recognition.start();
-      } catch (e) {}
-    } else {
+    // Ignite the engine
+    startMic();
+
+    return () => {
+      recognition.onend = null;
       recognition.stop();
-    }
-
-    return () => recognition.stop();
-  }, [isBoloListening, language, handleIntent, setBoloListening]);
-
-  // 4. 🚀 WAKE WORD ENGINE ("Hey Bolo")
-  useEffect(() => {
-    const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition || !wakeWordEnabled || isBoloListening) {
-      if (passiveRecRef.current) passiveRecRef.current.stop();
-      return;
-    }
-
-    const passiveRec = new SpeechRecognition();
-    passiveRec.lang = "en-IN"; // Wake word usually works best triggered in English baseline
-    passiveRec.continuous = true;
-    passiveRec.interimResults = true;
-
-    passiveRec.onresult = (event: any) => {
-      const current =
-        event.results[event.results.length - 1][0].transcript.toLowerCase();
-      // If it hears "bolo" or "hey bolo", activate the main assistant!
-      if (current.includes("bolo") || current.includes("hey bolo")) {
-        passiveRec.stop();
-        speak(language === "hi" ? "हाँ जी?" : "Yes?");
-        setBoloListening(true);
-      }
     };
-
-    passiveRec.onend = () => {
-      // Auto-restart passive listening if it dies (Hackathon trick to keep it alive)
-      if (wakeWordEnabled && !isBoloListening) {
-        try {
-          passiveRec.start();
-        } catch (e) {}
-      }
-    };
-
-    try {
-      passiveRec.start();
-    } catch (e) {}
-    passiveRecRef.current = passiveRec;
-
-    return () => passiveRec.stop();
-  }, [wakeWordEnabled, isBoloListening, speak, language, setBoloListening]);
+    // Notice how isBoloListening is NOT in the array. This prevents the infinite restart loop!
+  }, [isBoloSleeping, speak, setBoloListening, resetInactivityTimer]);
 
   const isVisible =
     isBoloListening || isProcessing || showResponse || transcript !== "";
 
+  // --- UI RENDER ---
   return (
     <>
       <AnimatePresence>
@@ -416,7 +454,30 @@ export function BoloAssistant() {
         )}
       </AnimatePresence>
 
-      <div className="fixed bottom-24 md:bottom-6 right-6 z-[100] flex flex-col items-end gap-4">
+      {/* Sleeping Toast */}
+      <AnimatePresence>
+        {isBoloSleeping && !isBoloListening && (
+          <motion.button
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            onClick={() => {
+              resetInactivityTimer();
+              setBoloListening(true);
+            }}
+            className="fixed bottom-24 right-6 bg-amber-500/10 backdrop-blur-md border border-amber-500/30 px-4 py-2 rounded-2xl flex items-center gap-3 hover:bg-amber-500/20 transition-all z-[100] shadow-lg shadow-amber-900/20"
+          >
+            <Moon className="w-4 h-4 text-amber-500 animate-pulse" />
+            <span className="text-xs font-bold text-amber-500 uppercase tracking-tighter">
+              Bolo Sleep Mode{" "}
+              <span className="underline ml-1 opacity-70">Tap to wake</span>
+            </span>
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+      <div className="fixed bottom-6 right-6 z-[100] flex flex-col items-end gap-4">
+        {/* Main Bolo Modal */}
         <AnimatePresence>
           {isVisible && (
             <motion.div
@@ -425,7 +486,6 @@ export function BoloAssistant() {
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               className="w-[340px] rounded-[2.5rem] p-6 shadow-2xl border border-white/20 bg-black/85 backdrop-blur-3xl pointer-events-auto flex flex-col"
             >
-              {/* Header */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2 text-primary">
                   <Sparkles className="w-5 h-5" />
@@ -446,7 +506,6 @@ export function BoloAssistant() {
                 </button>
               </div>
 
-              {/* Status Area (Listening/Processing/Response) */}
               <div className="min-h-[100px] flex flex-col justify-center text-center mb-4">
                 <AnimatePresence mode="wait">
                   {isBoloListening && !isProcessing && (
@@ -507,7 +566,7 @@ export function BoloAssistant() {
                 </AnimatePresence>
               </div>
 
-              {/* 🚀 NEW: Text Chat Input */}
+              {/* Text Chat Input */}
               <div className="mt-auto relative">
                 <form
                   onSubmit={(e) => {
@@ -541,50 +600,32 @@ export function BoloAssistant() {
           )}
         </AnimatePresence>
 
-        {/* 🚀 Wake Word Toggle + Main Mic Button */}
-        <div className="flex items-center gap-3">
-          {/* Wake Word Toggle */}
-          <motion.button
-            whileTap={{ scale: 0.9 }}
-            onClick={() => setWakeWordEnabled(!wakeWordEnabled)}
-            className={cn(
-              "px-4 py-2 rounded-full backdrop-blur-md border text-xs font-bold uppercase tracking-widest flex items-center gap-2 shadow-xl transition-all",
-              wakeWordEnabled
-                ? "bg-green-500/20 border-green-500/50 text-green-400"
-                : "bg-black/50 border-white/10 text-white/50",
-            )}
-          >
-            <Ear
-              className={cn("w-4 h-4", wakeWordEnabled && "animate-pulse")}
-            />
-            {wakeWordEnabled ? "'Hey Bolo' ON" : "Wake Word"}
-          </motion.button>
+        {/* Floating Mic Button */}
+        <motion.button
+          onClick={() => {
+            if (!isBoloListening) resetInactivityTimer();
+            setBoloListening(!isBoloListening);
+            setTranscript("");
+          }}
+          whileTap={{ scale: 0.9 }}
+          className={cn(
+            "w-16 h-16 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(0,0,0,0.5)] border-2 transition-all duration-500 relative",
+            isBoloListening
+              ? "bg-red-500 border-red-400"
+              : "bg-[#1e4d2b] border-[#1e4d2b]/50 hover:bg-[#2a6b3d]",
+          )}
+        >
+          {isBoloListening ? (
+            <X className="w-7 h-7 text-white" />
+          ) : (
+            <Mic className="w-7 h-7 text-white" />
+          )}
 
-          {/* Main Mic Button */}
-          <motion.button
-            onClick={() => {
-              if (!isBoloListening) {
-                // Stop wake word temporarily if manually clicking mic
-                if (passiveRecRef.current) passiveRecRef.current.stop();
-              }
-              setBoloListening(!isBoloListening);
-              setTranscript("");
-            }}
-            whileTap={{ scale: 0.9 }}
-            className={cn(
-              "w-16 h-16 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(0,0,0,0.5)] border-2 transition-all duration-500 relative",
-              isBoloListening
-                ? "bg-red-500 border-red-400"
-                : "bg-[#1e4d2b] border-[#1e4d2b]/50 hover:bg-[#2a6b3d]",
-            )}
-          >
-            {isBoloListening ? (
-              <X className="w-7 h-7 text-white" />
-            ) : (
-              <Mic className="w-7 h-7 text-white" />
-            )}
-          </motion.button>
-        </div>
+          {/* Subtle ring to show wake-word is active */}
+          {!isBoloSleeping && !isBoloListening && (
+            <span className="absolute -inset-2 border-2 border-primary/30 rounded-full animate-ping" />
+          )}
+        </motion.button>
       </div>
     </>
   );

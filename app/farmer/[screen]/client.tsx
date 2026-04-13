@@ -11,6 +11,7 @@ import { ProfileScreen } from "@/components/farmer/profile-screen";
 import { NotificationsScreen } from "@/components/farmer/notifications-screen";
 import { EarningsScreen } from "@/components/farmer/earnings-screen";
 import { BoloAssistant } from "@/components/bolo/bolo-assistant";
+import { Loader2 } from "lucide-react";
 
 export function FarmerScreenClient({ screen }: { screen: string }) {
   const hasOnboarded = useAppStore((state) => state.hasOnboarded);
@@ -18,16 +19,37 @@ export function FarmerScreenClient({ screen }: { screen: string }) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
+  // Define valid screens to prevent invalid navigation loops
+  const VALID_SCREENS = [
+    "sell",
+    "auction",
+    "tracking",
+    "market",
+    "profile",
+    "notifications",
+    "earnings",
+  ];
+
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  // --- Auth & Onboarding Guard ---
   useEffect(() => {
     if (!mounted) return;
     if (!hasOnboarded || !isLoggedIn) {
       router.replace("/");
     }
   }, [mounted, hasOnboarded, isLoggedIn, router]);
+
+  // --- Navigation Side-Effect Guard ---
+  // Fixes the "Cannot update a component while rendering" error
+  useEffect(() => {
+    if (mounted && !VALID_SCREENS.includes(screen)) {
+      console.warn(`Invalid screen: ${screen}. Redirecting to /farmer...`);
+      router.replace("/farmer");
+    }
+  }, [mounted, screen, router]);
 
   if (!mounted || !hasOnboarded || !isLoggedIn) {
     return (
@@ -41,16 +63,27 @@ export function FarmerScreenClient({ screen }: { screen: string }) {
 
   const renderScreen = () => {
     switch (screen) {
-      case "sell": return <SellFlow />;
-      case "auction": return <AuctionScreen />;
-      case "tracking": return <TrackingScreen />;
-      case "market": return <MarketScreen />;
-      case "profile": return <ProfileScreen />;
-      case "notifications": return <NotificationsScreen />;
-      case "earnings": return <EarningsScreen />;
+      case "sell":
+        return <SellFlow />;
+      case "auction":
+        return <AuctionScreen />;
+      case "tracking":
+        return <TrackingScreen />;
+      case "market":
+        return <MarketScreen />;
+      case "profile":
+        return <ProfileScreen />;
+      case "notifications":
+        return <NotificationsScreen />;
+      case "earnings":
+        return <EarningsScreen />;
       default:
-        router.replace("/farmer");
-        return null;
+        // Return a loader while the useEffect handles the router.replace
+        return (
+          <div className="min-h-screen bg-background flex items-center justify-center">
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+          </div>
+        );
     }
   };
 

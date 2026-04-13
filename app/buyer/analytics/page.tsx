@@ -178,7 +178,7 @@ export default function StrategicAnalyticsHub() {
         style={{ backgroundImage: "url('/images/market-bg.jpg')" }}
       />
       {/* The Heavy Smoked Mask */}
-      <div className="fixed inset-0 z-1 bg-black/50 backdrop-blur-[8px]" />
+      <div className="fixed inset-0 z-1 bg-green/60 backdrop-blur-[4px]" />
 
       <div className="relative z-10 p-6 lg:p-10 max-w-[1800px] mx-auto min-h-screen flex flex-col">
         {/* Top Navigation Bar */}

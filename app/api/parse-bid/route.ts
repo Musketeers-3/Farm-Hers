@@ -1,97 +1,151 @@
 import { GoogleGenAI } from "@google/genai";
 import { NextResponse } from "next/server";
 
+type ParsedData = {
+  intent: "bid" | "sell" | "navigation" | "social" | "unknown";
+  target: "analytics" | "auctions" | "orders" | "home" | null;
+  crop: "wheat" | "rice" | "corn" | "mustard" | "potato" | "onion" | null;
+  amount: number | null;
+  price: number | null;
+  reply: string;
+};
+
 export async function POST(req: Request) {
-  try {
-    if (!process.env.GEMINI_API_KEY) {
-      console.error("CRITICAL: GEMINI_API_KEY is missing from .env.local");
-      return NextResponse.json(
-        { success: false, error: "Missing API Key" },
-        { status: 500 },
-      );
-    }
+  const { transcript, language } = await req.json();
 
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-    const { transcript, language } = await req.json();
-
-    const prompt = `
+  const systemPrompt = `
 You are a multilingual agricultural voice assistant designed for Indian farmers and buyers.
+User Input: "${transcript}"
+Detected Language: ${language}
 
-The user has spoken the following input:
-"${transcript}"
+YOUR TASK:
+1. Understand intent (Hindi, Punjabi, English, Hinglish).
+2. Normalize meaning (do NOT translate blindly).
+3. Extract structured intent.
+4. Reply in the SAME language/tone (max 8–10 words).
 
-Detected language: ${language}
+STRICT OUTPUT: Return ONLY valid JSON. No markdown.
 
-Your responsibilities:
-1. Understand the user's intent even if the input is in Hindi, Punjabi, English, or a mix.
-2. Normalize the meaning internally.
-3. Extract structured information.
-4. Respond in the SAME language and conversational tone as the user.
-5. Keep the reply short, natural, and suitable for voice interaction.
-
-STRICT OUTPUT RULES:
-* Return ONLY a valid JSON object.
-* Do NOT include markdown, code blocks, explanations, or extra text.
-
-JSON format:
+JSON FORMAT:
 {
-"intent": "bid" | "sell" | "navigation" | "social" | "unknown",
-"target": "analytics" | "auctions" | "orders" | "home" | null,
-"crop": "wheat" | "rice" | "corn" | "mustard" | "potato" | "onion" | null,
-"amount": number | null, 
-"price": number | null,
-"reply": string
+  "intent": "bid" | "sell" | "navigation" | "social" | "unknown",
+  "target": "analytics" | "auctions" | "orders" | "home" | null,
+  "crop": "wheat" | "rice" | "corn" | "mustard" | "potato" | "onion" | null,
+  "amount": number | null,
+  "price": number | null,
+  "reply": string
 }
 
-INTENT RULES:
-* "sell" → farmer wants to create a new crop listing/auction (extract crop, amount in quintals, and price).
-* "bid" → buyer wants to place a bid.
-* "navigation" → user wants to open a section.
-* "social" → greetings.
-
-CROP RULES (Map to these exact English IDs):
-* गेहूं / wheat / kanak → "wheat"
-* चावल / rice / chawal → "rice"
-* मक्का / makki / maize / corn → "corn"
-* सरसों / sarson / mustard → "mustard"
+CROP MAPPING:
+गेहूं/gehu/kanak -> "wheat", चावल/chawal/chaul -> "rice", मक्का/makki/corn -> "corn"
 
 EXAMPLES:
-Input: "Main 50 quintal kanak vechni hai 2500 de rate te" (Punjabi)
-Output:
-{"intent":"sell","target":null,"crop":"wheat","amount":50,"price":2500,"reply":"Tuhadi 50 quintal kanak di nilami 2500 rupaye te shuru kar diti gayi hai."}
-
-Input: "mujhe 100 quintal chawal bechna hai 3000 par" (Hindi)
-Output:
-{"intent":"sell","target":null,"crop":"rice","amount":100,"price":3000,"reply":"Theek hai, 100 quintal chawal ki nilami 3000 rupaye par shuru ho gayi hai."}
-
-Input: "bhai 2000 ka bid laga de wheat pe"
-Output:
-{"intent":"bid","target":null,"crop":"wheat","amount":2000,"price":null,"reply":"Theek hai, wheat ke liye 2000 ka bid laga diya."}
+Input: "hello, orders dikha" -> {"intent":"navigation","target":"orders","crop":null,"amount":null,"price":null,"reply":"Yeh rahe aapke orders."}
+Input: "ki haal aa" -> {"intent":"social","target":null,"crop":null,"amount":null,"price":null,"reply":"Vadiya ji! Daso ki madad karaan?"}
 `;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: prompt,
+  // ==========================================
+  // TIER 1: GEMINI (Primary Cloud Brain)
+  // ==========================================
+  try {
+    if (!process.env.GEMINI_API_KEY) throw new Error("No Gemini Key");
+
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+    const result = await ai.models.generateContent({
+      model: "gemini-1.5-flash",
+      contents: systemPrompt,
+      config: { temperature: 0.1 },
     });
 
-    let responseText = response.text || "";
-    responseText = responseText
-      .replace(/```json/gi, "")
-      .replace(/```/g, "")
-      .trim();
+    const text = result.text
+      ?.replace(/```json/gi, "")
+      ?.replace(/```/g, "")
+      ?.trim();
+    const parsedData = JSON.parse(text || "");
 
-    const jsonStart = responseText.indexOf("{");
-    const jsonEnd = responseText.lastIndexOf("}") + 1;
-    const cleanJson = responseText.slice(jsonStart, jsonEnd);
-
-    const parsedData = JSON.parse(cleanJson);
-
-    return NextResponse.json({ success: true, data: parsedData });
-  } catch (error: any) {
-    console.error("Gemini API Error in Route:", error.message);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 },
+    return NextResponse.json({
+      success: true,
+      data: parsedData,
+      source: "tier-1-gemini",
+    });
+  } catch (geminiError: any) {
+    console.warn(
+      "⚠️ Tier 1 (Gemini) Failed or Timeout. Initializing Edge-AI...",
     );
+
+    // ==========================================
+    // TIER 2: OLLAMA (Local Edge-AI Fallback)
+    // ==========================================
+    try {
+      console.log("🔄 Routing to Local Node (Ollama on port 11434)...");
+
+      const ollamaRes = await fetch("http://localhost:11434/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "mistral", // 🚀 Updated to use your existing model
+          prompt: systemPrompt,
+          stream: false,
+          format: "json",
+        }),
+      });
+
+      if (!ollamaRes.ok) throw new Error("Ollama node offline");
+
+      const ollamaData = await ollamaRes.json();
+      const text = ollamaData.response;
+
+      return NextResponse.json({
+        success: true,
+        data: JSON.parse(text),
+        source: "tier-2-edge-ollama",
+      });
+    } catch (ollamaError: any) {
+      console.warn("🚨 Tier 2 (Ollama) Failed. Is the local terminal running?");
+
+      // ==========================================
+      // TIER 3: LOCAL REGEX (The Unkillable Failsafe)
+      // ==========================================
+      console.log("⚙️ Executing Tier 3 Hardcoded Failsafe...");
+
+      const input = transcript.toLowerCase();
+      const safeData: ParsedData = {
+        intent: "unknown",
+        target: null,
+        crop: null,
+        amount: null,
+        price: null,
+        reply:
+          language === "hi"
+            ? "मैं अभी ऑफ़लाइन मोड में हूँ, पर काम कर रहा हूँ।"
+            : "Operating in offline mode.",
+      };
+
+      const numbers = input.match(/\d+/g)?.map(Number) || [];
+      if (input.match(/wheat|kanak|gehu|गेहूं|ਕਣਕ/i)) safeData.crop = "wheat";
+      if (input.match(/rice|chawal|chaul|चावल|ਚੌਲ/i)) safeData.crop = "rice";
+
+      if (input.match(/sell|bechna|vechni|बेचना|ਵੇਚਣਾ/i)) {
+        safeData.intent = "sell";
+        safeData.amount = numbers[0] || null;
+        safeData.price = numbers[1] || null;
+        safeData.reply = `Offline Mode: Processing ${safeData.crop || "crop"} listing.`;
+      } else if (input.match(/bid|bol|बोली|ਬੋਲੀ/i)) {
+        safeData.intent = "bid";
+        safeData.amount = numbers[0] || null;
+        safeData.reply = `Offline Mode: Bid placed for ${numbers[0] || ""}.`;
+      } else if (input.match(/mandi|data|analytics|chart/i)) {
+        safeData.intent = "navigation";
+        safeData.target = "analytics";
+        safeData.reply = "Opening offline data view.";
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: safeData,
+        source: "tier-3-local-regex",
+      });
+    }
   }
 }

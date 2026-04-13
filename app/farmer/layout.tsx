@@ -1,4 +1,5 @@
 import { BottomNav } from "@/components/farmer/bottom-nav";
+import { BoloAssistant } from "@/components/bolo/bolo-assistant";
 
 export default function FarmerLayout({
   children,
@@ -6,10 +7,16 @@ export default function FarmerLayout({
   children: React.ReactNode;
 }) {
   return (
+    <div className="relative min-h-screen bg-background">
+      
+      <main className="pb-24"> 
+        {children}
+      </main>
 
-    <>
-      {children}
+      {/* Bolo stays as the invisible "Siri" of the app */}
+      <BoloAssistant />
+
       <BottomNav />
-    </>
+    </div>
   );
 }
