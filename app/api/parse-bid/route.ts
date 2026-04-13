@@ -11,7 +11,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // 🚀 Initialize the NEW SDK
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     const { transcript, language } = await req.json();
 
@@ -24,81 +23,58 @@ The user has spoken the following input:
 Detected language: ${language}
 
 Your responsibilities:
-
-1. Understand the user's intent even if the input is in Hindi, Punjabi, English, or a mix (Hinglish/Punjabi-English).
-2. Normalize the meaning internally (do not translate word-by-word blindly).
+1. Understand the user's intent even if the input is in Hindi, Punjabi, English, or a mix.
+2. Normalize the meaning internally.
 3. Extract structured information.
 4. Respond in the SAME language and conversational tone as the user.
 5. Keep the reply short, natural, and suitable for voice interaction.
 
 STRICT OUTPUT RULES:
-
 * Return ONLY a valid JSON object.
 * Do NOT include markdown, code blocks, explanations, or extra text.
-* Ensure JSON is parseable.
 
 JSON format:
 {
-"intent": "bid" | "navigation" | "social" | "unknown",
+"intent": "bid" | "sell" | "navigation" | "social" | "unknown",
 "target": "analytics" | "auctions" | "orders" | "home" | null,
-"crop": "wheat" | "rice" | "maize" | null,
-"amount": number | null,
+"crop": "wheat" | "rice" | "corn" | "mustard" | "potato" | "onion" | null,
+"amount": number | null, 
+"price": number | null,
 "reply": string
 }
 
 INTENT RULES:
+* "sell" → farmer wants to create a new crop listing/auction (extract crop, amount in quintals, and price).
+* "bid" → buyer wants to place a bid.
+* "navigation" → user wants to open a section.
+* "social" → greetings.
 
-* "bid" → user wants to place a bid or mention price
-* "navigation" → user wants to open a section (orders, analytics, auctions, home)
-* "social" → greetings or casual talk
-* "unknown" → unclear meaning
-
-LANGUAGE RULES:
-
-* If input is Hindi → reply in natural Hindi
-* If input is Punjabi → reply in natural Punjabi
-* If input is Hinglish → reply in Hinglish
-* If input is English → reply in English
-* Match user's tone (casual, respectful, urgent)
-
-CROP RULES:
-
-* गेहूं / wheat → "wheat"
-* चावल / rice → "rice"
-* मक्का / makki / maize → "maize"
+CROP RULES (Map to these exact English IDs):
+* गेहूं / wheat / kanak → "wheat"
+* चावल / rice / chawal → "rice"
+* मक्का / makki / maize / corn → "corn"
+* सरसों / sarson / mustard → "mustard"
 
 EXAMPLES:
+Input: "Main 50 quintal kanak vechni hai 2500 de rate te" (Punjabi)
+Output:
+{"intent":"sell","target":null,"crop":"wheat","amount":50,"price":2500,"reply":"Tuhadi 50 quintal kanak di nilami 2500 rupaye te shuru kar diti gayi hai."}
+
+Input: "mujhe 100 quintal chawal bechna hai 3000 par" (Hindi)
+Output:
+{"intent":"sell","target":null,"crop":"rice","amount":100,"price":3000,"reply":"Theek hai, 100 quintal chawal ki nilami 3000 rupaye par shuru ho gayi hai."}
 
 Input: "bhai 2000 ka bid laga de wheat pe"
 Output:
-{"intent":"bid","target":null,"crop":"wheat","amount":2000,"reply":"Theek hai, wheat ke liye 2000 ka bid laga diya."}
-
-Input: "mere orders dikha"
-Output:
-{"intent":"navigation","target":"orders","crop":null,"amount":null,"reply":"Yeh rahe aapke orders."}
-
-Input: "mera data dikha"
-Output:
-{"intent":"navigation","target":"analytics","crop":null,"amount":null,"reply":"Yeh raha aapka data."}
-
-Input: "ki haal aa, mera order dikha"
-Output:
-{"intent":"navigation","target":"orders","crop":null,"amount":null,"reply":"Tuhade orders eh rahe."}
-
-Input: "hello"
-Output:
-{"intent":"social","target":null,"crop":null,"amount":null,"reply":"Hello! Ki madad chahidi hai?"}
-
+{"intent":"bid","target":null,"crop":"wheat","amount":2000,"price":null,"reply":"Theek hai, wheat ke liye 2000 ka bid laga diya."}
 `;
 
-    // 🚀 Call the current stable model using the new syntax
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: prompt,
     });
 
     let responseText = response.text || "";
-
     responseText = responseText
       .replace(/```json/gi, "")
       .replace(/```/g, "")
