@@ -59,7 +59,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${dmSans.variable} ${playfair.variable} ${geistMono.variable}`}>
+    // Add it right here, next to lang="en"
+    <html lang="en" data-agri-theme="buyer" className={`${dmSans.variable} ${playfair.variable} ${geistMono.variable}`}>
       <body className="font-sans antialiased min-h-screen">
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}

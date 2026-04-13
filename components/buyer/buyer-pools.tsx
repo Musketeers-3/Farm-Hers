@@ -1,313 +1,336 @@
 "use client";
-
-import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
+import React, { useState } from "react";
 import {
-  MapPin,
-  Users,
-  Star,
-  Clock,
-  Flame,
-  Package,
-  ShieldCheck,
-  ChevronRight,
+  Flame, MapPin, TrendingUp, Package, CircleDollarSign,
+  ShieldCheck, Star, CheckCircle2, Clock, ChevronRight, ArrowRight,
 } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
 import { motion, AnimatePresence } from "framer-motion";
-import { useAppStore } from "@/lib/store"; // 🚀 Import the global store
+import { useAppStore } from "@/lib/store";
+
+// ✅ CHANGE: Updated all green tokens from bright lime → deep paddy green
+const G = {
+  card:         "rgba(18,14,8,0.72)",
+  cardHover:    "rgba(22,18,10,0.80)",
+  cardActive:   "rgba(18,14,8,0.82)",
+  border:       "rgba(255,255,255,0.09)",
+  borderActive: "rgba(90,158,111,0.32)",   // was rgba(74,222,128,0.32)
+  blur:         "blur(18px)",
+  textPrimary:  "#ffffff",
+  textSub:      "rgba(255,255,255,0.55)",
+  textLabel:    "rgba(255,255,255,0.38)",
+  accent:       "#5a9e6f",                 // was #4ade80
+  accentDark:   "#2d6a4f",                 // was #16a34a
+  accentBg:     "rgba(45,106,79,0.22)",    // was rgba(22,163,74,0.22)
+  accentBorder: "rgba(90,158,111,0.28)",   // was rgba(74,222,128,0.28)
+};
 
 export function BuyerPools() {
-  // 1. 🚀 PULL REAL DATA FROM ZUSTAND
-  const pools = useAppStore((state) => state.pools);
-  const crops = useAppStore((state) => state.crops);
-  const addOrder = useAppStore((state) => state.addOrder);
+  const pools    = useAppStore((s) => s.pools);
+  const crops    = useAppStore((s) => s.crops);
+  const addOrder = useAppStore((s) => s.addOrder);
 
-  // 2. 🚀 MOVED STATE INSIDE THE COMPONENT
-  const [activePoolId, setActivePoolId] = useState<string | null>(null);
-  const [selectedQty, setSelectedQty] = useState<number>(0);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [activePoolId,   setActivePoolId]   = useState<string | null>(null);
+  const [selectedQty,    setSelectedQty]    = useState<number>(0);
+  const [isProcessing,   setIsProcessing]   = useState(false);
   const [contractSigned, setContractSigned] = useState<string | null>(null);
 
-  const getCropEmoji = (cropName: string) => {
-    if (!cropName) return "🌱";
-    if (cropName.includes("Wheat")) return "🌾";
-    if (cropName.includes("Rice")) return "🍚";
-    if (cropName.includes("Mustard")) return "🌻";
-    if (cropName.includes("Corn")) return "🌽";
-    return "🌱";
-  };
-
-  const getQualityStyle = (quality: string) => {
-    switch (quality) {
-      case "Premium":
-        return "bg-agri-gold/15 text-agri-earth border-agri-gold/30";
-      case "Standard":
-        return "bg-primary/10 text-primary border-primary/20";
-      default:
-        return "bg-muted text-muted-foreground border-border";
-    }
-  };
-
   const togglePool = (poolId: string, maxQty: number) => {
-    if (activePoolId === poolId) {
-      setActivePoolId(null);
-    } else {
-      setActivePoolId(poolId);
-      setSelectedQty(Math.floor(maxQty * 0.25)); // Default to 25% of available pool
-    }
+    if (activePoolId === poolId) { setActivePoolId(null); return; }
+    setActivePoolId(poolId);
+    setSelectedQty(Math.floor(maxQty * 0.25));
   };
 
-  // 3. 🚀 THE REAL BUSINESS LOGIC (Creates an order in Zustand)
-  const handleInitiateContract = (
-    poolId: string,
-    cropId: string,
-    price: number,
-    qty: number,
-  ) => {
+  const handleInitiateContract = (poolId: string, cropId: string, price: number, qty: number) => {
     setIsProcessing(true);
-
-    // Simulate network delay for realism
     setTimeout(() => {
-      // Create the global order in the Zustand store
       addOrder({
         id: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
-        cropId: cropId,
-        quantity: qty,
-        pricePerQuintal: price,
-        totalAmount: qty * price,
-        status: "pending",
-        buyerId: "buyer-pam-001",
-        farmerId: "pool-collective",
+        cropId, quantity: qty, pricePerQuintal: price,
+        totalAmount: qty * price, status: "pending",
+        buyerId: "buyer-pam-001", farmerId: "pool-collective",
         createdAt: new Date().toISOString(),
       });
-
       setIsProcessing(false);
       setContractSigned(poolId);
     }, 1500);
   };
 
+  const totalVolume = pools.reduce((a, b) => a + b.totalQuantity, 0);
+  const avgBonus    = pools.length > 0
+    ? Math.round(pools.reduce((a, b) => a + b.bonusPerQuintal, 0) / pools.length) : 0;
+
   return (
-    <div className="space-y-4">
-      {/* 4. 🚀 MAP OVER ZUSTAND POOLS INSTEAD OF MOCK DATA */}
-      {pools.map((pool) => {
-        // Link the pool to its actual crop details in the store
-        const cropDetails = crops.find((c) => c.id === pool.cropId);
-        const cropName = cropDetails?.name || "Unknown Crop";
-        const finalPrice =
-          (cropDetails?.currentPrice || 0) + pool.bonusPerQuintal;
+    <div className="space-y-6 sm:space-y-8">
 
-        const isActive = activePoolId === pool.id;
-        const totalValue = (selectedQty * finalPrice) / 100000; // Convert to Lakhs
-
-        // UI Embellishments (we mock these for now until they are added to store)
-        const mockLocation =
-          pool.cropId === "wheat" ? "Ludhiana, Punjab" : "Alwar, Rajasthan";
-        const mockQuality = pool.totalQuantity > 300 ? "Premium" : "Standard";
-        const mockRating = pool.totalQuantity > 300 ? 4.8 : 4.5;
-        const isHot = pool.contributors > 5;
-
-        return (
+      {/* ── METRIC CARDS ── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
+        {[
+          { label: "Active Pools",  value: pools.length,      icon: Package },
+          { label: "Total Volume",  value: `${totalVolume}q`, icon: TrendingUp },
+          { label: "Avg Bonus",     value: `₹${avgBonus}/q`,  icon: CircleDollarSign },
+        ].map((stat, i) => (
           <motion.div
-            layout
-            key={pool.id}
-            className="glass-card rounded-2xl overflow-hidden premium-shadow transition-all border border-border/50 hover:border-primary/30"
+            key={stat.label}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.08 }}
+            className="p-5 sm:p-6 flex items-center justify-between rounded-2xl"
+            style={{ background: G.card, border: `1px solid ${G.border}`, backdropFilter: G.blur }}
           >
-            {/* The Main Card */}
-            <div
-              className="p-4 sm:p-5 cursor-pointer hover:bg-secondary/10 transition-colors"
-              onClick={() => togglePool(pool.id, pool.totalQuantity)}
-            >
-              <div className="flex gap-4">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-secondary flex items-center justify-center text-2xl sm:text-3xl shrink-0">
-                  {getCropEmoji(cropName)}
-                </div>
+            <div>
+              <p className="text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-1" style={{ color: G.textLabel }}>
+                {stat.label}
+              </p>
+              <p className="text-2xl sm:text-3xl font-black tracking-tight" style={{ color: G.textPrimary }}>
+                {stat.value}
+              </p>
+            </div>
+            {/* ✅ CHANGE: icon bg/border uses new paddy green tokens */}
+            <div className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-2xl"
+              style={{ background: G.accentBg, border: `1px solid ${G.accentBorder}` }}>
+              <stat.icon className="w-6 h-6" style={{ color: G.accent }} />
+            </div>
+          </motion.div>
+        ))}
+      </div>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2 mb-2">
+      {/* ── MAIN GRID ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+
+        {/* LEFT — Pool cards */}
+        <div className="lg:col-span-8 space-y-4 sm:space-y-5">
+          {pools.map((pool, index) => {
+            const cropDetails = crops.find((c) => c.id === pool.cropId);
+            const cropName    = cropDetails?.name || "Unknown Asset";
+            const finalPrice  = (cropDetails?.currentPrice || 0) + pool.bonusPerQuintal;
+            const isActive    = activePoolId === pool.id;
+            const fillPct     = Math.round((pool.totalQuantity / pool.targetQuantity) * 100);
+            const isSigned    = contractSigned === pool.id;
+
+            return (
+              <motion.div
+                key={pool.id}
+                layout
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.08, duration: 0.35 }}
+                className="overflow-hidden rounded-2xl transition-all duration-300"
+                style={{
+                  background:    isActive ? G.cardActive : G.card,
+                  border:        `1px solid ${isActive ? G.borderActive : G.border}`,
+                  backdropFilter: G.blur,
+                  WebkitBackdropFilter: G.blur,
+                  // ✅ CHANGE: active glow uses paddy green shadow
+                  boxShadow: isActive
+                    ? "0 0 0 1px rgba(90,158,111,0.12), 0 8px 32px rgba(0,0,0,0.5)"
+                    : "0 4px 24px rgba(0,0,0,0.45)",
+                }}
+              >
+                {/* Card header */}
+                <div
+                  className="p-5 sm:p-6 cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                  onClick={() => !isSigned && togglePool(pool.id, pool.targetQuantity - pool.totalQuantity)}
+                >
+                  <div className="flex items-center gap-4">
+                    {/* ✅ CHANGE: icon container paddy green */}
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center shrink-0"
+                      style={{ background: G.accentBg, border: `1px solid ${G.accentBorder}` }}>
+                      <Flame className="w-6 h-6" style={{ color: G.accent }} />
+                    </div>
                     <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-semibold text-foreground text-base sm:text-lg">
-                          {cropName}
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <h3 className="font-black text-lg sm:text-xl tracking-tight text-white">
+                          {cropName} Pool
                         </h3>
-                        {isHot && (
-                          <Badge className="bg-destructive/10 text-destructive border-0 text-[10px] gap-0.5 px-1.5 py-0.5 uppercase tracking-wider font-bold">
-                            <Flame className="w-3 h-3" /> Hot Pool
-                          </Badge>
-                        )}
+                        {/* ✅ CHANGE: Grade badge paddy green */}
+                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-widest"
+                          style={{ background: G.accentBg, color: G.accent, border: `1px solid ${G.accentBorder}` }}>
+                          Grade A
+                        </span>
                       </div>
-                      <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
-                        <MapPin className="w-3.5 h-3.5 text-primary/70" />
-                        <span>{mockLocation}</span>
-                      </div>
-                    </div>
-                    <Badge
-                      className={`${getQualityStyle(mockQuality)} border text-[10px] font-bold`}
-                    >
-                      {mockQuality}
-                    </Badge>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-2">
-                    <div className="bg-secondary/60 rounded-xl p-2.5">
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-0.5">
-                        Available
-                      </p>
-                      <p className="text-sm font-bold text-foreground">
-                        {pool.totalQuantity}q
-                      </p>
-                    </div>
-                    <div className="bg-secondary/60 rounded-xl p-2.5">
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-0.5">
-                        Price
-                      </p>
-                      <p className="text-sm font-bold text-primary">
-                        ₹{finalPrice}/q
-                      </p>
-                    </div>
-                    <div className="bg-secondary/60 rounded-xl p-2.5">
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-0.5">
-                        Farmers
-                      </p>
-                      <div className="flex items-center gap-1">
-                        <Users className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span className="text-sm font-bold text-foreground">
-                          {pool.contributors}
+                      <div className="flex items-center gap-3 text-xs sm:text-sm font-semibold" style={{ color: G.textSub }}>
+                        <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> Punjab</span>
+                        {/* ✅ CHANGE: bonus text paddy green */}
+                        <span className="flex items-center gap-1" style={{ color: G.accent }}>
+                          <TrendingUp className="w-3.5 h-3.5" /> +₹{pool.bonusPerQuintal} Bonus
                         </span>
                       </div>
                     </div>
                   </div>
-                </div>
-              </div>
 
-              {/* Collapsed State Footer */}
-              {!isActive && (
-                <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1">
-                      <Star className="w-4 h-4 text-agri-gold fill-agri-gold" />
-                      <span className="text-xs font-bold text-foreground">
-                        {mockRating}
-                      </span>
+                  {/* Price */}
+                  <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 sm:gap-0.5">
+                    <div className="text-left sm:text-right">
+                      <p className="text-[10px] uppercase font-bold tracking-widest" style={{ color: G.textLabel }}>Target Rate</p>
+                      <p className="text-xl sm:text-2xl font-mono font-black text-white">₹{finalPrice}</p>
                     </div>
-                    <div className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
-                      <Clock className="w-3.5 h-3.5" />
-                      <span>Closes today</span>
-                    </div>
+                    {!isActive && !isSigned && (
+                      <div className="p-2 rounded-xl sm:hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+                        <ChevronRight className="w-5 h-5 text-white/40" />
+                      </div>
+                    )}
                   </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="text-primary font-semibold hover:bg-primary/10"
-                  >
-                    Procure <ChevronRight className="w-4 h-4 ml-1" />
-                  </Button>
                 </div>
-              )}
+
+                {/* Progress bar */}
+                <div className="px-5 sm:px-6 pb-5 sm:pb-6">
+                  <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider mb-2">
+                    <span style={{ color: G.textLabel }}>Pool Filled</span>
+                    {/* ✅ CHANGE: percentage label paddy green */}
+                    <span style={{ color: G.accent }}>{fillPct}%</span>
+                  </div>
+                  <div className="h-1.5 w-full rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.08)" }}>
+                    {/* ✅ FIX: Moved the comment outside of the motion.div properties */}
+                    {/* ✅ CHANGE: progress bar gradient uses paddy greens */}
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${fillPct}%` }}
+                      transition={{ duration: 1, ease: "easeOut" }}
+                      className="h-full rounded-full"
+                      style={{ background: `linear-gradient(90deg, ${G.accentDark}, ${G.accent})` }}
+                    />
+                  </div>
+                  <p className="text-[10px] font-semibold mt-2" style={{ color: G.textLabel }}>
+                    {pool.totalQuantity}q / {pool.targetQuantity}q collected
+                  </p>
+                </div>
+
+                {/* Expanded contract panel */}
+                <AnimatePresence>
+                  {isActive && !isSigned && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden"
+                      style={{ borderTop: `1px solid ${G.border}` }}
+                    >
+                      <div className="p-5 sm:p-6 space-y-5" style={{ background: "rgba(0,0,0,0.3)" }}>
+
+                        {/* Volume slider */}
+                        <div className="p-5 rounded-xl" style={{ background: G.card, border: `1px solid ${G.border}` }}>
+                          <div className="flex justify-between items-end mb-4">
+                            <div>
+                              <p className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: G.textLabel }}>
+                                Procurement Volume
+                              </p>
+                              <p className="text-2xl font-black font-mono text-white">
+                                {selectedQty} <span className="text-base font-medium" style={{ color: G.textSub }}>Quintals</span>
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: G.textLabel }}>Total Value</p>
+                              {/* ✅ CHANGE: total value accent paddy green */}
+                              <p className="text-xl font-bold font-mono" style={{ color: G.accent }}>
+                                ₹{(selectedQty * finalPrice).toLocaleString()}
+                              </p>
+                            </div>
+                          </div>
+                          <Slider
+                            value={[selectedQty]}
+                            onValueChange={(v) => setSelectedQty(v[0])}
+                            max={pool.targetQuantity - pool.totalQuantity}
+                            step={10}
+                            className="py-4"
+                          />
+                        </div>
+
+                        {/* ✅ CHANGE: CTA button uses paddy green */}
+                        <button
+                          disabled={isProcessing || selectedQty === 0}
+                          onClick={() => handleInitiateContract(pool.id, pool.cropId, finalPrice, selectedQty)}
+                          className="w-full py-4 rounded-xl font-bold text-sm uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+                          style={isProcessing
+                            ? { background: "rgba(255,255,255,0.06)", color: G.textSub }
+                            : { background: G.accentDark, color: "#fff", border: `1px solid ${G.accentBorder}`, boxShadow: "0 4px 20px rgba(45,106,79,0.4)" }
+                          }
+                        >
+                          {isProcessing
+                            ? <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}><Clock className="w-5 h-5" /></motion.div>
+                            : <><span>Initiate Contract</span><ArrowRight className="w-4 h-4" /></>
+                          }
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* Signed confirmation */}
+                  {isSigned && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.97 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="p-6 flex flex-col items-center text-center gap-3"
+                      // ✅ CHANGE: signed state uses paddy green bg
+                      style={{ background: "rgba(45,106,79,0.18)", borderTop: `1px solid ${G.accentBorder}` }}
+                    >
+                      <div className="w-12 h-12 rounded-full flex items-center justify-center"
+                        style={{ background: G.accentBg, border: `1px solid ${G.accentBorder}` }}>
+                        <CheckCircle2 className="w-6 h-6" style={{ color: G.accent }} />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-white">Contract Initiated Successfully</h4>
+                        <p className="text-xs mt-1" style={{ color: G.textSub }}>
+                          Awaiting farmer collective approval for {selectedQty}q at ₹{finalPrice}/q
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* RIGHT — Quality Assurance */}
+        <div className="lg:col-span-4 space-y-5 lg:sticky lg:top-32">
+          <div
+            className="rounded-2xl p-6"
+            style={{
+              background: G.card,
+              border: `1px solid ${G.border}`,
+              backdropFilter: G.blur,
+              WebkitBackdropFilter: G.blur,
+              boxShadow: "0 4px 24px rgba(0,0,0,0.45)",
+            }}
+          >
+            <h3 className="font-bold text-lg flex items-center gap-2 mb-5 text-white">
+              {/* ✅ CHANGE: shield icon paddy green */}
+              <ShieldCheck className="w-5 h-5" style={{ color: G.accent }} />
+              Quality Assurance
+            </h3>
+            <div className="space-y-3">
+              {[
+                { title: "Moisture Content",  value: "< 12%", status: "Optimal" },
+                { title: "Foreign Matter",    value: "< 1%",  status: "Grade A" },
+                { title: "Pesticide Residue", value: "Zero",  status: "Certified Organic" },
+              ].map((m, i) => (
+                <div key={i} className="flex items-center justify-between p-3.5 rounded-xl"
+                  style={{ background: "rgba(255,255,255,0.05)", border: `1px solid ${G.border}` }}>
+                  <span className="text-sm font-semibold" style={{ color: G.textSub }}>{m.title}</span>
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-white">{m.value}</p>
+                    {/* ✅ CHANGE: status label paddy green */}
+                    <p className="text-[9px] uppercase tracking-wider font-bold" style={{ color: G.accent }}>{m.status}</p>
+                  </div>
+                </div>
+              ))}
             </div>
 
-            {/* EXPANDABLE PROCUREMENT DRAWER */}
-            <AnimatePresence>
-              {isActive && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="overflow-hidden bg-primary/5 border-t border-primary/20"
-                >
-                  <div className="p-5 space-y-5">
-                    {/* Trust Banner */}
-                    <div className="flex items-center gap-2 p-3 rounded-lg bg-background/50 border border-border/50 text-xs text-muted-foreground font-medium">
-                      <ShieldCheck className="w-4 h-4 text-agri-success" />
-                      <p>
-                        Funds held in 100% secure escrow until quality
-                        verification.
-                      </p>
-                    </div>
-
-                    {/* Volume Slider */}
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <label className="text-sm font-bold text-foreground">
-                          Select Procurement Volume
-                        </label>
-                        <span className="text-sm font-mono font-bold text-primary bg-primary/10 px-2 py-1 rounded-md">
-                          {selectedQty} / {pool.totalQuantity}q
-                        </span>
-                      </div>
-
-                      <Slider
-                        defaultValue={[selectedQty]}
-                        max={pool.totalQuantity}
-                        step={10}
-                        className="w-full py-2"
-                        onValueChange={(val) => setSelectedQty(val[0])}
-                      />
-
-                      <div className="flex justify-between text-[10px] text-muted-foreground font-semibold">
-                        <span>Min: 10q</span>
-                        <span>Max: {pool.totalQuantity}q</span>
-                      </div>
-                    </div>
-
-                    {/* Checkout Footer */}
-                    <div className="pt-4 border-t border-primary/10 flex items-center justify-between">
-                      <div>
-                        <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-1">
-                          Total Value
-                        </p>
-                        <p className="text-2xl font-serif font-bold text-foreground">
-                          ₹{totalValue.toFixed(2)}
-                          <span className="text-base text-muted-foreground">
-                            L
-                          </span>
-                        </p>
-                      </div>
-
-                      {contractSigned === pool.id ? (
-                        <motion.div
-                          initial={{ scale: 0.9, opacity: 0 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          className="h-12 px-6 bg-agri-success/10 border border-agri-success text-agri-success font-bold text-base rounded-xl flex items-center justify-center w-full sm:w-auto"
-                        >
-                          <ShieldCheck className="w-5 h-5 mr-2" />
-                          Smart Contract Active
-                        </motion.div>
-                      ) : (
-                        <Button
-                          // 🚀 PASSING THE GLOBAL DATA INTO THE FUNCTION
-                          onClick={() =>
-                            handleInitiateContract(
-                              pool.id,
-                              pool.cropId,
-                              finalPrice,
-                              selectedQty,
-                            )
-                          }
-                          disabled={isProcessing || selectedQty === 0}
-                          className="h-12 px-6 bg-primary text-white font-bold text-base hover:shadow-lg hover:shadow-primary/30 transition-all rounded-xl w-full sm:w-auto"
-                        >
-                          {isProcessing ? (
-                            <span className="flex items-center animate-pulse">
-                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                              Locking Escrow...
-                            </span>
-                          ) : (
-                            <span className="flex items-center">
-                              <Package className="w-5 h-5 mr-2" />
-                              Initiate Contract
-                            </span>
-                          )}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
-        );
-      })}
+            {/* ✅ CHANGE: premium supply banner paddy green bg */}
+            <div className="mt-5 p-4 rounded-xl flex items-start gap-3"
+              style={{ background: G.accentBg, border: `1px solid ${G.accentBorder}` }}>
+              <Star className="w-5 h-5 shrink-0 mt-0.5" style={{ color: G.accent }} />
+              <div>
+                <p className="text-sm font-bold text-white">Premium Supply</p>
+                <p className="text-xs mt-1 leading-relaxed" style={{ color: G.textSub }}>
+                  These pools are sourced from top-rated farmer collectives with strict quality control.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
