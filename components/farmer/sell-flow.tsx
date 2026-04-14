@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useAppStore, useTranslation, type Crop } from "@/lib/store";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   ArrowLeft,
   ArrowRight,
@@ -15,13 +14,13 @@ import {
   Sprout,
   Leaf,
   TrendingUp,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Crop images
 const cropIcons: Record<string, any> = {
   wheat: Wheat,
   rice: Wheat,
@@ -50,7 +49,6 @@ type SellStep =
   | "choose-method"
   | "pool-details"
   | "confirm";
-
 const stepOrder: SellStep[] = [
   "select-crop",
   "enter-quantity",
@@ -62,11 +60,13 @@ const stepOrder: SellStep[] = [
 export function SellFlow() {
   const router = useRouter();
   const [step, setStep] = useState<SellStep>("select-crop");
-  const [direction, setDirection] = useState(1); // 1 for forward, -1 for backward
+  const [direction, setDirection] = useState(1);
   const [sellMethod, setMethod] = useState<
     "direct" | "pool" | "auction" | null
   >(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const crops = useAppStore((state) => state.crops);
   const selectedCrop = useAppStore((state) => state.selectedCrop);
@@ -75,6 +75,7 @@ export function SellFlow() {
   const setSellQuantity = useAppStore((state) => state.setSellQuantity);
   const pools = useAppStore((state) => state.pools);
   const language = useAppStore((state) => state.language);
+  const userProfile = useAppStore((state) => state.userProfile);
   const t = useTranslation();
 
   useEffect(() => setIsMounted(true), []);
@@ -95,9 +96,6 @@ export function SellFlow() {
     ? sellQuantity * matchingPool.bonusPerQuintal
     : 0;
 
-  // ----------------------------------------------------------------------
-  // NAVIGATION LOGIC (Merged safely!)
-  // ----------------------------------------------------------------------
   const changeStep = (newStep: SellStep, dir: number) => {
     setDirection(dir);
     setStep(newStep);
@@ -117,8 +115,57 @@ export function SellFlow() {
           -1,
         );
       default:
-        // Teammate's Next.js Router logic for exiting the flow
         router.push("/farmer");
+    }
+  };
+
+  // ── CONFIRM SALE: calls the Pools API ──────────────────────────────────────
+  const handleConfirmSale = async () => {
+    if (!selectedCrop || !userProfile) return;
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      if (sellMethod === "pool") {
+        if (matchingPool) {
+          // Join an existing open pool
+          const res = await fetch(`/api/pools/${matchingPool.id}/join`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              farmerId: userProfile.uid,
+              quantity: sellQuantity,
+            }),
+          });
+          if (!res.ok) {
+            const data = await res.json();
+            throw new Error(data.error || "Failed to join pool");
+          }
+        } else {
+          // No existing pool — create a new one
+          const res = await fetch("/api/pools", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              cropId: selectedCrop.id,
+              targetQuantity: sellQuantity * 3, // default: 3x your quantity
+              bonusPerQuintal: 150,
+              initialQuantity: sellQuantity,
+              farmerId: userProfile.uid,
+            }),
+          });
+          if (!res.ok) {
+            const data = await res.json();
+            throw new Error(data.error || "Failed to create pool");
+          }
+        }
+      }
+      // direct / auction — handled by future backends
+      router.push("/farmer/tracking");
+    } catch (err: any) {
+      setSubmitError(err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -131,26 +178,19 @@ export function SellFlow() {
         if (sellQuantity > 0) changeStep("choose-method", 1);
         break;
       case "choose-method":
-        if (sellMethod === "pool") {
-          changeStep("pool-details", 1);
-        } else if (sellMethod === "auction") {
-          // Teammate's Next.js Router logic
-          router.push("/farmer/auction");
-        } else {
-          changeStep("confirm", 1);
-        }
+        if (sellMethod === "pool") changeStep("pool-details", 1);
+        else if (sellMethod === "auction") router.push("/farmer/auction");
+        else changeStep("confirm", 1);
         break;
       case "pool-details":
         changeStep("confirm", 1);
         break;
       case "confirm":
-        // Complete transaction
-        router.push("/farmer/tracking");
+        handleConfirmSale();
         break;
     }
   };
 
-  // Animation Variants for Page Slides
   const slideVariants = {
     enter: (dir: number) => ({ x: dir > 0 ? 50 : -50, opacity: 0 }),
     center: { x: 0, opacity: 1 },
@@ -165,9 +205,6 @@ export function SellFlow() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
-      {/* ---------------------------------------------------------------------- */}
-      {/* HEADER & PROGRESS */}
-      {/* ---------------------------------------------------------------------- */}
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50 pt-4 pb-0">
         <div className="flex items-center gap-4 px-4 pb-4">
           <button
@@ -185,8 +222,6 @@ export function SellFlow() {
             </p>
           </div>
         </div>
-
-        {/* Animated Progress Bar */}
         <div className="w-full h-1 bg-secondary relative overflow-hidden">
           <motion.div
             className="absolute top-0 left-0 h-full bg-primary"
@@ -197,9 +232,6 @@ export function SellFlow() {
         </div>
       </header>
 
-      {/* ---------------------------------------------------------------------- */}
-      {/* DYNAMIC CONTENT AREA */}
-      {/* ---------------------------------------------------------------------- */}
       <main className="flex-1 relative w-full max-w-2xl mx-auto">
         <AnimatePresence initial={false} custom={direction} mode="wait">
           <motion.div
@@ -238,7 +270,7 @@ export function SellFlow() {
                 t={t}
               />
             )}
-            {step === "pool-details" && matchingPool && selectedCrop && (
+            {step === "pool-details" && selectedCrop && (
               <PoolDetails
                 pool={matchingPool}
                 crop={selectedCrop}
@@ -256,15 +288,13 @@ export function SellFlow() {
                 method={sellMethod}
                 getCropName={getCropName}
                 t={t}
+                error={submitError}
               />
             )}
           </motion.div>
         </AnimatePresence>
       </main>
 
-      {/* ---------------------------------------------------------------------- */}
-      {/* STICKY BOTTOM ACTION */}
-      {/* ---------------------------------------------------------------------- */}
       <div className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none">
         <div className="h-12 w-full bg-gradient-to-t from-background to-transparent" />
         <div className="p-4 sm:p-6 bg-background/90 backdrop-blur-xl border-t border-border/50 pointer-events-auto">
@@ -272,14 +302,26 @@ export function SellFlow() {
             <Button
               onClick={handleNext}
               disabled={
+                isSubmitting ||
                 (step === "select-crop" && !selectedCrop) ||
                 (step === "enter-quantity" && sellQuantity <= 0) ||
                 (step === "choose-method" && !sellMethod)
               }
               className="w-full h-14 rounded-2xl sm:rounded-3xl bg-primary hover:bg-primary/90 text-lg font-bold premium-shadow group transition-all duration-300"
             >
-              {step === "confirm" ? "Confirm Sale" : "Continue"}
-              <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Processing...
+                </>
+              ) : step === "confirm" ? (
+                "Confirm Sale"
+              ) : (
+                "Continue"
+              )}
+              {!isSubmitting && (
+                <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+              )}
             </Button>
           </div>
         </div>
@@ -288,9 +330,6 @@ export function SellFlow() {
   );
 }
 
-// ============================================================================
-// STEP 1: CROP SELECTION
-// ============================================================================
 function CropSelection({ crops, selectedCrop, onSelect, getCropName }: any) {
   return (
     <div className="space-y-4">
@@ -301,7 +340,6 @@ function CropSelection({ crops, selectedCrop, onSelect, getCropName }: any) {
         {crops.map((crop: Crop, index: number) => {
           const isSelected = selectedCrop?.id === crop.id;
           const Icon = cropIcons[crop.id] || Wheat;
-
           return (
             <motion.button
               key={crop.id}
@@ -328,7 +366,6 @@ function CropSelection({ crops, selectedCrop, onSelect, getCropName }: any) {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/40 to-transparent" />
               </div>
-
               <div
                 className={cn(
                   "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300 relative z-10",
@@ -339,7 +376,6 @@ function CropSelection({ crops, selectedCrop, onSelect, getCropName }: any) {
               >
                 <Icon className="w-6 h-6" strokeWidth={2.5} />
               </div>
-
               <div className="text-center relative z-10">
                 <h3
                   className={cn(
@@ -353,7 +389,6 @@ function CropSelection({ crops, selectedCrop, onSelect, getCropName }: any) {
                   ₹{crop.currentPrice}/q
                 </p>
               </div>
-
               {isSelected && (
                 <motion.div
                   initial={{ scale: 0 }}
@@ -371,9 +406,6 @@ function CropSelection({ crops, selectedCrop, onSelect, getCropName }: any) {
   );
 }
 
-// ============================================================================
-// STEP 2: FINTECH QUANTITY INPUT
-// ============================================================================
 function QuantityInput({
   crop,
   quantity,
@@ -382,7 +414,6 @@ function QuantityInput({
   t,
 }: any) {
   const totalValue = quantity * crop.currentPrice;
-
   return (
     <div className="space-y-8 flex flex-col items-center">
       <div className="inline-flex items-center gap-3 bg-secondary/50 backdrop-blur-md px-4 py-2 rounded-full border border-border/50">
@@ -402,26 +433,22 @@ function QuantityInput({
           ₹{crop.currentPrice}/q
         </span>
       </div>
-
       <div className="flex flex-col items-center w-full mt-4">
         <label className="text-sm font-bold text-muted-foreground uppercase tracking-widest mb-4">
           Enter Quantity
         </label>
-        <div className="flex items-end justify-center gap-2 w-full">
-          <input
-            type="number"
-            value={quantity || ""}
-            onChange={(e) => onQuantityChange(Number(e.target.value))}
-            autoFocus
-            className="w-2/3 bg-transparent text-6xl sm:text-8xl font-mono font-medium text-center text-foreground placeholder:text-muted-foreground/30 outline-none p-0 focus:ring-0"
-            placeholder="0"
-          />
-        </div>
+        <input
+          type="number"
+          value={quantity || ""}
+          onChange={(e) => onQuantityChange(Number(e.target.value))}
+          autoFocus
+          className="w-2/3 bg-transparent text-6xl sm:text-8xl font-mono font-medium text-center text-foreground placeholder:text-muted-foreground/30 outline-none p-0 focus:ring-0"
+          placeholder="0"
+        />
         <span className="text-xl font-bold text-primary mt-2">
           {t.quintals}
         </span>
       </div>
-
       <div className="flex flex-wrap justify-center gap-2">
         {[10, 25, 50, 100].map((q) => (
           <button
@@ -438,7 +465,6 @@ function QuantityInput({
           </button>
         ))}
       </div>
-
       <AnimatePresence>
         {quantity > 0 && (
           <motion.div
@@ -470,9 +496,6 @@ function QuantityInput({
   );
 }
 
-// ============================================================================
-// STEP 3: METHOD SELECTION
-// ============================================================================
 function MethodSelection({
   sellMethod,
   onMethodSelect,
@@ -493,8 +516,8 @@ function MethodSelection({
       icon: Users,
       title: t.joinPool,
       desc: "Combine with neighbors for better rates",
-      badge: hasPool ? `+₹${poolBonus}/q Bonus` : null,
-      highlight: hasPool,
+      badge: hasPool ? `+₹${poolBonus}/q Bonus` : "Create New Pool",
+      highlight: true,
     },
     {
       id: "auction",
@@ -504,7 +527,6 @@ function MethodSelection({
       badge: "Max Profit",
     },
   ];
-
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-foreground tracking-tight">
@@ -513,7 +535,6 @@ function MethodSelection({
       <div className="space-y-4">
         {methods.map((method: any) => {
           const isSelected = sellMethod === method.id;
-
           return (
             <motion.button
               key={method.id}
@@ -530,7 +551,6 @@ function MethodSelection({
               {method.highlight && !isSelected && (
                 <div className="absolute inset-0 bg-agri-gold/5 pointer-events-none" />
               )}
-
               <div className="flex items-start gap-4 sm:gap-5 relative z-10">
                 <div
                   className={cn(
@@ -542,7 +562,6 @@ function MethodSelection({
                 >
                   <method.icon className="w-6 h-6 sm:w-7 sm:h-7" />
                 </div>
-
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <h3
@@ -570,7 +589,6 @@ function MethodSelection({
                     {method.desc}
                   </p>
                 </div>
-
                 <div
                   className={cn(
                     "w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 mt-2 transition-all",
@@ -592,21 +610,58 @@ function MethodSelection({
   );
 }
 
-// ============================================================================
-// STEP 4: POOL DETAILS
-// ============================================================================
 function PoolDetails({ pool, crop, quantity, getCropName, t }: any) {
-  const progressPercent = (pool.totalQuantity / pool.targetQuantity) * 100;
+  if (!pool) {
+    return (
+      <div className="space-y-6">
+        <h2 className="text-2xl font-bold text-foreground tracking-tight">
+          Creating New Pool
+        </h2>
+        <div className="glass-card premium-shadow border border-border/50 rounded-3xl p-6">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-agri-gold to-agri-earth flex items-center justify-center shadow-lg">
+              <Users className="w-7 h-7 text-white" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-foreground">
+                {getCropName(crop)} Pool
+              </h3>
+              <p className="text-sm font-medium text-muted-foreground">
+                You'll be the first member
+              </p>
+            </div>
+          </div>
+          <div className="bg-agri-success/10 border border-agri-success/20 rounded-2xl p-4">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-semibold text-foreground">
+                Your Contribution
+              </span>
+              <span className="font-bold text-lg text-foreground">
+                {quantity}q
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-semibold text-agri-success flex items-center gap-1">
+                <TrendingUp className="w-4 h-4" /> Default Bonus
+              </span>
+              <span className="font-bold text-lg text-agri-success">
+                +₹150/q
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
+  const progressPercent = (pool.totalQuantity / pool.targetQuantity) * 100;
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-foreground tracking-tight">
         Pool Insights
       </h2>
-
       <div className="glass-card premium-shadow border border-border/50 rounded-3xl p-6 relative overflow-hidden">
         <div className="absolute -top-10 -right-10 w-32 h-32 bg-agri-gold/20 blur-3xl rounded-full" />
-
         <div className="flex items-center gap-4 mb-6 relative z-10">
           <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-agri-gold to-agri-earth flex items-center justify-center shadow-lg shadow-agri-gold/20">
             <Users className="w-7 h-7 text-white" />
@@ -620,7 +675,6 @@ function PoolDetails({ pool, crop, quantity, getCropName, t }: any) {
             </p>
           </div>
         </div>
-
         <div className="space-y-3 relative z-10">
           <div className="flex justify-between text-sm font-bold uppercase tracking-wider">
             <span className="text-muted-foreground">Volume Target</span>
@@ -637,7 +691,6 @@ function PoolDetails({ pool, crop, quantity, getCropName, t }: any) {
             />
           </div>
         </div>
-
         <div className="mt-8 bg-agri-success/10 border border-agri-success/20 rounded-2xl p-4 relative z-10">
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm font-semibold text-foreground">
@@ -661,9 +714,6 @@ function PoolDetails({ pool, crop, quantity, getCropName, t }: any) {
   );
 }
 
-// ============================================================================
-// STEP 5: CONFIRMATION
-// ============================================================================
 function ConfirmationScreen({
   crop,
   quantity,
@@ -672,16 +722,16 @@ function ConfirmationScreen({
   method,
   getCropName,
   t,
+  error,
 }: any) {
   return (
     <div className="space-y-6">
       <div className="text-center space-y-3 py-4">
-        <div className="w-20 h-20 rounded-full bg-agri-success/20 flex items-center justify-center mx-auto shadow-[0_0_30px_rgba(var(--agri-success-rgb),0.3)]">
+        <div className="w-20 h-20 rounded-full bg-agri-success/20 flex items-center justify-center mx-auto">
           <Check className="w-10 h-10 text-agri-success" strokeWidth={3} />
         </div>
         <h2 className="text-2xl font-bold text-foreground">Review & Confirm</h2>
       </div>
-
       <div className="glass-card premium-shadow border border-border/50 rounded-3xl p-6 space-y-5">
         <ReceiptRow label="Commodity" value={getCropName(crop)} />
         <ReceiptRow label="Quantity" value={`${quantity} ${t.quintals}`} />
@@ -700,7 +750,6 @@ function ConfirmationScreen({
           }
           highlight
         />
-
         {poolBonus > 0 && (
           <ReceiptRow
             label="Pool Bonus"
@@ -708,21 +757,21 @@ function ConfirmationScreen({
             success
           />
         )}
-
         <div className="h-px bg-border/80 my-4" />
-
         <div className="flex items-end justify-between pt-2">
           <span className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
             Final Payout
           </span>
-          <div className="text-right">
-            <span className="text-4xl font-bold tracking-tighter text-primary">
-              ₹{(totalValue + poolBonus).toLocaleString("en-IN")}
-            </span>
-          </div>
+          <span className="text-4xl font-bold tracking-tighter text-primary">
+            ₹{(totalValue + poolBonus).toLocaleString("en-IN")}
+          </span>
         </div>
       </div>
-
+      {error && (
+        <div className="bg-destructive/10 border border-destructive/30 rounded-2xl p-4 text-sm text-destructive font-medium text-center">
+          ⚠️ {error}
+        </div>
+      )}
       <p className="text-xs text-center font-medium text-muted-foreground px-4">
         By tapping confirm, you agree to AgriLink's terms. Funds are secured in
         escrow until handover.

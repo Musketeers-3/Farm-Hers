@@ -6,6 +6,7 @@ export function generateStaticParams() {
     { screen: "auctions" },
     { screen: "orders" },
     { screen: "analytics" },
+    { screen: "demands" },
   ];
 }
 

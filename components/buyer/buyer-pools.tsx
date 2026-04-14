@@ -1,54 +1,98 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
-  Flame, MapPin, TrendingUp, Package, CircleDollarSign,
-  ShieldCheck, Star, CheckCircle2, Clock, ChevronRight, ArrowRight,
+  Flame,
+  MapPin,
+  TrendingUp,
+  Package,
+  CircleDollarSign,
+  ShieldCheck,
+  Star,
+  CheckCircle2,
+  Clock,
+  ChevronRight,
+  ArrowRight,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/lib/store";
+import type { Pool } from "@/types/pool";
 
-// ✅ CHANGE: Updated all green tokens from bright lime → deep paddy green
 const G = {
-  card:         "rgba(18,14,8,0.72)",
-  cardHover:    "rgba(22,18,10,0.80)",
-  cardActive:   "rgba(18,14,8,0.82)",
-  border:       "rgba(255,255,255,0.09)",
-  borderActive: "rgba(90,158,111,0.32)",   // was rgba(74,222,128,0.32)
-  blur:         "blur(18px)",
-  textPrimary:  "#ffffff",
-  textSub:      "rgba(255,255,255,0.55)",
-  textLabel:    "rgba(255,255,255,0.38)",
-  accent:       "#5a9e6f",                 // was #4ade80
-  accentDark:   "#2d6a4f",                 // was #16a34a
-  accentBg:     "rgba(45,106,79,0.22)",    // was rgba(22,163,74,0.22)
-  accentBorder: "rgba(90,158,111,0.28)",   // was rgba(74,222,128,0.28)
+  card: "rgba(18,14,8,0.72)",
+  cardHover: "rgba(22,18,10,0.80)",
+  cardActive: "rgba(18,14,8,0.82)",
+  border: "rgba(255,255,255,0.09)",
+  borderActive: "rgba(90,158,111,0.32)",
+  blur: "blur(18px)",
+  textPrimary: "#ffffff",
+  textSub: "rgba(255,255,255,0.55)",
+  textLabel: "rgba(255,255,255,0.38)",
+  accent: "#5a9e6f",
+  accentDark: "#2d6a4f",
+  accentBg: "rgba(45,106,79,0.22)",
+  accentBorder: "rgba(90,158,111,0.28)",
 };
 
 export function BuyerPools() {
-  const pools    = useAppStore((s) => s.pools);
-  const crops    = useAppStore((s) => s.crops);
+  const crops = useAppStore((s) => s.crops);
   const addOrder = useAppStore((s) => s.addOrder);
 
-  const [activePoolId,   setActivePoolId]   = useState<string | null>(null);
-  const [selectedQty,    setSelectedQty]    = useState<number>(0);
-  const [isProcessing,   setIsProcessing]   = useState(false);
+  // ── Live pools from Firestore via API ──────────────────────────────────────
+  const [pools, setPools] = useState<Pool[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchPools = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch("/api/pools?status=open");
+        if (!res.ok) throw new Error("Failed to fetch pools");
+        const data = await res.json();
+        setPools(data.pools);
+      } catch (err: any) {
+        setFetchError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPools();
+  }, []);
+
+  const [activePoolId, setActivePoolId] = useState<string | null>(null);
+  const [selectedQty, setSelectedQty] = useState<number>(0);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [contractSigned, setContractSigned] = useState<string | null>(null);
 
   const togglePool = (poolId: string, maxQty: number) => {
-    if (activePoolId === poolId) { setActivePoolId(null); return; }
+    if (activePoolId === poolId) {
+      setActivePoolId(null);
+      return;
+    }
     setActivePoolId(poolId);
     setSelectedQty(Math.floor(maxQty * 0.25));
   };
 
-  const handleInitiateContract = (poolId: string, cropId: string, price: number, qty: number) => {
+  const handleInitiateContract = (
+    poolId: string,
+    cropId: string,
+    price: number,
+    qty: number,
+  ) => {
     setIsProcessing(true);
     setTimeout(() => {
       addOrder({
         id: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
-        cropId, quantity: qty, pricePerQuintal: price,
-        totalAmount: qty * price, status: "pending",
-        buyerId: "buyer-pam-001", farmerId: "pool-collective",
+        cropId,
+        quantity: qty,
+        pricePerQuintal: price,
+        totalAmount: qty * price,
+        status: "pending",
+        buyerId: "buyer-pam-001",
+        farmerId: "pool-collective",
         createdAt: new Date().toISOString(),
       });
       setIsProcessing(false);
@@ -57,18 +101,66 @@ export function BuyerPools() {
   };
 
   const totalVolume = pools.reduce((a, b) => a + b.totalQuantity, 0);
-  const avgBonus    = pools.length > 0
-    ? Math.round(pools.reduce((a, b) => a + b.bonusPerQuintal, 0) / pools.length) : 0;
+  const avgBonus =
+    pools.length > 0
+      ? Math.round(
+          pools.reduce((a, b) => a + b.bonusPerQuintal, 0) / pools.length,
+        )
+      : 0;
+
+  // ── Loading state ──────────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-4">
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: G.accent }} />
+        <p className="text-sm font-semibold" style={{ color: G.textSub }}>
+          Loading pools from Firestore...
+        </p>
+      </div>
+    );
+  }
+
+  // ── Error state ────────────────────────────────────────────────────────────
+  if (fetchError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-4">
+        <AlertCircle className="w-8 h-8 text-red-400" />
+        <p className="text-sm font-semibold text-red-400">{fetchError}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 rounded-xl text-sm font-bold text-white"
+          style={{ background: G.accentDark }}
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  // ── Empty state ────────────────────────────────────────────────────────────
+  if (pools.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-4">
+        <Package className="w-10 h-10" style={{ color: G.textLabel }} />
+        <p className="text-sm font-semibold" style={{ color: G.textSub }}>
+          No open pools available right now.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 sm:space-y-8">
-
       {/* ── METRIC CARDS ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
         {[
-          { label: "Active Pools",  value: pools.length,      icon: Package },
-          { label: "Total Volume",  value: `${totalVolume}q`, icon: TrendingUp },
-          { label: "Avg Bonus",     value: `₹${avgBonus}/q`,  icon: CircleDollarSign },
+          { label: "Active Pools", value: pools.length, icon: Package },
+          { label: "Total Volume", value: `${totalVolume}q`, icon: TrendingUp },
+          {
+            label: "Avg Bonus",
+            value: `₹${avgBonus}/q`,
+            icon: CircleDollarSign,
+          },
         ].map((stat, i) => (
           <motion.div
             key={stat.label}
@@ -76,19 +168,33 @@ export function BuyerPools() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.08 }}
             className="p-5 sm:p-6 flex items-center justify-between rounded-2xl"
-            style={{ background: G.card, border: `1px solid ${G.border}`, backdropFilter: G.blur }}
+            style={{
+              background: G.card,
+              border: `1px solid ${G.border}`,
+              backdropFilter: G.blur,
+            }}
           >
             <div>
-              <p className="text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-1" style={{ color: G.textLabel }}>
+              <p
+                className="text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-1"
+                style={{ color: G.textLabel }}
+              >
                 {stat.label}
               </p>
-              <p className="text-2xl sm:text-3xl font-black tracking-tight" style={{ color: G.textPrimary }}>
+              <p
+                className="text-2xl sm:text-3xl font-black tracking-tight"
+                style={{ color: G.textPrimary }}
+              >
                 {stat.value}
               </p>
             </div>
-            {/* ✅ CHANGE: icon bg/border uses new paddy green tokens */}
-            <div className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-2xl"
-              style={{ background: G.accentBg, border: `1px solid ${G.accentBorder}` }}>
+            <div
+              className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-2xl"
+              style={{
+                background: G.accentBg,
+                border: `1px solid ${G.accentBorder}`,
+              }}
+            >
               <stat.icon className="w-6 h-6" style={{ color: G.accent }} />
             </div>
           </motion.div>
@@ -97,16 +203,19 @@ export function BuyerPools() {
 
       {/* ── MAIN GRID ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-
         {/* LEFT — Pool cards */}
         <div className="lg:col-span-8 space-y-4 sm:space-y-5">
           {pools.map((pool, index) => {
             const cropDetails = crops.find((c) => c.id === pool.cropId);
-            const cropName    = cropDetails?.name || "Unknown Asset";
-            const finalPrice  = (cropDetails?.currentPrice || 0) + pool.bonusPerQuintal;
-            const isActive    = activePoolId === pool.id;
-            const fillPct     = Math.round((pool.totalQuantity / pool.targetQuantity) * 100);
-            const isSigned    = contractSigned === pool.id;
+            const cropName = cropDetails?.name || "Unknown Asset";
+            const finalPrice =
+              (cropDetails?.currentPrice || 0) + pool.bonusPerQuintal;
+            const isActive = activePoolId === pool.id;
+            const fillPct = Math.round(
+              (pool.totalQuantity / pool.targetQuantity) * 100,
+            );
+            const isSigned = contractSigned === pool.id;
+            const availableQty = pool.targetQuantity - pool.totalQuantity;
 
             return (
               <motion.div
@@ -117,11 +226,10 @@ export function BuyerPools() {
                 transition={{ delay: index * 0.08, duration: 0.35 }}
                 className="overflow-hidden rounded-2xl transition-all duration-300"
                 style={{
-                  background:    isActive ? G.cardActive : G.card,
-                  border:        `1px solid ${isActive ? G.borderActive : G.border}`,
+                  background: isActive ? G.cardActive : G.card,
+                  border: `1px solid ${isActive ? G.borderActive : G.border}`,
                   backdropFilter: G.blur,
                   WebkitBackdropFilter: G.blur,
-                  // ✅ CHANGE: active glow uses paddy green shadow
                   boxShadow: isActive
                     ? "0 0 0 1px rgba(90,158,111,0.12), 0 8px 32px rgba(0,0,0,0.5)"
                     : "0 4px 24px rgba(0,0,0,0.45)",
@@ -130,12 +238,16 @@ export function BuyerPools() {
                 {/* Card header */}
                 <div
                   className="p-5 sm:p-6 cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-                  onClick={() => !isSigned && togglePool(pool.id, pool.targetQuantity - pool.totalQuantity)}
+                  onClick={() => !isSigned && togglePool(pool.id, availableQty)}
                 >
                   <div className="flex items-center gap-4">
-                    {/* ✅ CHANGE: icon container paddy green */}
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center shrink-0"
-                      style={{ background: G.accentBg, border: `1px solid ${G.accentBorder}` }}>
+                    <div
+                      className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center shrink-0"
+                      style={{
+                        background: G.accentBg,
+                        border: `1px solid ${G.accentBorder}`,
+                      }}
+                    >
                       <Flame className="w-6 h-6" style={{ color: G.accent }} />
                     </div>
                     <div>
@@ -143,30 +255,51 @@ export function BuyerPools() {
                         <h3 className="font-black text-lg sm:text-xl tracking-tight text-white">
                           {cropName} Pool
                         </h3>
-                        {/* ✅ CHANGE: Grade badge paddy green */}
-                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-widest"
-                          style={{ background: G.accentBg, color: G.accent, border: `1px solid ${G.accentBorder}` }}>
+                        <span
+                          className="text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-widest"
+                          style={{
+                            background: G.accentBg,
+                            color: G.accent,
+                            border: `1px solid ${G.accentBorder}`,
+                          }}
+                        >
                           Grade A
                         </span>
                       </div>
-                      <div className="flex items-center gap-3 text-xs sm:text-sm font-semibold" style={{ color: G.textSub }}>
-                        <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> Punjab</span>
-                        {/* ✅ CHANGE: bonus text paddy green */}
-                        <span className="flex items-center gap-1" style={{ color: G.accent }}>
-                          <TrendingUp className="w-3.5 h-3.5" /> +₹{pool.bonusPerQuintal} Bonus
+                      <div
+                        className="flex items-center gap-3 text-xs sm:text-sm font-semibold"
+                        style={{ color: G.textSub }}
+                      >
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3.5 h-3.5" /> Punjab
+                        </span>
+                        <span
+                          className="flex items-center gap-1"
+                          style={{ color: G.accent }}
+                        >
+                          <TrendingUp className="w-3.5 h-3.5" /> +₹
+                          {pool.bonusPerQuintal} Bonus
                         </span>
                       </div>
                     </div>
                   </div>
-
-                  {/* Price */}
                   <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 sm:gap-0.5">
                     <div className="text-left sm:text-right">
-                      <p className="text-[10px] uppercase font-bold tracking-widest" style={{ color: G.textLabel }}>Target Rate</p>
-                      <p className="text-xl sm:text-2xl font-mono font-black text-white">₹{finalPrice}</p>
+                      <p
+                        className="text-[10px] uppercase font-bold tracking-widest"
+                        style={{ color: G.textLabel }}
+                      >
+                        Target Rate
+                      </p>
+                      <p className="text-xl sm:text-2xl font-mono font-black text-white">
+                        ₹{finalPrice}
+                      </p>
                     </div>
                     {!isActive && !isSigned && (
-                      <div className="p-2 rounded-xl sm:hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+                      <div
+                        className="p-2 rounded-xl sm:hidden"
+                        style={{ background: "rgba(255,255,255,0.06)" }}
+                      >
                         <ChevronRight className="w-5 h-5 text-white/40" />
                       </div>
                     )}
@@ -177,22 +310,28 @@ export function BuyerPools() {
                 <div className="px-5 sm:px-6 pb-5 sm:pb-6">
                   <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider mb-2">
                     <span style={{ color: G.textLabel }}>Pool Filled</span>
-                    {/* ✅ CHANGE: percentage label paddy green */}
                     <span style={{ color: G.accent }}>{fillPct}%</span>
                   </div>
-                  <div className="h-1.5 w-full rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.08)" }}>
-                    {/* ✅ FIX: Moved the comment outside of the motion.div properties */}
-                    {/* ✅ CHANGE: progress bar gradient uses paddy greens */}
+                  <div
+                    className="h-1.5 w-full rounded-full overflow-hidden"
+                    style={{ background: "rgba(255,255,255,0.08)" }}
+                  >
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${fillPct}%` }}
                       transition={{ duration: 1, ease: "easeOut" }}
                       className="h-full rounded-full"
-                      style={{ background: `linear-gradient(90deg, ${G.accentDark}, ${G.accent})` }}
+                      style={{
+                        background: `linear-gradient(90deg, ${G.accentDark}, ${G.accent})`,
+                      }}
                     />
                   </div>
-                  <p className="text-[10px] font-semibold mt-2" style={{ color: G.textLabel }}>
-                    {pool.totalQuantity}q / {pool.targetQuantity}q collected
+                  <p
+                    className="text-[10px] font-semibold mt-2"
+                    style={{ color: G.textLabel }}
+                  >
+                    {pool.totalQuantity}q / {pool.targetQuantity}q collected ·{" "}
+                    {pool.contributors} farmers
                   </p>
                 </div>
 
@@ -206,23 +345,46 @@ export function BuyerPools() {
                       className="overflow-hidden"
                       style={{ borderTop: `1px solid ${G.border}` }}
                     >
-                      <div className="p-5 sm:p-6 space-y-5" style={{ background: "rgba(0,0,0,0.3)" }}>
-
-                        {/* Volume slider */}
-                        <div className="p-5 rounded-xl" style={{ background: G.card, border: `1px solid ${G.border}` }}>
+                      <div
+                        className="p-5 sm:p-6 space-y-5"
+                        style={{ background: "rgba(0,0,0,0.3)" }}
+                      >
+                        <div
+                          className="p-5 rounded-xl"
+                          style={{
+                            background: G.card,
+                            border: `1px solid ${G.border}`,
+                          }}
+                        >
                           <div className="flex justify-between items-end mb-4">
                             <div>
-                              <p className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: G.textLabel }}>
+                              <p
+                                className="text-xs font-bold uppercase tracking-wider mb-1"
+                                style={{ color: G.textLabel }}
+                              >
                                 Procurement Volume
                               </p>
                               <p className="text-2xl font-black font-mono text-white">
-                                {selectedQty} <span className="text-base font-medium" style={{ color: G.textSub }}>Quintals</span>
+                                {selectedQty}{" "}
+                                <span
+                                  className="text-base font-medium"
+                                  style={{ color: G.textSub }}
+                                >
+                                  Quintals
+                                </span>
                               </p>
                             </div>
                             <div className="text-right">
-                              <p className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: G.textLabel }}>Total Value</p>
-                              {/* ✅ CHANGE: total value accent paddy green */}
-                              <p className="text-xl font-bold font-mono" style={{ color: G.accent }}>
+                              <p
+                                className="text-xs font-bold uppercase tracking-wider mb-1"
+                                style={{ color: G.textLabel }}
+                              >
+                                Total Value
+                              </p>
+                              <p
+                                className="text-xl font-bold font-mono"
+                                style={{ color: G.accent }}
+                              >
                                 ₹{(selectedQty * finalPrice).toLocaleString()}
                               </p>
                             </div>
@@ -230,48 +392,90 @@ export function BuyerPools() {
                           <Slider
                             value={[selectedQty]}
                             onValueChange={(v) => setSelectedQty(v[0])}
-                            max={pool.targetQuantity - pool.totalQuantity}
+                            max={availableQty}
                             step={10}
                             className="py-4"
                           />
                         </div>
-
-                        {/* ✅ CHANGE: CTA button uses paddy green */}
                         <button
                           disabled={isProcessing || selectedQty === 0}
-                          onClick={() => handleInitiateContract(pool.id, pool.cropId, finalPrice, selectedQty)}
+                          onClick={() =>
+                            handleInitiateContract(
+                              pool.id,
+                              pool.cropId,
+                              finalPrice,
+                              selectedQty,
+                            )
+                          }
                           className="w-full py-4 rounded-xl font-bold text-sm uppercase tracking-widest transition-all flex items-center justify-center gap-2"
-                          style={isProcessing
-                            ? { background: "rgba(255,255,255,0.06)", color: G.textSub }
-                            : { background: G.accentDark, color: "#fff", border: `1px solid ${G.accentBorder}`, boxShadow: "0 4px 20px rgba(45,106,79,0.4)" }
+                          style={
+                            isProcessing
+                              ? {
+                                  background: "rgba(255,255,255,0.06)",
+                                  color: G.textSub,
+                                }
+                              : {
+                                  background: G.accentDark,
+                                  color: "#fff",
+                                  border: `1px solid ${G.accentBorder}`,
+                                  boxShadow: "0 4px 20px rgba(45,106,79,0.4)",
+                                }
                           }
                         >
-                          {isProcessing
-                            ? <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}><Clock className="w-5 h-5" /></motion.div>
-                            : <><span>Initiate Contract</span><ArrowRight className="w-4 h-4" /></>
-                          }
+                          {isProcessing ? (
+                            <motion.div
+                              animate={{ rotate: 360 }}
+                              transition={{
+                                repeat: Infinity,
+                                duration: 1,
+                                ease: "linear",
+                              }}
+                            >
+                              <Clock className="w-5 h-5" />
+                            </motion.div>
+                          ) : (
+                            <>
+                              <span>Initiate Contract</span>
+                              <ArrowRight className="w-4 h-4" />
+                            </>
+                          )}
                         </button>
                       </div>
                     </motion.div>
                   )}
 
-                  {/* Signed confirmation */}
                   {isSigned && (
                     <motion.div
                       initial={{ opacity: 0, scale: 0.97 }}
                       animate={{ opacity: 1, scale: 1 }}
                       className="p-6 flex flex-col items-center text-center gap-3"
-                      // ✅ CHANGE: signed state uses paddy green bg
-                      style={{ background: "rgba(45,106,79,0.18)", borderTop: `1px solid ${G.accentBorder}` }}
+                      style={{
+                        background: "rgba(45,106,79,0.18)",
+                        borderTop: `1px solid ${G.accentBorder}`,
+                      }}
                     >
-                      <div className="w-12 h-12 rounded-full flex items-center justify-center"
-                        style={{ background: G.accentBg, border: `1px solid ${G.accentBorder}` }}>
-                        <CheckCircle2 className="w-6 h-6" style={{ color: G.accent }} />
+                      <div
+                        className="w-12 h-12 rounded-full flex items-center justify-center"
+                        style={{
+                          background: G.accentBg,
+                          border: `1px solid ${G.accentBorder}`,
+                        }}
+                      >
+                        <CheckCircle2
+                          className="w-6 h-6"
+                          style={{ color: G.accent }}
+                        />
                       </div>
                       <div>
-                        <h4 className="font-bold text-white">Contract Initiated Successfully</h4>
-                        <p className="text-xs mt-1" style={{ color: G.textSub }}>
-                          Awaiting farmer collective approval for {selectedQty}q at ₹{finalPrice}/q
+                        <h4 className="font-bold text-white">
+                          Contract Initiated Successfully
+                        </h4>
+                        <p
+                          className="text-xs mt-1"
+                          style={{ color: G.textSub }}
+                        >
+                          Awaiting farmer collective approval for {selectedQty}q
+                          at ₹{finalPrice}/q
                         </p>
                       </div>
                     </motion.div>
@@ -295,36 +499,68 @@ export function BuyerPools() {
             }}
           >
             <h3 className="font-bold text-lg flex items-center gap-2 mb-5 text-white">
-              {/* ✅ CHANGE: shield icon paddy green */}
               <ShieldCheck className="w-5 h-5" style={{ color: G.accent }} />
               Quality Assurance
             </h3>
             <div className="space-y-3">
               {[
-                { title: "Moisture Content",  value: "< 12%", status: "Optimal" },
-                { title: "Foreign Matter",    value: "< 1%",  status: "Grade A" },
-                { title: "Pesticide Residue", value: "Zero",  status: "Certified Organic" },
+                {
+                  title: "Moisture Content",
+                  value: "< 12%",
+                  status: "Optimal",
+                },
+                { title: "Foreign Matter", value: "< 1%", status: "Grade A" },
+                {
+                  title: "Pesticide Residue",
+                  value: "Zero",
+                  status: "Certified Organic",
+                },
               ].map((m, i) => (
-                <div key={i} className="flex items-center justify-between p-3.5 rounded-xl"
-                  style={{ background: "rgba(255,255,255,0.05)", border: `1px solid ${G.border}` }}>
-                  <span className="text-sm font-semibold" style={{ color: G.textSub }}>{m.title}</span>
+                <div
+                  key={i}
+                  className="flex items-center justify-between p-3.5 rounded-xl"
+                  style={{
+                    background: "rgba(255,255,255,0.05)",
+                    border: `1px solid ${G.border}`,
+                  }}
+                >
+                  <span
+                    className="text-sm font-semibold"
+                    style={{ color: G.textSub }}
+                  >
+                    {m.title}
+                  </span>
                   <div className="text-right">
                     <p className="text-sm font-bold text-white">{m.value}</p>
-                    {/* ✅ CHANGE: status label paddy green */}
-                    <p className="text-[9px] uppercase tracking-wider font-bold" style={{ color: G.accent }}>{m.status}</p>
+                    <p
+                      className="text-[9px] uppercase tracking-wider font-bold"
+                      style={{ color: G.accent }}
+                    >
+                      {m.status}
+                    </p>
                   </div>
                 </div>
               ))}
             </div>
-
-            {/* ✅ CHANGE: premium supply banner paddy green bg */}
-            <div className="mt-5 p-4 rounded-xl flex items-start gap-3"
-              style={{ background: G.accentBg, border: `1px solid ${G.accentBorder}` }}>
-              <Star className="w-5 h-5 shrink-0 mt-0.5" style={{ color: G.accent }} />
+            <div
+              className="mt-5 p-4 rounded-xl flex items-start gap-3"
+              style={{
+                background: G.accentBg,
+                border: `1px solid ${G.accentBorder}`,
+              }}
+            >
+              <Star
+                className="w-5 h-5 shrink-0 mt-0.5"
+                style={{ color: G.accent }}
+              />
               <div>
                 <p className="text-sm font-bold text-white">Premium Supply</p>
-                <p className="text-xs mt-1 leading-relaxed" style={{ color: G.textSub }}>
-                  These pools are sourced from top-rated farmer collectives with strict quality control.
+                <p
+                  className="text-xs mt-1 leading-relaxed"
+                  style={{ color: G.textSub }}
+                >
+                  These pools are sourced from top-rated farmer collectives with
+                  strict quality control.
                 </p>
               </div>
             </div>

@@ -130,6 +130,9 @@ async function tryGeocode(query: string): Promise<{ lat: number; lon: number } |
 async function geocodeLocation(location: string): Promise<{ lat: number; lon: number } | null> {
   const candidates = buildQueryCandidates(location);
   for (const query of candidates) {
+    // Try with ", India" suffix first (improves accuracy for state/region names like "West Bengal")
+    const withIndia = await tryGeocode(`${query}, India`);
+    if (withIndia) return withIndia;
     const result = await tryGeocode(query);
     if (result) return result;
   }
@@ -139,23 +142,45 @@ async function geocodeLocation(location: string): Promise<{ lat: number; lon: nu
 // ─── OPEN-METEO FETCH (FREE — NO API KEY) ────────────────────────────────────
 async function fetchWeather(lat: number, lon: number): Promise<LiveWeather | null> {
   try {
-    const url =
-      `https://api.open-meteo.com/v1/forecast` +
-      `?latitude=${lat}&longitude=${lon}` +
-      `&current=temperature_2m,apparent_temperature,relative_humidity_2m,` +
-      `wind_speed_10m,weather_code,visibility,uv_index,is_day` +
-      `&daily=weather_code,temperature_2m_max,temperature_2m_min,` +
-      `precipitation_sum,precipitation_probability_max` +
-      `&timezone=auto` +
-      `&forecast_days=4`;
+    const params = new URLSearchParams({
+      latitude:   String(lat),
+      longitude:  String(lon),
+      current:    "temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code,visibility,uv_index,is_day",
+      daily:      "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,sunrise,sunset",
+      timezone:   "auto",
+      forecast_days: "4",
+    });
+    const url = `https://api.open-meteo.com/v1/forecast?${params}`;
 
     const res = await fetch(url);
     if (!res.ok) throw new Error(`Open-Meteo ${res.status}`);
     const data = await res.json();
 
-    const cur    = data.current;
-    const isDay  = cur.is_day === 1;
-    const code   = cur.weather_code as number;
+    const cur = data.current;
+
+    // is_day detection:
+    // Open-Meteo normally returns is_day (1/0) in current weather.
+    // Fallback uses sunrise/sunset from daily — these are LOCAL time strings like
+    // "2024-04-14T05:47" with NO timezone suffix, so new Date() parses them as UTC
+    // which is wrong for IST (+5:30) etc. Compare HH:MM strings directly instead.
+    let isDay: boolean;
+    if (typeof cur.is_day === "number") {
+      isDay = cur.is_day === 1;
+    } else {
+      try {
+        const sunriseHHMM = (data.daily.sunrise?.[0] as string)?.slice(11, 16); // "05:47"
+        const sunsetHHMM  = (data.daily.sunset?.[0]  as string)?.slice(11, 16); // "18:32"
+        const now         = new Date();
+        const nowHHMM     = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+        isDay = sunriseHHMM && sunsetHHMM
+          ? nowHHMM >= sunriseHHMM && nowHHMM < sunsetHHMM
+          : now.getHours() >= 6 && now.getHours() < 20;
+      } catch {
+        isDay = new Date().getHours() >= 6 && new Date().getHours() < 20;
+      }
+    }
+
+    const code = cur.weather_code as number;
 
     const themeKey     = wmoToCondition(code, isDay);
     const conditionLabel = wmoToLabel(code, isDay);
@@ -169,8 +194,8 @@ async function fetchWeather(lat: number, lon: number): Promise<LiveWeather | nul
 
     const forecast: ForecastDay[] = (data.daily.time as string[]).slice(0, 4).map(
       (dateStr: string, i: number) => {
-        const date      = new Date(dateStr);
-        const dayCode   = data.daily.weather_code[i] as number;
+        const date    = new Date(dateStr + "T12:00:00"); // noon → always correct weekday
+        const dayCode = data.daily.weather_code[i] as number;
         return {
           day:       i < 2 ? dayLabels[i] : weekdays[date.getDay()],
           condition: wmoToCondition(dayCode, true),
