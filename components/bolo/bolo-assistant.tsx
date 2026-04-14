@@ -20,7 +20,7 @@
 //         msg: {
 //           en: "Switching to Hindi.",
 //           hi: "अब मैं हिंदी में बात करूँगा।",
-//           pa: "ਹੁਣ ਮੈਂ ਹਿੰਦੀ ਵਿੱਚ ਗੱਲ ਕਰਾਂਗਾ।",
+//           pa: "ਹੁਣ ਮੈਂ ਹਿੰਦੀ ਵਿੱਚ ਗੱਲ ਕਰਾਂगा।",
 //         },
 //       },
 //       {
@@ -137,11 +137,12 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Mic, X, Sparkles, Loader2, Volume2, Send, Moon } from "lucide-react";
+import { Mic, X, Sparkles, Loader2, Volume2, Send } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import * as googleTTS from "google-tts-api";
 
 export function BoloAssistant() {
   const router = useRouter();
@@ -166,62 +167,63 @@ export function BoloAssistant() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showResponse, setShowResponse] = useState(false);
 
-  // --- WATCHDOG STATE (Battery Saver) ---
-  const [isBoloSleeping, setIsBoloSleeping] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const passiveRecRef = useRef<any>(null);
+  // ⚡ SHORT-TERM MEMORY BUFFER FOR CONTEXT
+  const lastCropRef = useRef<string | null>(null);
 
-  // --- 1. TEXT-TO-SPEECH ---
+  // --- 1. TEXT-TO-SPEECH (Option 2: Direct Google Bypass) ---
   const speak = useCallback(
     (textToSpeak: string) => {
-      if (typeof window !== "undefined" && window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(textToSpeak);
-        utterance.lang =
-          language === "hi" ? "hi-IN" : language === "pa" ? "pa-IN" : "en-IN";
-        utterance.pitch = 1.0;
-        utterance.rate = 1.0;
-        window.speechSynthesis.speak(utterance);
+      // TIER 3: The unkillable fallback function (Browser native)
+      const executeBrowserFallback = () => {
+        console.log("⚙️ Executing Tier 3 Browser TTS Failsafe...");
+        if (typeof window !== "undefined" && window.speechSynthesis) {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(textToSpeak);
+          utterance.lang =
+            language === "hi" ? "hi-IN" : language === "pa" ? "pa-IN" : "en-IN";
+          utterance.rate = language === "en" ? 1.0 : 0.9;
+          window.speechSynthesis.speak(utterance);
+        }
+      };
+
+      try {
+        console.log("🔊 Generating voice via Google Translate Bypass...");
+
+        // 1. Clean text and enforce 200-character limit for the open endpoint
+        const cleanText = textToSpeak.replace(/[*#_]/g, "").substring(0, 199);
+
+        // 2. Map language for the Translate engine
+        const translateLang =
+          language === "hi" ? "hi" : language === "pa" ? "pa" : "en";
+
+        // 3. Construct the direct audio URL
+        // We use the 'tw-ob' client ID which is the stable public endpoint
+        const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(
+          cleanText,
+        )}&tl=${translateLang}&client=tw-ob&ttsspeed=1`;
+
+        // 4. Play the audio
+        const audio = new Audio(url);
+        const playPromise = audio.play();
+
+        if (playPromise !== undefined) {
+          playPromise.catch((error) => {
+            console.warn(
+              "Autoplay blocked or network error, falling back:",
+              error,
+            );
+            executeBrowserFallback();
+          });
+        }
+      } catch (error) {
+        console.error("Bypass failed. Triggering Tier 3 fallback:", error);
+        executeBrowserFallback();
       }
     },
     [language],
   );
 
-  // --- 2. INACTIVITY WATCHDOG ---
-  const resetInactivityTimer = useCallback(() => {
-    if (isBoloSleeping) {
-      setIsBoloSleeping(false);
-    }
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-
-    // Sleep after 2 minutes of zero mouse/keyboard/scroll movement
-    timeoutRef.current = setTimeout(() => {
-      setIsBoloSleeping(true);
-      if (passiveRecRef.current) passiveRecRef.current.stop();
-    }, 120000);
-  }, [isBoloSleeping]);
-
-  useEffect(() => {
-    const events = [
-      "mousedown",
-      "mousemove",
-      "keypress",
-      "scroll",
-      "touchstart",
-    ];
-    const handleActivity = () => resetInactivityTimer();
-    events.forEach((event) => window.addEventListener(event, handleActivity));
-    resetInactivityTimer();
-
-    return () => {
-      events.forEach((event) =>
-        window.removeEventListener(event, handleActivity),
-      );
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
-  }, [resetInactivityTimer]);
-
-  // --- 3. INTENT RESOLVER (BRAIN) ---
+  // --- 2. INTENT RESOLVER (BRAIN) ---
   const handleIntent = useCallback(
     async (input: string) => {
       if (!input.trim()) return;
@@ -232,16 +234,27 @@ export function BoloAssistant() {
         const res = await fetch("/api/parse-bid", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ transcript: input, language }),
+          body: JSON.stringify({
+            transcript: input,
+            language,
+            context: { lastCrop: lastCropRef.current },
+          }),
         });
 
         const result = await res.json();
 
         if (result.success && result.data) {
           const ai = result.data;
+
+          // ⚡ SYNCED: This now triggers the local Google Bypass speak()
           setResponse(ai.reply);
-          speak(ai.reply);
+          if (ai.reply) speak(ai.reply);
           setShowResponse(true);
+
+          // UPDATE MEMORY BUFFER
+          if (ai.crop) {
+            lastCropRef.current = ai.crop;
+          }
 
           // FARMER SELL INTENT
           if (ai.intent === "sell" && ai.crop && ai.amount && ai.price) {
@@ -322,8 +335,12 @@ export function BoloAssistant() {
         }
       } catch (error) {
         console.error("Bolo AI Error:", error);
-        setResponse("Network error. Try again.");
-        speak("Network error. Try again.");
+        const netError =
+          language === "hi"
+            ? "नेटवर्क एरर। फिर से कोशिश करें।"
+            : "Network error. Try again.";
+        setResponse(netError);
+        speak(netError);
         setShowResponse(true);
       } finally {
         setIsProcessing(false);
@@ -347,95 +364,98 @@ export function BoloAssistant() {
     ],
   );
 
-  // --- 4. THE UNIFIED AUDIO ENGINE (Bulletproof Hackathon Fix) ---
-  // We use refs so React state changes don't assassinate the microphone loop
-  const isListeningRef = useRef(isBoloListening);
-  const languageRef = useRef(language);
+  // --- 3. PUSH-TO-TALK ENGINE (Clean, No-Loop Architecture) ---
+  const recognitionRef = useRef<any>(null);
   const handleIntentRef = useRef(handleIntent);
+  const languageRef = useRef(language);
 
-  // Sync state to refs instantly
-  useEffect(() => {
-    isListeningRef.current = isBoloListening;
-  }, [isBoloListening]);
-  useEffect(() => {
-    languageRef.current = language;
-  }, [language]);
+  // Sync refs so callbacks have fresh state without triggering re-renders
   useEffect(() => {
     handleIntentRef.current = handleIntent;
   }, [handleIntent]);
+  useEffect(() => {
+    languageRef.current = language;
+  }, [language]);
 
+  // INITIALIZE ENGINE ONCE
   useEffect(() => {
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
+    if (!SpeechRecognition) {
+      console.error("🚨 Speech Recognition API not supported.");
+      return;
+    }
 
-    const recognition = new SpeechRecognition();
-    recognition.continuous = true; // Always continuous to stop the ping-pong effect
-    recognition.interimResults = true;
+    if (!recognitionRef.current) {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false; // ⚡ PUSH-TO-TALK MODE
+      recognition.interimResults = true;
 
-    const startMic = () => {
-      if (isBoloSleeping) return;
-      try {
-        recognition.lang =
+      recognition.onstart = () => {
+        console.log("🟢 Bolo is actively listening (PTT Mode)...");
+      };
+
+      recognition.onresult = (event: any) => {
+        const current = event.results[event.results.length - 1][0].transcript;
+        setTranscript(current);
+
+        if (event.results[event.results.length - 1].isFinal) {
+          console.log("✅ Final Command captured:", current);
+          setBoloListening(false); // Turn off mic state immediately
+          handleIntentRef.current(current);
+        }
+      };
+
+      recognition.onerror = (e: any) => {
+        if (e.error !== "no-speech" && e.error !== "aborted") {
+          console.warn("🚨 Mic Error:", e.error);
+        }
+        setBoloListening(false); // Reset UI on error
+      };
+
+      recognition.onend = () => {
+        // Natural end of speech
+        setBoloListening(false);
+      };
+
+      recognitionRef.current = recognition;
+    }
+
+    return () => {
+      // Hard cleanup on unmount
+      if (recognitionRef.current) {
+        recognitionRef.current.onstart = null;
+        recognitionRef.current.onresult = null;
+        recognitionRef.current.onerror = null;
+        recognitionRef.current.onend = null;
+        try {
+          recognitionRef.current.abort();
+        } catch (e) {}
+      }
+    };
+  }, [setBoloListening]);
+
+  // ⚡ THE HARDWARE CONTROLLER
+  // Reacts purely to the global `isBoloListening` toggle
+  useEffect(() => {
+    if (!recognitionRef.current) return;
+
+    try {
+      if (isBoloListening) {
+        recognitionRef.current.lang =
           languageRef.current === "hi"
             ? "hi-IN"
             : languageRef.current === "pa"
               ? "pa-IN"
               : "en-IN";
-        recognition.start();
-      } catch (e) {}
-    };
-
-    recognition.onstart = () => {
-      if (isListeningRef.current)
-        console.log("🟢 Bolo is actively listening...");
-    };
-
-    recognition.onresult = (event: any) => {
-      const current = event.results[event.results.length - 1][0].transcript;
-      const lower = current.toLowerCase();
-
-      // MODE 1: PASSIVE (Waiting for "Hey Bolo")
-      if (!isListeningRef.current) {
-        if (lower.includes("bolo") || lower.includes("hey bolo")) {
-          recognition.stop(); // Pause mic so we don't hear our own TTS reply
-          speak(languageRef.current === "hi" ? "हाँ जी?" : "Yes?");
-          setBoloListening(true);
-          resetInactivityTimer();
-        }
+        recognitionRef.current.start();
+      } else {
+        recognitionRef.current.stop();
       }
-      // MODE 2: ACTIVE (Dictating command)
-      else {
-        setTranscript(current);
-
-        if (event.results[event.results.length - 1].isFinal) {
-          console.log("✅ Final Command:", current);
-          recognition.stop(); // Pause mic to process AI
-          handleIntentRef.current(current);
-        }
-      }
-    };
-
-    recognition.onerror = (e: any) => {
-      if (e.error !== "no-speech") console.warn("🚨 Mic Error:", e.error);
-    };
-
-    recognition.onend = () => {
-      // The absolute failsafe: If it dies, force it back to life instantly
-      if (!isBoloSleeping) {
-        setTimeout(startMic, 100);
-      }
-    };
-
-    // Ignite the engine
-    startMic();
-
-    return () => {
-      recognition.onend = null;
-      recognition.stop();
-    };
-    // Notice how isBoloListening is NOT in the array. This prevents the infinite restart loop!
-  }, [isBoloSleeping, speak, setBoloListening, resetInactivityTimer]);
+    } catch (e) {
+      // Safely ignore start/stop collisions
+    }
+  }, [isBoloListening]);
 
   const isVisible =
     isBoloListening || isProcessing || showResponse || transcript !== "";
@@ -451,28 +471,6 @@ export function BoloAssistant() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[90] bg-black/50 backdrop-blur-sm pointer-events-none"
           />
-        )}
-      </AnimatePresence>
-
-      {/* Sleeping Toast */}
-      <AnimatePresence>
-        {isBoloSleeping && !isBoloListening && (
-          <motion.button
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            onClick={() => {
-              resetInactivityTimer();
-              setBoloListening(true);
-            }}
-            className="fixed bottom-24 right-6 bg-amber-500/10 backdrop-blur-md border border-amber-500/30 px-4 py-2 rounded-2xl flex items-center gap-3 hover:bg-amber-500/20 transition-all z-[100] shadow-lg shadow-amber-900/20"
-          >
-            <Moon className="w-4 h-4 text-amber-500 animate-pulse" />
-            <span className="text-xs font-bold text-amber-500 uppercase tracking-tighter">
-              Bolo Sleep Mode{" "}
-              <span className="underline ml-1 opacity-70">Tap to wake</span>
-            </span>
-          </motion.button>
         )}
       </AnimatePresence>
 
@@ -603,7 +601,7 @@ export function BoloAssistant() {
         {/* Floating Mic Button */}
         <motion.button
           onClick={() => {
-            if (!isBoloListening) resetInactivityTimer();
+            // Toggles the state. The useEffect will handle starting/stopping the hardware.
             setBoloListening(!isBoloListening);
             setTranscript("");
           }}
@@ -619,11 +617,6 @@ export function BoloAssistant() {
             <X className="w-7 h-7 text-white" />
           ) : (
             <Mic className="w-7 h-7 text-white" />
-          )}
-
-          {/* Subtle ring to show wake-word is active */}
-          {!isBoloSleeping && !isBoloListening && (
-            <span className="absolute -inset-2 border-2 border-primary/30 rounded-full animate-ping" />
           )}
         </motion.button>
       </div>

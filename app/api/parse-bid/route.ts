@@ -1,9 +1,18 @@
 import { GoogleGenAI } from "@google/genai";
 import { NextResponse } from "next/server";
 
+// ⚡ STRICT SYNC WITH frontend/client.tsx VALID_SCREENS
 type ParsedData = {
   intent: "bid" | "sell" | "navigation" | "social" | "unknown";
-  target: "analytics" | "auctions" | "orders" | "home" | null;
+  target:
+    | "sell"
+    | "auction"
+    | "tracking"
+    | "market"
+    | "profile"
+    | "notifications"
+    | "earnings"
+    | null;
   crop: "wheat" | "rice" | "corn" | "mustard" | "potato" | "onion" | null;
   amount: number | null;
   price: number | null;
@@ -11,37 +20,40 @@ type ParsedData = {
 };
 
 export async function POST(req: Request) {
-  const { transcript, language } = await req.json();
+  // ⚡ DESTRUCTURING CONTEXT PIPELINE FROM BOLO
+  const { transcript, language, context } = await req.json();
 
   const systemPrompt = `
-You are a multilingual agricultural voice assistant designed for Indian farmers and buyers.
+You are Bolo, a warm, respectful, and highly intelligent agricultural voice assistant for Indian farmers. 
+You are speaking to hard-working farmers. You must NEVER sound robotic. NEVER just repeat the user's words.
+
 User Input: "${transcript}"
 Detected Language: ${language}
+Context (Last Crop): ${context?.lastCrop || "None"}
 
-YOUR TASK:
-1. Understand intent (Hindi, Punjabi, English, Hinglish).
-2. Normalize meaning (do NOT translate blindly).
-3. Extract structured intent.
-4. Reply in the SAME language/tone (max 8–10 words).
+YOUR MISSION:
+1. Extract intent (Hindi, Punjabi, English, Hinglish). Use "Context" if the crop is omitted.
+2. Normalize target screens EXACTLY to: ["sell", "auction", "tracking", "market", "profile", "notifications", "earnings"].
+   - Rules: "mandi", "bhav", "rate", "daam" -> "market". "orders" -> "tracking".
+3. Calculate Standard KGs for "amount" (1 'man'=40kg, 1 'bori'=50kg, 1 'quintal'=100kg).
+4. Craft a "reply" (max 8-10 words). It MUST be empathetic, helpful, and natural in the exact language spoken.
 
-STRICT OUTPUT: Return ONLY valid JSON. No markdown.
+FEW-SHOT EXAMPLES FOR THE "reply" FIELD (DO NOT HALLUCINATE):
+Input: "aajkal ka rate kya hai" -> Reply: "Mandi ke taza bhav yeh rahe, bhaiyya." (NOT repeating their words)
+Input: "ki haal aa" -> Reply: "Main vadiya ji! Daso, kivein madad karaan?"
+Input: "2 bori kanak bechni hai" -> Reply: "Bilkul, main tuhadi 100 kilo kanak list kar dinda haan."
+Input: "sell my potatoes" -> Reply: "Sure, let's get your potatoes listed on the market."
 
-JSON FORMAT:
+STRICT OUTPUT: Return ONLY valid JSON. No markdown. No conversational filler outside the JSON.
+
 {
   "intent": "bid" | "sell" | "navigation" | "social" | "unknown",
-  "target": "analytics" | "auctions" | "orders" | "home" | null,
+  "target": "sell" | "auction" | "tracking" | "market" | "profile" | "notifications" | "earnings" | null,
   "crop": "wheat" | "rice" | "corn" | "mustard" | "potato" | "onion" | null,
   "amount": number | null,
   "price": number | null,
-  "reply": string
+  "reply": "string (your warm, natural human response)"
 }
-
-CROP MAPPING:
-गेहूं/gehu/kanak -> "wheat", चावल/chawal/chaul -> "rice", मक्का/makki/corn -> "corn"
-
-EXAMPLES:
-Input: "hello, orders dikha" -> {"intent":"navigation","target":"orders","crop":null,"amount":null,"price":null,"reply":"Yeh rahe aapke orders."}
-Input: "ki haal aa" -> {"intent":"social","target":null,"crop":null,"amount":null,"price":null,"reply":"Vadiya ji! Daso ki madad karaan?"}
 `;
 
   // ==========================================
@@ -84,7 +96,7 @@ Input: "ki haal aa" -> {"intent":"social","target":null,"crop":null,"amount":nul
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "mistral", // 🚀 Updated to use your existing model
+          model: "mistral",
           prompt: systemPrompt,
           stream: false,
           format: "json",
@@ -135,10 +147,11 @@ Input: "ki haal aa" -> {"intent":"social","target":null,"crop":null,"amount":nul
         safeData.intent = "bid";
         safeData.amount = numbers[0] || null;
         safeData.reply = `Offline Mode: Bid placed for ${numbers[0] || ""}.`;
-      } else if (input.match(/mandi|data|analytics|chart/i)) {
+      } else if (input.match(/mandi|data|analytics|chart|bhav/i)) {
         safeData.intent = "navigation";
-        safeData.target = "analytics";
-        safeData.reply = "Opening offline data view.";
+        // ⚡ PATCHED: Syncs perfectly with frontend to prevent 404 loops
+        safeData.target = "market";
+        safeData.reply = "Opening offline market view.";
       }
 
       return NextResponse.json({
