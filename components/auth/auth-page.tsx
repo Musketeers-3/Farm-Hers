@@ -144,6 +144,8 @@ export default function AuthPage({
                 mousePos={mousePos}
                 error={loginError}
                 loading={loginLoading}
+                error={loginError}
+                loading={loginLoading}
               />
             </motion.div>
           ) : (
