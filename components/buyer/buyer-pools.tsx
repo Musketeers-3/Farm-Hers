@@ -22,7 +22,6 @@ import type { Pool } from "@/types/pool";
 
 // ─── TOKEN FACTORY ─────────────────────────────────────────────────────────────
 const makeTokens = (isDark: boolean) => isDark ? {
-  // ── DARK (image 1 — paddy green) ──────────────────────────────────────────
   card:         "rgba(8,18,10,0.65)",
   cardActive:   "rgba(8,18,10,0.82)",
   border:       "rgba(90,158,111,0.15)",
@@ -43,7 +42,6 @@ const makeTokens = (isDark: boolean) => isDark ? {
   glowActive:   "0 0 0 1px rgba(90,158,111,0.12), 0 8px 32px rgba(0,0,0,0.5)",
   shadow:       "0 4px 24px rgba(0,0,0,0.45)",
 } : {
-  // ── LIGHT (sky-blue frosted glass) ────────────────────────────────────────
   card:         "rgba(200,225,255,0.18)",
   cardActive:   "rgba(200,225,255,0.28)",
   border:       "rgba(180,210,255,0.30)",
