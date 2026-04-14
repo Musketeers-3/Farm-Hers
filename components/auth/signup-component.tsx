@@ -291,11 +291,7 @@ export function SignupComponent({
 
             <p className="text-center text-sm text-[#1a2419]">
               Already have an account?{" "}
-              <button
-                type="button"
-                onClick={onLoginClick}
-                className="font-bold text-[#1e4d2b] underline cursor-pointer"
-              >
+              <button type="button" onClick={onLoginClick} className="font-bold text-[#1e4d2b] underline cursor-pointer">
                 Login
               </button>
             </p>
