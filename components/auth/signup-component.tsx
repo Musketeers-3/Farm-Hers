@@ -8,9 +8,17 @@ interface SignupProps {
   onSignup: (data: any) => void;
   error?: string;
   loading?: boolean;
+  error?: string;
+  loading?: boolean;
 }
 
-export function SignupComponent({ role, onLoginClick, onSignup, error, loading }: SignupProps) {
+export function SignupComponent({
+  role,
+  onLoginClick,
+  onSignup,
+  error,
+  loading,
+}: SignupProps) {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState({
@@ -44,10 +52,13 @@ export function SignupComponent({ role, onLoginClick, onSignup, error, loading }
     e.preventDefault();
     let newErrors: Record<string, string> = {};
     if (!formData.fullName) newErrors.fullName = "Required";
-    if (!formData.phone || formData.phone.length < 10) newErrors.phone = "Invalid phone";
-    if (formData.email && !formData.email.includes("@")) newErrors.email = "Invalid email";
+    if (!formData.phone || formData.phone.length < 10)
+      newErrors.phone = "Invalid phone";
+    if (formData.email && !formData.email.includes("@"))
+      newErrors.email = "Invalid email";
     if (formData.password.length < 6) newErrors.password = "Min 6 characters";
-    if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = "Doesn't match";
+    if (formData.password !== formData.confirmPassword)
+      newErrors.confirmPassword = "Doesn't match";
     if (!formData.location) newErrors.location = "Required";
 
     if (Object.keys(newErrors).length === 0) {
@@ -85,15 +96,27 @@ export function SignupComponent({ role, onLoginClick, onSignup, error, loading }
       <div className="w-full max-w-[500px] px-6 py-8">
         <header className="text-center mb-4">
           <div className="text-3xl mb-1">{role === "farmer" ? "🚜" : "🏢"}</div>
-          <h1 className="font-serif text-[2rem] font-bold text-[#1a2419]">AgriLink</h1>
-          <p className="text-xs text-[#1a2419]/70 mt-0.5">Empowering Bharat's Agriculture</p>
+          <h1 className="font-serif text-[2rem] font-bold text-[#1a2419]">
+            AgriLink
+          </h1>
+          <p className="text-xs text-[#1a2419]/70 mt-0.5">
+            Empowering Bharat's Agriculture
+          </p>
         </header>
 
         <main className="bg-white/20 backdrop-blur-[25px] border border-white/30 rounded-[28px] p-6 shadow-xl">
-          <h2 className="text-center text-lg font-bold mb-0.5 text-[#1a2419]">Create Account</h2>
+          <h2 className="text-center text-lg font-bold mb-0.5 text-[#1a2419]">
+            Create Account
+          </h2>
           <p className="text-center text-xs text-[#1a2419]/60 mb-4">
             {role === "farmer" ? "Join as a Farmer" : "Join as a Buyer"}
           </p>
+
+          {error && (
+            <div className="mb-4 px-4 py-3 rounded-xl bg-red-100 border border-red-300 text-red-700 text-sm text-center">
+              {error}
+            </div>
+          )}
 
           {error && (
             <div className="mb-4 px-4 py-3 rounded-xl bg-red-100 border border-red-300 text-red-700 text-sm text-center">
@@ -105,31 +128,43 @@ export function SignupComponent({ role, onLoginClick, onSignup, error, loading }
             {/* Row 1: Full Name + Phone */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-semibold text-[#1a2419] mb-1 block">Full Name *</label>
+                <label className="text-xs font-semibold text-[#1a2419] mb-1 block">
+                  Full Name *
+                </label>
                 <input
                   placeholder="Your name"
                   className={inputClass("fullName")}
                   onChange={(e) => handleChange("fullName", e.target.value)}
                 />
-                {errors.fullName && <p className="text-red-500 text-xs mt-0.5">{errors.fullName}</p>}
+                {errors.fullName && (
+                  <p className="text-red-500 text-xs mt-0.5">
+                    {errors.fullName}
+                  </p>
+                )}
               </div>
               <div>
-                <label className="text-xs font-semibold text-[#1a2419] mb-1 block">Phone *</label>
+                <label className="text-xs font-semibold text-[#1a2419] mb-1 block">
+                  Phone *
+                </label>
                 <input
                   type="tel"
                   placeholder="Phone number"
                   className={inputClass("phone")}
                   onChange={(e) => handleChange("phone", e.target.value)}
                 />
-                {errors.phone && <p className="text-red-500 text-xs mt-0.5">{errors.phone}</p>}
+                {errors.phone && (
+                  <p className="text-red-500 text-xs mt-0.5">{errors.phone}</p>
+                )}
               </div>
             </div>
 
-            {/* Row 2: Email + Location */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-semibold text-[#1a2419] mb-1 block">
-                  Email <span className="text-[#1a2419]/40 font-normal">(optional)</span>
+                  Email{" "}
+                  <span className="text-[#1a2419]/40 font-normal">
+                    (optional)
+                  </span>
                 </label>
                 <input
                   type="email"
@@ -137,40 +172,62 @@ export function SignupComponent({ role, onLoginClick, onSignup, error, loading }
                   className={inputClass("email")}
                   onChange={(e) => handleChange("email", e.target.value)}
                 />
-                {errors.email && <p className="text-red-500 text-xs mt-0.5">{errors.email}</p>}
+                {errors.email && (
+                  <p className="text-red-500 text-xs mt-0.5">{errors.email}</p>
+                )}
               </div>
               <div>
-                <label className="text-xs font-semibold text-[#1a2419] mb-1 block">Village / City *</label>
+                <label className="text-xs font-semibold text-[#1a2419] mb-1 block">
+                  Village / City *
+                </label>
                 <input
                   placeholder="Your location"
                   className={inputClass("location")}
                   onChange={(e) => handleChange("location", e.target.value)}
                 />
-                {errors.location && <p className="text-red-500 text-xs mt-0.5">{errors.location}</p>}
+                {errors.location && (
+                  <p className="text-red-500 text-xs mt-0.5">
+                    {errors.location}
+                  </p>
+                )}
               </div>
             </div>
 
             {/* Row 3: Password + Confirm */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-semibold text-[#1a2419] mb-1 block">Password *</label>
+                <label className="text-xs font-semibold text-[#1a2419] mb-1 block">
+                  Password *
+                </label>
                 <input
                   type="password"
                   placeholder="••••••••"
                   className={inputClass("password")}
                   onChange={(e) => handleChange("password", e.target.value)}
                 />
-                {errors.password && <p className="text-red-500 text-xs mt-0.5">{errors.password}</p>}
+                {errors.password && (
+                  <p className="text-red-500 text-xs mt-0.5">
+                    {errors.password}
+                  </p>
+                )}
               </div>
               <div>
-                <label className="text-xs font-semibold text-[#1a2419] mb-1 block">Confirm Password *</label>
+                <label className="text-xs font-semibold text-[#1a2419] mb-1 block">
+                  Confirm Password *
+                </label>
                 <input
                   type="password"
                   placeholder="••••••••"
                   className={inputClass("confirmPassword")}
-                  onChange={(e) => handleChange("confirmPassword", e.target.value)}
+                  onChange={(e) =>
+                    handleChange("confirmPassword", e.target.value)
+                  }
                 />
-                {errors.confirmPassword && <p className="text-red-500 text-xs mt-0.5">{errors.confirmPassword}</p>}
+                {errors.confirmPassword && (
+                  <p className="text-red-500 text-xs mt-0.5">
+                    {errors.confirmPassword}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -179,14 +236,19 @@ export function SignupComponent({ role, onLoginClick, onSignup, error, loading }
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-semibold text-[#1a2419] mb-1 block">
-                    Farm Size <span className="text-[#1a2419]/40 font-normal">(optional)</span>
+                    Farm Size{" "}
+                    <span className="text-[#1a2419]/40 font-normal">
+                      (optional)
+                    </span>
                   </label>
                   <select
                     className="w-full p-2.5 rounded-xl bg-white/70 border border-black/10 outline-none text-[#1a2419] text-sm"
                     onChange={(e) => handleChange("farmSize", e.target.value)}
                     defaultValue=""
                   >
-                    <option value="" disabled>Select size</option>
+                    <option value="" disabled>
+                      Select size
+                    </option>
                     <option value="small">Under 2 acres</option>
                     <option value="medium">2 – 10 acres</option>
                     <option value="large">10 – 50 acres</option>
@@ -195,14 +257,19 @@ export function SignupComponent({ role, onLoginClick, onSignup, error, loading }
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-[#1a2419] mb-1 block">
-                    Primary Crop <span className="text-[#1a2419]/40 font-normal">(optional)</span>
+                    Primary Crop{" "}
+                    <span className="text-[#1a2419]/40 font-normal">
+                      (optional)
+                    </span>
                   </label>
                   <select
                     className="w-full p-2.5 rounded-xl bg-white/70 border border-black/10 outline-none text-[#1a2419] text-sm"
                     onChange={(e) => handleChange("cropType", e.target.value)}
                     defaultValue=""
                   >
-                    <option value="" disabled>Select crop</option>
+                    <option value="" disabled>
+                      Select crop
+                    </option>
                     <option value="wheat">Wheat</option>
                     <option value="rice">Rice</option>
                     <option value="vegetables">Vegetables</option>
@@ -220,7 +287,10 @@ export function SignupComponent({ role, onLoginClick, onSignup, error, loading }
               type="submit"
               disabled={loading}
               className="w-full p-3.5 rounded-xl bg-[#1e4d2b] text-white font-bold hover:bg-[#153a20] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              disabled={loading}
+              className="w-full p-3.5 rounded-xl bg-[#1e4d2b] text-white font-bold hover:bg-[#153a20] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
+              {loading ? "Creating account..." : "Create Account"}
               {loading ? "Creating account..." : "Create Account"}
             </button>
 
@@ -232,11 +302,8 @@ export function SignupComponent({ role, onLoginClick, onSignup, error, loading }
 
             <p className="text-center text-sm text-[#1a2419]">
               Already have an account?{" "}
-              <button
-                type="button"
-                onClick={onLoginClick}
-                className="font-bold text-[#1e4d2b] underline cursor-pointer"
-              >
+              <button type="button" onClick={onLoginClick} className="font-bold text-[#1e4d2b] underline cursor-pointer">
+              <button type="button" onClick={onLoginClick} className="font-bold text-[#1e4d2b] underline cursor-pointer">
                 Login
               </button>
             </p>

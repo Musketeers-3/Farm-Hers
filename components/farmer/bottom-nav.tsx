@@ -1,36 +1,35 @@
 "use client";
 
-import React, { useMemo, useCallback } from "react";
+import React, { useCallback } from "react";
 import { useAppStore, useTranslation, Screen } from "@/lib/store";
 import { useRouter, usePathname } from "next/navigation";
-import { Home, ShoppingBag, BarChart2, User } from "lucide-react";
+import { Home, ShoppingBag, BarChart2, User, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 
-type NavId = "home" | "sell" | "market" | "profile";
+type NavId = "home" | "sell" | "market" | "pools" | "profile";
 
 const navItems: { id: NavId; icon: React.ElementType; path: string }[] = [
-  { id: "home", icon: Home, path: "/farmer" },
-  { id: "sell", icon: ShoppingBag, path: "/farmer/sell" },
-  { id: "market", icon: BarChart2, path: "/farmer/market" },
-  { id: "profile", icon: User, path: "/farmer/profile" },
+  { id: "home",    icon: Home,        path: "/farmer" },
+  { id: "sell",    icon: ShoppingBag, path: "/farmer/sell" },
+  { id: "market",  icon: BarChart2,   path: "/farmer/market" },
+  { id: "pools",   icon: Layers,      path: "/farmer/pools" },
+  { id: "profile", icon: User,        path: "/farmer/profile" },
 ];
 
 export function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
   const setBoloListening = useAppStore((state) => state.setBoloListening);
-  // FIX: also pull setActiveScreen so nav taps keep Zustand in sync with the URL
   const setActiveScreen = useAppStore((state) => state.setActiveScreen);
   const t = useTranslation();
 
-  // FIX: added "home" and "profile" fallbacks — these keys don't exist in the
-  // translations object, so t.home / t.profile would be undefined without them.
   const labels: Record<string, string> = {
-    home: (t as any)?.home ?? "Home",
-    sell: t?.sell ?? "Sell",
-    market: t?.market ?? "Market",
+    home:    (t as any)?.home    ?? "Home",
+    sell:    t?.sell             ?? "Sell",
+    market:  t?.market           ?? "Market",
+    pools:   (t as any)?.pools   ?? "Pools",
     profile: (t as any)?.profile ?? "Profile",
   };
 
@@ -44,8 +43,6 @@ export function BottomNav() {
     [pathname],
   );
 
-  // FIX: every nav tap does both router.push (URL) and setActiveScreen (Zustand).
-  // Previously only router.push was called, so activeScreen was always stale.
   const handleNavTap = useCallback(
     (item: (typeof navItems)[number]) => {
       router.push(item.path);
@@ -57,7 +54,8 @@ export function BottomNav() {
   return (
     <nav className="fixed bottom-4 sm:bottom-6 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
       <div className="pointer-events-auto w-full max-w-[420px] bg-background/70 backdrop-blur-xl border border-border/50 shadow-2xl rounded-3xl flex items-center justify-between px-2 py-2">
-        {/* Left Nav Items */}
+        
+        {/* Left Nav Items: home, sell */}
         <div className="flex items-center gap-1">
           {navItems.slice(0, 2).map((item) => (
             <NavItem
@@ -94,7 +92,7 @@ export function BottomNav() {
           </span>
         </div>
 
-        {/* Right Nav Items */}
+        {/* Right Nav Items: market, pools, profile */}
         <div className="flex items-center gap-1">
           {navItems.slice(2).map((item) => (
             <NavItem
@@ -127,7 +125,7 @@ const NavItem = React.memo(
       <button
         onClick={onClick}
         className={cn(
-          "relative flex flex-col items-center justify-center w-16 h-14 rounded-2xl transition-all duration-300",
+          "relative flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all duration-300",
           isActive
             ? "text-primary"
             : "text-muted-foreground hover:text-foreground",

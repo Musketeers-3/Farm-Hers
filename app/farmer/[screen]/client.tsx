@@ -12,6 +12,8 @@ import { NotificationsScreen } from "@/components/farmer/notifications-screen";
 import { EarningsScreen } from "@/components/farmer/earnings-screen";
 import { BoloAssistant } from "@/components/bolo/bolo-assistant";
 import { Loader2 } from "lucide-react";
+import { FarmerDemands } from "@/components/farmer/farmer-demands";
+import FarmerPools from "@/components/farmer/farmer-pools";
 
 export function FarmerScreenClient({ screen }: { screen: string }) {
   const hasOnboarded = useAppStore((state) => state.hasOnboarded);
@@ -28,6 +30,7 @@ export function FarmerScreenClient({ screen }: { screen: string }) {
     "profile",
     "notifications",
     "earnings",
+    "demands",
   ];
 
   useEffect(() => {
@@ -77,6 +80,10 @@ export function FarmerScreenClient({ screen }: { screen: string }) {
         return <NotificationsScreen />;
       case "earnings":
         return <EarningsScreen />;
+      case "demands":
+        return <FarmerDemands />;
+      case "pools":
+        return <FarmerPools />;
       default:
         // Return a loader while the useEffect handles the router.replace
         return (
