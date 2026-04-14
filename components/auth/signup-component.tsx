@@ -8,6 +8,8 @@ interface SignupProps {
   onSignup: (data: any) => void;
   error?: string;
   loading?: boolean;
+  error?: string;
+  loading?: boolean;
 }
 
 export function SignupComponent({
@@ -109,6 +111,12 @@ export function SignupComponent({
           <p className="text-center text-xs text-[#1a2419]/60 mb-4">
             {role === "farmer" ? "Join as a Farmer" : "Join as a Buyer"}
           </p>
+
+          {error && (
+            <div className="mb-4 px-4 py-3 rounded-xl bg-red-100 border border-red-300 text-red-700 text-sm text-center">
+              {error}
+            </div>
+          )}
 
           {error && (
             <div className="mb-4 px-4 py-3 rounded-xl bg-red-100 border border-red-300 text-red-700 text-sm text-center">
@@ -279,7 +287,10 @@ export function SignupComponent({
               type="submit"
               disabled={loading}
               className="w-full p-3.5 rounded-xl bg-[#1e4d2b] text-white font-bold hover:bg-[#153a20] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              disabled={loading}
+              className="w-full p-3.5 rounded-xl bg-[#1e4d2b] text-white font-bold hover:bg-[#153a20] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
+              {loading ? "Creating account..." : "Create Account"}
               {loading ? "Creating account..." : "Create Account"}
             </button>
 
@@ -291,6 +302,7 @@ export function SignupComponent({
 
             <p className="text-center text-sm text-[#1a2419]">
               Already have an account?{" "}
+              <button type="button" onClick={onLoginClick} className="font-bold text-[#1e4d2b] underline cursor-pointer">
               <button type="button" onClick={onLoginClick} className="font-bold text-[#1e4d2b] underline cursor-pointer">
                 Login
               </button>

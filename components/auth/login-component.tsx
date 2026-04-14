@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 
 interface LoginComponentProps {
@@ -7,6 +8,8 @@ interface LoginComponentProps {
   onLogin: (role: "farmer" | "buyer", email: string, password: string) => void;
   onSignupClick: () => void;
   mousePos: { x: number; y: number };
+  error?: string;
+  loading?: boolean;
   error?: string;
   loading?: boolean;
 }
@@ -18,7 +21,11 @@ export function LoginComponent({
   mousePos,
   error,
   loading,
+  error,
+  loading,
 }: LoginComponentProps) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
