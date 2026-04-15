@@ -5,10 +5,12 @@ import { Pool } from "@/types/pool";
 // GET /api/pools/[id] — get a single pool by ID
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // 1. Type it as a Promise
 ) {
   try {
-    const doc = await adminDb.collection("pools").doc(params.id).get();
+    const { id } = await params; // 2. Await the params before using them
+
+    const doc = await adminDb.collection("pools").doc(id).get();
 
     if (!doc.exists) {
       return NextResponse.json({ error: "Pool not found" }, { status: 404 });

@@ -23,6 +23,7 @@ export function FarmerScreenClient({ screen }: { screen: string }) {
 
   // Define valid screens to prevent invalid navigation loops
   const VALID_SCREENS = [
+    "home",
     "sell",
     "auction",
     "tracking",
@@ -30,7 +31,7 @@ export function FarmerScreenClient({ screen }: { screen: string }) {
     "profile",
     "notifications",
     "earnings",
-    "demands",
+    "pools",
   ];
 
   useEffect(() => {

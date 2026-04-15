@@ -19,7 +19,8 @@ export type Screen =
   | "market"
   | "profile"
   | "notifications"
-  | "earnings";
+  | "earnings"
+  | "pools";
 
 export interface Crop {
   id: string;
@@ -31,14 +32,32 @@ export interface Crop {
   unit: string;
 }
 
+// 🚀 UPGRADED: Merged UI expectations with Firebase Schema
 export interface Pool {
-  id: string;
-  cropId: string;
-  totalQuantity: number;
-  contributors: number;
-  bonusPerQuintal: number;
-  status: "open" | "closed" | "sold";
+  id?: string;
+  // Firebase Properties
+  creatorId?: string;
+  creatorRole?: string;
+  creatorName?: string;
+  commodity?: string;
+  pricePerUnit?: number;
+  unit?: string;
   targetQuantity: number;
+  filledQuantity?: number;
+  members?: string[];
+  status: "open" | "fulfilled" | "closed" | "sold";
+  deadline?: string | null;
+  location?: string | null;
+  description?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  lat?: number;
+  lng?: number;
+  // Legacy UI Properties (Kept for backward compatibility in other screens)
+  cropId?: string;
+  totalQuantity?: number;
+  bonusPerQuintal?: number;
+  contributors?: number;
 }
 
 export interface Auction {
@@ -85,13 +104,13 @@ interface AppState {
   hasOnboarded: boolean;
   setHasOnboarded: (v: boolean) => void;
 
-  // Auth — NEW
+  // Auth
   isLoggedIn: boolean;
   setIsLoggedIn: (v: boolean) => void;
   userEmail: string;
   setUserEmail: (email: string) => void;
 
-  // 🚀 User Profile State
+  // User Profile State
   userProfile: UserProfile | null;
   setUserProfile: (profile: UserProfile | null) => void;
 
@@ -114,11 +133,13 @@ interface AppState {
 
   // Pools
   pools: Pool[];
+  setPools: (pools: Pool[]) => void; // 🚀 INTAKE VALVE FOR FIREBASE
   addPool: (pool: Pool) => void;
   joinPool: (poolId: string, quantity: number) => void;
 
   // Auctions
   auctions: Auction[];
+  setAuctions: (auctions: Auction[]) => void; // 🚀 INTAKE VALVE FOR FIREBASE
   addAuction: (auction: Auction) => void;
   placeBid: (auctionId: string, amount: number, bidderId: string) => void;
 
@@ -209,7 +230,9 @@ const samplePools: Pool[] = [
   {
     id: "pool-1",
     cropId: "wheat",
+    commodity: "wheat",
     totalQuantity: 350,
+    filledQuantity: 350,
     contributors: 8,
     bonusPerQuintal: 150,
     status: "open",
@@ -218,7 +241,9 @@ const samplePools: Pool[] = [
   {
     id: "pool-2",
     cropId: "mustard",
+    commodity: "mustard",
     totalQuantity: 200,
+    filledQuantity: 200,
     contributors: 5,
     bonusPerQuintal: 200,
     status: "open",
@@ -270,21 +295,17 @@ export const useAppStore = create<AppState>()(
       hasOnboarded: false,
       setHasOnboarded: (v) => set({ hasOnboarded: v }),
 
-      // Auth
       isLoggedIn: false,
       setIsLoggedIn: (v) => set({ isLoggedIn: v }),
       userEmail: "",
       setUserEmail: (email) => set({ userEmail: email }),
 
-      // 🚀 User Profile
       userProfile: null,
       setUserProfile: (profile) => set({ userProfile: profile }),
 
-      // Language
       language: "en",
       setLanguage: (lang) => set({ language: lang }),
 
-      // User
       userRole: "farmer",
       setUserRole: (role) => set({ userRole: role }),
       userName: "",
@@ -292,13 +313,13 @@ export const useAppStore = create<AppState>()(
       userLocation: "",
       setUserLocation: (location) => set({ userLocation: location }),
 
-      // Crops
       crops: sampleCrops,
       selectedCrop: null,
       setSelectedCrop: (crop) => set({ selectedCrop: crop }),
 
-      // Pools
+      // 🚀 Global Pools State
       pools: samplePools,
+      setPools: (pools) => set({ pools }),
       addPool: (pool) => set((state) => ({ pools: [...state.pools, pool] })),
       joinPool: (poolId, quantity) =>
         set((state) => ({
@@ -306,15 +327,17 @@ export const useAppStore = create<AppState>()(
             p.id === poolId
               ? {
                   ...p,
-                  totalQuantity: p.totalQuantity + quantity,
-                  contributors: p.contributors + 1,
+                  filledQuantity: (p.filledQuantity || 0) + quantity,
+                  totalQuantity: (p.totalQuantity || 0) + quantity,
+                  contributors: (p.contributors || 0) + 1,
                 }
               : p,
           ),
         })),
 
-      // Auctions
+      // 🚀 Global Auctions State
       auctions: sampleAuctions,
+      setAuctions: (auctions) => set({ auctions }),
       addAuction: (auction) =>
         set((state) => ({ auctions: [...state.auctions, auction] })),
       placeBid: (auctionId, amount, bidderId) =>
@@ -326,7 +349,6 @@ export const useAppStore = create<AppState>()(
           ),
         })),
 
-      // Orders
       orders: [],
       addOrder: (order) =>
         set((state) => ({ orders: [...state.orders, order] })),
@@ -337,7 +359,6 @@ export const useAppStore = create<AppState>()(
           ),
         })),
 
-      // Weather
       weather: {
         temperature: 32,
         humidity: 45,
@@ -347,17 +368,14 @@ export const useAppStore = create<AppState>()(
       },
       setWeather: (weather) => set({ weather }),
 
-      // Market
       marketInsights: sampleMarketInsights,
       setMarketInsights: (insights) => set({ marketInsights: insights }),
 
-      // UI State
       activeScreen: "home",
       setActiveScreen: (screen) => set({ activeScreen: screen }),
       isBoloListening: false,
       setBoloListening: (listening) => set({ isBoloListening: listening }),
 
-      // Sell Flow
       sellQuantity: 0,
       setSellQuantity: (qty) => set({ sellQuantity: qty }),
       sellPrice: 0,
@@ -365,7 +383,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "agrilink-storage",
-      version: 1, // bump from 0 to 1
+      version: 1,
       migrate: (persistedState: any, version: number) => {
         if (version === 0) {
           return { ...persistedState, isLoggedIn: false };
@@ -380,7 +398,6 @@ export const useAppStore = create<AppState>()(
         userLocation: state.userLocation,
         hasOnboarded: state.hasOnboarded,
         isLoggedIn: state.isLoggedIn,
-        // 🚀 Ensure profile saves to local storage!
         userProfile: state.userProfile,
       }),
     },
@@ -497,7 +514,8 @@ export const translations = {
 
 export const useTranslation = () => {
   const language = useAppStore((state) => state.language);
-  return translations[language];
+  // Default to English if translation is missing for testing
+  return translations[language] || translations.en;
 };
 
 export const useHydrated = () => {

@@ -2,53 +2,80 @@ import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 
-// POST /api/pools/:id/join
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+// POST /api/pools/[id]/join
+export async function POST(
+  req: NextRequest, 
+  { params }: { params: Promise<{ id: string }> } // ⚡ Next.js 15 Promise type
+) {
   try {
     const { farmerId, farmerName, quantity } = await req.json();
+    const { id } = await params; // ⚡ Await the params
 
     if (!farmerId || !quantity) {
       return NextResponse.json({ error: "farmerId and quantity are required" }, { status: 400 });
     }
 
-    const poolRef = adminDb.collection("pools").doc(params.id);
-    const poolSnap = await poolRef.get();
+    const poolRef = adminDb.collection("pools").doc(id);
 
-    if (!poolSnap.exists) {
-      return NextResponse.json({ error: "Pool not found" }, { status: 404 });
-    }
+    // ==========================================
+    // THE ALGORITHMIC OVERRIDE: Concurrency Lock
+    // ==========================================
+    const result = await adminDb.runTransaction(async (transaction) => {
+      const poolSnap = await transaction.get(poolRef);
 
-    const pool = poolSnap.data()!;
+      if (!poolSnap.exists) {
+        throw new Error("Pool not found");
+      }
 
-    if (pool.status !== "open") {
-      return NextResponse.json({ error: "Pool is not open for joining" }, { status: 400 });
-    }
+      const pool = poolSnap.data()!;
 
-    // Check if farmer already joined
-    const alreadyJoined = pool.members?.some((m: any) => m.farmerId === farmerId);
-    if (alreadyJoined) {
-      return NextResponse.json({ error: "You have already joined this pool" }, { status: 400 });
-    }
+      if (pool.status !== "open") {
+        throw new Error("Pool is not open for joining");
+      }
 
-    const newMember = {
-      farmerId,
-      farmerName,
-      quantity: Number(quantity),
-      joinedAt: new Date().toISOString(),
-    };
+      // Check if farmer already joined
+      const alreadyJoined = pool.members?.some((m: any) => m.farmerId === farmerId);
+      if (alreadyJoined) {
+        throw new Error("You have already joined this pool");
+      }
 
-    const newFilledQty = (pool.filledQuantity || 0) + Number(quantity);
-    const newStatus = newFilledQty >= pool.targetQuantity ? "filled" : "open";
+      const numQuantity = Number(quantity);
+      const newFilledQty = (pool.filledQuantity || 0) + numQuantity;
+      
+      // Ensure we don't accidentally overfill a premium buyer's contract
+      if (newFilledQty > pool.targetQuantity) {
+         throw new Error(`Cannot join. Only ${pool.targetQuantity - (pool.filledQuantity || 0)} quintals remaining in this pool.`);
+      }
 
-    await poolRef.update({
-      members: FieldValue.arrayUnion(newMember),
-      filledQuantity: newFilledQty,
-      status: newStatus,
-      updatedAt: new Date().toISOString(),
+      // Using "fulfilled" to match our store schema strictly
+      const newStatus = newFilledQty === pool.targetQuantity ? "fulfilled" : "open";
+
+      const newMember = {
+        farmerId,
+        farmerName,
+        quantity: numQuantity,
+        joinedAt: new Date().toISOString(),
+      };
+
+      transaction.update(poolRef, {
+        members: FieldValue.arrayUnion(newMember),
+        filledQuantity: newFilledQty,
+        status: newStatus,
+        updatedAt: new Date().toISOString(),
+      });
+
+      return { newStatus, newFilledQty };
     });
 
-    return NextResponse.json({ success: true, newStatus, filledQuantity: newFilledQty });
+    return NextResponse.json({ 
+      success: true, 
+      newStatus: result.newStatus, 
+      filledQuantity: result.newFilledQty 
+    });
+
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("Pool join error:", error.message);
+    const statusCode = error.message.includes("found") ? 404 : 400;
+    return NextResponse.json({ error: error.message }, { status: statusCode });
   }
 }

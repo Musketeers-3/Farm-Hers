@@ -1,9 +1,6 @@
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 
-console.log("KEY START:", process.env.FIREBASE_PRIVATE_KEY?.substring(0, 50));
-console.log("EMAIL:", process.env.FIREBASE_CLIENT_EMAIL);
-
 if (!getApps().length) {
   initializeApp({
     credential: cert({
