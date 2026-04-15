@@ -59,12 +59,12 @@ export async function POST(req: NextRequest) {
       lng,
     } = body;
 
+    // Basic validation
     if (
       !creatorId ||
       !creatorRole ||
-      !commodity ||
-      !pricePerUnit ||
-      !targetQuantity
+      (!commodity && !body.cropId) ||
+      !pricePerUnit
     ) {
       return NextResponse.json(
         { error: "Missing required fields" },
@@ -82,10 +82,9 @@ export async function POST(req: NextRequest) {
         .collection("pools")
         .where("creatorRole", "==", "farmer")
         .where("status", "==", "open")
-        .where("commodity", "==", commodity)
+        .where("commodity", "==", commodity || body.cropId)
         .get();
 
-      // FIX: Explicitly typed 'doc' as 'any' to satisfy strict mode
       const availableListings: CropListing[] = listingsSnapshot.docs.map(
         (doc: any) => {
           const data = doc.data();
@@ -105,9 +104,9 @@ export async function POST(req: NextRequest) {
         lat,
         lng,
         availableListings,
-        Number(targetQuantity),
+        Number(targetQuantity || requestedQuantity),
         20,
-        commodity,
+        commodity || body.cropId,
         "Grade A",
       );
 
@@ -119,10 +118,10 @@ export async function POST(req: NextRequest) {
           creatorId,
           creatorRole,
           creatorName,
-          commodity,
+          commodity: commodity || body.cropId,
           pricePerUnit: Number(pricePerUnit),
-          unit: unit || "kg",
-          targetQuantity: Number(targetQuantity),
+          unit: unit || "quintal",
+          targetQuantity: Number(targetQuantity || requestedQuantity),
           filledQuantity: poolResult.actualVolume,
           members: poolResult.participants.map((p) => p.farmerId),
           status: "fulfilled",
@@ -158,28 +157,25 @@ export async function POST(req: NextRequest) {
     }
 
     // ==========================================
-    // FALLBACK (Farmer Listing OR Unmatched Buyer)
+    // THE ARCHITECT'S FALLBACK (Farmer Listing OR Unmatched Buyer)
     // ==========================================
 
-    // FIX: Using an intersection type to force the compiler to accept the spatial coordinates
-    // without requiring you to manually edit your teammate's types/pool.ts file right now.
-    const newPool: Omit<Pool, "id"> & {
-      lat?: number | null;
-      lng?: number | null;
-    } = {
+    // ⚡ Strict Sanitization Engine: Prevents all 'undefined' crashes
+    const sanitizedPool: any = {
       creatorId,
       creatorRole,
-      creatorName,
-      commodity,
-      pricePerUnit: Number(pricePerUnit),
-      unit: unit || "kg",
-      targetQuantity: Number(targetQuantity),
-      requestedQuantity: requestedQuantity
-        ? Number(requestedQuantity)
-        : undefined,
-      filledQuantity: 0,
-      members: [],
-      status: "open",
+      creatorName: creatorName || "FarmHers Partner",
+      commodity: commodity || body.cropId || "unknown",
+      pricePerUnit: Number(pricePerUnit) || 0,
+      unit: unit || "quintal",
+      // Bidirectional fallback mapping ensures Firestore is always happy
+      targetQuantity: Number(targetQuantity) || Number(requestedQuantity) || 0,
+      requestedQuantity:
+        Number(requestedQuantity) || Number(targetQuantity) || 0,
+      bonusPerQuintal: Number(body.bonusPerQuintal) || 150,
+      filledQuantity: Number(body.filledQuantity) || 0,
+      members: body.members || [],
+      status: body.status || "open",
       deadline: deadline || null,
       location: location || null,
       description: description || null,
@@ -187,11 +183,22 @@ export async function POST(req: NextRequest) {
       updatedAt: now,
       lat: lat || null,
       lng: lng || null,
-    } as any; // Final safety cast for the Firebase add() method
+    };
 
-    const docRef = await adminDb.collection("pools").add(newPool);
-    return NextResponse.json({ id: docRef.id, ...newPool }, { status: 201 });
+    // ⚡ The Safety Sweep: Purge any key that accidentally evaluates to undefined
+    Object.keys(sanitizedPool).forEach((key) => {
+      if (sanitizedPool[key] === undefined) {
+        delete sanitizedPool[key];
+      }
+    });
+
+    const docRef = await adminDb.collection("pools").add(sanitizedPool);
+    return NextResponse.json(
+      { id: docRef.id, ...sanitizedPool },
+      { status: 201 },
+    );
   } catch (error: any) {
+    console.error("POST /api/pools Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
