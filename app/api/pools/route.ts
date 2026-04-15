@@ -17,19 +17,16 @@ export async function GET(req: NextRequest) {
     if (commodity) query = query.where("commodity", "==", commodity);
     if (creatorRole) query = query.where("creatorRole", "==", creatorRole);
 
-    // ⚡ ARCHITECT HYBRID FIX: Removed Firebase .orderBy() to bypass all Index errors.
-
     const snapshot = await query.get();
     let pools = snapshot.docs.map((doc: any) => ({
       id: doc.id,
       ...doc.data(),
     }));
 
-    // ⚡ Sort in server memory instead. This guarantees 100% uptime for complex queries.
     pools.sort((a: any, b: any) => {
       const dateA = new Date(a.createdAt || 0).getTime();
       const dateB = new Date(b.createdAt || 0).getTime();
-      return dateB - dateA; // Descending
+      return dateB - dateA;
     });
 
     return NextResponse.json({ pools });
@@ -59,30 +56,24 @@ export async function POST(req: NextRequest) {
       lng,
     } = body;
 
-    // Basic validation
-    if (
-      !creatorId ||
-      !creatorRole ||
-      (!commodity && !body.cropId) ||
-      !pricePerUnit
-    ) {
+    if (!creatorId || !creatorRole || !commodity || !pricePerUnit) {
       return NextResponse.json(
         { error: "Missing required fields" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
     const now = new Date().toISOString();
 
     // ==========================================
-    // THE ALGORITHMIC OVERRIDE (Buyer Micro-Pooling)
+    // BUYER MICRO-POOLING (only when lat/lng provided)
     // ==========================================
     if (creatorRole === "buyer" && lat && lng) {
       const listingsSnapshot = await adminDb
         .collection("pools")
         .where("creatorRole", "==", "farmer")
         .where("status", "==", "open")
-        .where("commodity", "==", commodity || body.cropId)
+        .where("commodity", "==", commodity)
         .get();
 
       const availableListings: CropListing[] = listingsSnapshot.docs.map(
@@ -97,7 +88,7 @@ export async function POST(req: NextRequest) {
             lat: data.lat || 0,
             lng: data.lng || 0,
           };
-        },
+        }
       );
 
       const poolResult = await generateMicroPoolDP(
@@ -106,8 +97,8 @@ export async function POST(req: NextRequest) {
         availableListings,
         Number(targetQuantity || requestedQuantity),
         20,
-        commodity || body.cropId,
-        "Grade A",
+        commodity,
+        "Grade A"
       );
 
       if (poolResult) {
@@ -117,11 +108,12 @@ export async function POST(req: NextRequest) {
         batch.set(newBuyerPoolRef, {
           creatorId,
           creatorRole,
-          creatorName,
-          commodity: commodity || body.cropId,
+          creatorName: creatorName || "Unknown Buyer",
+          commodity,
           pricePerUnit: Number(pricePerUnit),
           unit: unit || "quintal",
-          targetQuantity: Number(targetQuantity || requestedQuantity),
+          targetQuantity: Number(targetQuantity || requestedQuantity) || 0,
+          requestedQuantity: Number(requestedQuantity || targetQuantity) || 0,
           filledQuantity: poolResult.actualVolume,
           members: poolResult.participants.map((p) => p.farmerId),
           status: "fulfilled",
@@ -151,31 +143,27 @@ export async function POST(req: NextRequest) {
             id: newBuyerPoolRef.id,
             totalVolume: poolResult.actualVolume,
           },
-          { status: 201 },
+          { status: 201 }
         );
       }
     }
 
     // ==========================================
-    // THE ARCHITECT'S FALLBACK (Farmer Listing OR Unmatched Buyer)
+    // FALLBACK — Farmer Listing OR Unmatched Buyer
+    // Creates an open pool visible to the other side
     // ==========================================
-
-    // ⚡ Strict Sanitization Engine: Prevents all 'undefined' crashes
     const sanitizedPool: any = {
       creatorId,
       creatorRole,
-      creatorName: creatorName || "FarmHers Partner",
-      commodity: commodity || body.cropId || "unknown",
+      creatorName: creatorName || "Unknown",
+      commodity,
       pricePerUnit: Number(pricePerUnit) || 0,
       unit: unit || "quintal",
-      // Bidirectional fallback mapping ensures Firestore is always happy
       targetQuantity: Number(targetQuantity) || Number(requestedQuantity) || 0,
-      requestedQuantity:
-        Number(requestedQuantity) || Number(targetQuantity) || 0,
-      bonusPerQuintal: Number(body.bonusPerQuintal) || 150,
-      filledQuantity: Number(body.filledQuantity) || 0,
-      members: body.members || [],
-      status: body.status || "open",
+      requestedQuantity: Number(requestedQuantity) || Number(targetQuantity) || 0,
+      filledQuantity: 0,
+      members: [],
+      status: "open",
       deadline: deadline || null,
       location: location || null,
       description: description || null,
@@ -185,7 +173,7 @@ export async function POST(req: NextRequest) {
       lng: lng || null,
     };
 
-    // ⚡ The Safety Sweep: Purge any key that accidentally evaluates to undefined
+    // Safety sweep: remove any key that is still undefined
     Object.keys(sanitizedPool).forEach((key) => {
       if (sanitizedPool[key] === undefined) {
         delete sanitizedPool[key];
@@ -193,10 +181,7 @@ export async function POST(req: NextRequest) {
     });
 
     const docRef = await adminDb.collection("pools").add(sanitizedPool);
-    return NextResponse.json(
-      { id: docRef.id, ...sanitizedPool },
-      { status: 201 },
-    );
+    return NextResponse.json({ id: docRef.id, ...sanitizedPool }, { status: 201 });
   } catch (error: any) {
     console.error("POST /api/pools Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
