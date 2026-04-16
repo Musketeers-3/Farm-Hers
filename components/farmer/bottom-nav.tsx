@@ -49,11 +49,11 @@ export function BottomNav() {
   return (
     <nav className="fixed bottom-4 sm:bottom-6 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
       <div className="pointer-events-auto w-full max-w-[420px] relative">
-
-        {/* Pill bar */}
-        <div className="bg-white/80 backdrop-blur-2xl border border-white/40 shadow-[0_12px_40px_rgba(0,0,0,0.1)] rounded-[28px] flex items-center justify-between px-2 h-[72px]">
-
-          {/* Left: home, sell */}
+        
+        {/* Main Nav Bar */}
+        <div className="bg-background/80 backdrop-blur-2xl border border-border/50 shadow-[0_12px_40px_rgba(0,0,0,0.1)] rounded-[32px] flex items-center justify-between px-2 h-[72px]">
+          
+          {/* Left Nav Items: home, sell */}
           <div className="flex items-center gap-1">
             {navItems.slice(0, 2).map((item) => (
               <NavItem
@@ -66,10 +66,10 @@ export function BottomNav() {
             ))}
           </div>
 
-          {/* Centre spacer for floating mic */}
+          {/* Centre spacer to prevent buttons from hiding under the mic */}
           <div className="w-20 shrink-0" />
 
-          {/* Right: market, pools, profile */}
+          {/* Right Nav Items: market, pools, profile */}
           <div className="flex items-center gap-1">
             {navItems.slice(2).map((item) => (
               <NavItem
@@ -83,16 +83,16 @@ export function BottomNav() {
           </div>
         </div>
 
-        {/* Floating Bolo mic */}
-        <div className="absolute left-1/2 -translate-x-1/2 -top-10 flex flex-col items-center">
+        {/* Floating Bolo Mic */}
+        <div className="absolute left-1/2 -translate-x-1/2 -top-8 flex flex-col items-center pointer-events-auto">
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setBoloListening(true)}
             className="relative w-20 h-20 rounded-full flex items-center justify-center"
           >
-            <div className="absolute inset-0 rounded-full bg-emerald-400/20 blur-xl animate-pulse" />
-            <div className="relative z-10 w-full h-full rounded-full bg-gradient-to-br from-[#14532d] to-[#064e3b] border-[4px] border-white shadow-lg flex items-center justify-center">
+            <div className="absolute inset-0 rounded-full bg-agri-success/20 blur-xl animate-pulse" />
+            <div className="relative z-10 w-full h-full rounded-full bg-gradient-to-br from-[#1e4d2b] to-[#0f2916] border-[4px] border-background shadow-lg flex items-center justify-center">
               <motion.div
                 animate={{ scale: [1, 1.15, 1] }}
                 transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
@@ -104,10 +104,11 @@ export function BottomNav() {
               </motion.div>
             </div>
           </motion.button>
-          <span className="mt-1 font-black text-[9px] text-[#14532d] tracking-[0.2em] uppercase">
+          <span className="mt-1 font-black text-[9px] text-[#1e4d2b] tracking-[0.2em] uppercase">
             BOLO
           </span>
         </div>
+        
       </div>
     </nav>
   );
@@ -130,14 +131,14 @@ const NavItem = React.memo(function NavItem({
       onClick={onClick}
       className={cn(
         "relative flex flex-col items-center justify-center w-[46px] h-[56px] rounded-2xl transition-all duration-300",
-        isActive ? "text-[#16a34a]" : "text-slate-400 hover:text-slate-600",
+        isActive ? "text-primary" : "text-muted-foreground hover:text-foreground",
       )}
     >
       <AnimatePresence>
         {isActive && (
           <motion.div
-            layoutId="nav-active-bg"
-            className="absolute inset-0 bg-green-500/10 rounded-2xl border border-green-500/20 -z-10"
+            layoutId="nav-glow"
+            className="absolute inset-0 bg-primary/10 rounded-2xl border border-primary/20 -z-10"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -149,14 +150,14 @@ const NavItem = React.memo(function NavItem({
       <Icon
         className={cn(
           "w-5 h-5 transition-transform duration-300",
-          isActive && "scale-110 -translate-y-0.5",
+          isActive && "scale-110 translate-y-[-2px] drop-shadow-[0_0_8px_rgba(var(--primary),0.5)]",
         )}
         strokeWidth={isActive ? 2.5 : 2}
       />
       <span
         className={cn(
-          "text-[9px] mt-0.5 tracking-widest uppercase transition-all duration-300",
-          isActive ? "font-black opacity-100" : "font-medium opacity-60",
+          "text-[10px] mt-1 transition-all duration-300",
+          isActive ? "font-bold opacity-100" : "font-medium opacity-70",
         )}
       >
         {label}
@@ -164,3 +165,5 @@ const NavItem = React.memo(function NavItem({
     </button>
   );
 });
+
+NavItem.displayName = "NavItem";
