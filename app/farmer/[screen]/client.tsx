@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAppStore } from "@/lib/store";
 import { useRouter } from "next/navigation";
-import { SellFlow } from "@/components/farmer/sell-flow";
+import { SellFlow } from "@/components/sell-flow";
 import { AuctionScreen } from "@/components/auction/auction-screen";
 import { TrackingScreen } from "@/components/farmer/tracking-screen";
 import { MarketScreen } from "@/components/farmer/market-screen";
