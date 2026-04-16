@@ -21,39 +21,16 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 const cropImages: Record<string, string> = {
-  wheat:
-    "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=200&h=200&fit=crop",
+  wheat: "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=200&h=200&fit=crop",
   rice: "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=200&h=200&fit=crop",
-  corn: "https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=200&h=200&fit=crop",
-  mustard:
-    "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=200&h=200&fit=crop",
-  potato:
-    "https://images.unsplash.com/photo-1518977676601-b53f82ber95?w=200&h=200&fit=crop",
-  onion:
-    "https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=200&h=200&fit=crop",
+  mustard: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=200&h=200&fit=crop",
 };
 
 const mandiData = [
-  {
-    name: "Ludhiana Mandi",
-    distance: "12 km",
-    prices: { wheat: 2350, rice: 2180, mustard: 5350 },
-  },
-  {
-    name: "Amritsar Mandi",
-    distance: "45 km",
-    prices: { wheat: 2280, rice: 2220, mustard: 5200 },
-  },
-  {
-    name: "Jalandhar Mandi",
-    distance: "28 km",
-    prices: { wheat: 2310, rice: 2150, mustard: 5280 },
-  },
-  {
-    name: "Patiala Mandi",
-    distance: "65 km",
-    prices: { wheat: 2290, rice: 2190, mustard: 5320 },
-  },
+  { name: "Ludhiana Mandi", distance: "12 km", prices: { wheat: 2350, rice: 2180, mustard: 5350 } },
+  { name: "Amritsar Mandi", distance: "45 km", prices: { wheat: 2280, rice: 2220, mustard: 5200 } },
+  { name: "Jalandhar Mandi", distance: "28 km", prices: { wheat: 2310, rice: 2150, mustard: 5280 } },
+  { name: "Patiala Mandi", distance: "65 km", prices: { wheat: 2290, rice: 2190, mustard: 5320 } },
 ];
 
 export function MarketScreen() {
@@ -64,246 +41,328 @@ export function MarketScreen() {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => setIsMounted(true), []);
-
   if (!isMounted) return null;
 
   return (
-    <div className="min-h-screen bg-background pb-24 lg:pb-8 overflow-x-hidden">
-      {/* ---------------------------------------------------------------------- */}
-      {/* 1. COMPACT GLASS HEADER */}
-      {/* ---------------------------------------------------------------------- */}
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-2xl border-b border-border/40 shadow-sm transition-all duration-300">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-4 space-y-3 sm:space-y-4">
-          <div className="flex items-center gap-3 sm:gap-4">
+    // MAIN WRAPPER WITH BACKGROUND IMAGE
+    <div className="relative min-h-screen pb-24 lg:pb-8 overflow-x-hidden selection:bg-primary/30">
+      {/* 1. THE BACKGROUND LAYER */}
+<div className="fixed inset-0 z-0 pointer-events-none">
+  <Image 
+    src="/image.png" // Points to public/image.png
+    alt="Farm Background"
+    fill
+    sizes="100vw"
+    priority
+    className="object-cover transition-opacity duration-500"
+  />
+  {/* Dark Tint & Blur Overlay: Adjust bg-black/70 for more/less darkness */}
+  <div className="absolute inset-0 bg-black/70 backdrop-blur-[3px] transition-all" /> 
+</div>
+
+      {/* 2. GLASS HEADER */}
+      <header className="sticky top-0 z-50 bg-white/5 backdrop-blur-xl border-b border-white/10 shadow-2xl transition-all">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 sm:py-4 space-y-4">
+          <div className="flex items-center gap-3">
             <button
               onClick={() => router.push("/farmer")}
-              className="w-9 h-9 sm:w-10.5 sm:h-10.5 rounded-xl sm:rounded-2xl bg-secondary/80 flex items-center justify-center hover:bg-accent transition-all duration-200 shadow-sm shrink-0"
+              className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center hover:bg-white/20 border border-white/10 transition-all"
             >
-              <ArrowLeft className="w-4.5 h-4.5 sm:w-5.5 sm:h-5.5 text-foreground" />
+              <ArrowLeft className="w-5 h-5 text-white" />
             </button>
             <div>
-              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-foreground tracking-tight leading-none">
-                {t.market}
-              </h1>
-              <p className="text-[10px] sm:text-xs font-semibold text-agri-success uppercase tracking-wider mt-0.5 sm:mt-1 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-agri-success animate-pulse" />{" "}
-                Live Rates
+              <h1 className="text-xl font-bold text-white tracking-tight leading-none">{t.market}</h1>
+              <p className="text-[10px] font-semibold text-green-400 uppercase tracking-widest mt-1 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" /> Live Rates
               </p>
             </div>
           </div>
 
-          {/* Search & Filter - Shrunk height for mobile */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2">
             <div className="flex-1 relative group">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
               <Input
                 placeholder="Search crops or mandis..."
-                className="pl-10 sm:pl-11 h-10 sm:h-12 rounded-xl sm:rounded-2xl bg-secondary/50 border border-border/50 focus-visible:ring-2 focus-visible:ring-primary/30 transition-all text-sm sm:text-base"
+                className="pl-10 h-11 rounded-xl bg-white/5 border-white/10 text-white placeholder:text-white/40 focus-visible:ring-primary/50"
               />
             </div>
-            <button className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-secondary/50 border border-border/50 flex items-center justify-center hover:bg-primary/10 hover:text-primary transition-colors shrink-0">
-              <Filter className="w-4 h-4 sm:w-5 sm:h-5" />
+            <button className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 text-white">
+              <Filter className="w-4 h-4" />
             </button>
           </div>
         </div>
       </header>
 
-      {/* ---------------------------------------------------------------------- */}
-      {/* MAIN CONTENT AREA */}
-      {/* ---------------------------------------------------------------------- */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-5 sm:py-6 space-y-6 sm:space-y-8">
-        {/* 2. THE FINANCIAL TICKER (Mobile Scaled) */}
-        <section className="space-y-3 sm:space-y-4">
-          <div className="flex items-center gap-1.5 sm:gap-2 px-1">
-            <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-            <h2 className="text-base sm:text-lg font-bold text-foreground tracking-tight">
-              Market Movers
-            </h2>
-          </div>
+      {/* 3. CONTENT AREA */}
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-8">
+        
 
-          <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
-            {marketInsights.map((insight, index) => {
-              const crop = crops.find((c) => c.id === insight.cropId);
-              if (!crop) return null;
+{/* --- 2. MARKET MOVERS (ULTRA-COMPACT & ATTRACTIVE) --- */}
+<section className="space-y-4">
+  <div className="flex items-center justify-between px-1">
+    <div className="flex items-center gap-2">
+      <div className="p-2 rounded-lg bg-green-500/10 border border-green-500/20">
+        <Activity className="w-4 h-4 text-green-400" />
+      </div>
+      <h2 className="text-lg font-bold text-white tracking-tight">Market Movers</h2>
+    </div>
+  </div>
 
-              const TrendIcon =
-                insight.trend === "up"
-                  ? TrendingUp
-                  : insight.trend === "down"
-                    ? TrendingDown
-                    : Minus;
+  <div className="flex gap-4 overflow-x-auto pb-6 scrollbar-hide -mx-4 px-4">
+    {marketInsights.map((insight, index) => {
+      const crop = crops.find((c) => c.id === insight.cropId);
+      if (!crop) return null;
+      
+      const isUp = insight.trend === "up";
+      const TrendIcon = isUp ? TrendingUp : insight.trend === "down" ? TrendingDown : Minus;
 
-              return (
-                <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{
-                    delay: index * 0.1,
-                    type: "spring",
-                    stiffness: 300,
-                    damping: 25,
-                  }}
-                  key={insight.cropId}
-                  className="min-w-[190px] sm:min-w-[260px] relative overflow-hidden rounded-2xl sm:rounded-3xl p-4 sm:p-5 flex flex-col justify-between gap-4 sm:gap-5 group premium-shadow border-0"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary to-agri-olive z-0" />
-                  <div className="absolute -top-10 -right-10 w-24 h-24 sm:w-32 sm:h-32 bg-white/10 rounded-full blur-2xl pointer-events-none group-hover:bg-white/20 transition-colors duration-700 z-0" />
-                  <div
-                    className="absolute inset-0 opacity-[0.06] z-0"
-                    style={{
-                      backgroundImage:
-                        "radial-gradient(circle at 1.5px 1.5px, white 1.5px, transparent 0)",
-                      backgroundSize: "20px 20px",
-                    }}
-                  />
+      return (
+        <motion.div
+          key={insight.cropId}
+          whileHover={{ y: -5, scale: 1.02 }}
+          whileTap={{ scale: 0.98, filter: "brightness(1.2)" }}
+          className="min-w-[220px] relative h-[340px] group cursor-pointer"
+        >
+          {/* Animated Background Glow */}
+          <div className={cn(
+            "absolute inset-0 blur-[60px] opacity-20 transition-all duration-700 group-hover:opacity-40",
+            isUp ? "bg-green-500/30" : "bg-red-500/30"
+          )} />
 
-                  <div className="relative z-10 flex items-center gap-2.5 sm:gap-3">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl overflow-hidden ring-2 ring-white/20 shadow-md">
-                      <Image
-                        src={cropImages[crop.id] || cropImages.wheat}
-                        alt={crop.name}
-                        width={40}
-                        height={40}
-                        priority={index <= 3}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <span className="text-sm sm:text-base font-bold text-white tracking-wide">
-                      {crop.name}
-                    </span>
-                  </div>
-
-                  <div className="relative z-10 flex items-end justify-between">
-                    <div>
-                      <div className="flex items-start leading-none -ml-0.5">
-                        <span className="text-lg sm:text-xl font-light mt-0.5 sm:mt-1 mr-0.5 text-white/70">
-                          ₹
-                        </span>
-                        {/* Shrunk huge text for mobile */}
-                        <p className="text-3xl sm:text-4xl font-bold tracking-tighter text-white drop-shadow-sm">
-                          {insight.price.toLocaleString("en-IN")}
-                        </p>
-                      </div>
-                      <p className="text-[9px] sm:text-[10px] uppercase tracking-wider font-semibold text-white/60 mt-1">
-                        / {crop.unit}
-                      </p>
-                    </div>
-
-                    <div
-                      className={cn(
-                        "flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg backdrop-blur-md border shadow-[inset_0_1px_1px_rgba(255,255,255,0.3)]",
-                        insight.trend === "up"
-                          ? "bg-white/20 border-white/30 text-agri-gold"
-                          : "bg-black/20 border-black/30 text-white",
-                      )}
-                    >
-                      <TrendIcon
-                        className="w-3 h-3 sm:w-3.5 sm:h-3.5"
-                        strokeWidth={3}
-                      />
-                      <span className="text-[10px] sm:text-xs font-bold tracking-wide">
-                        {insight.trend === "up" && "+"}
-                        {insight.percentChange}%
-                      </span>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        </section>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-          {/* 3. NEARBY MANDIS (Mobile Scaled) */}
-          <section className="lg:col-span-5 space-y-3 sm:space-y-4">
-            <h2 className="text-base sm:text-lg font-bold text-foreground tracking-tight px-1">
-              Nearby Mandis
-            </h2>
-            <div className="space-y-3">
-              {mandiData.map((mandi, index) => (
-                <motion.div
-                  key={mandi.name}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 + index * 0.05 }}
-                  className="bg-card/40 backdrop-blur-md rounded-2xl sm:rounded-3xl p-4 sm:p-5 border border-border/50 hover:border-primary/40 premium-shadow transition-all duration-300 group"
-                >
-                  <div className="flex items-center justify-between mb-3 sm:mb-4">
-                    <div className="flex items-center gap-2.5 sm:gap-3">
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <MapPin
-                          className="w-4 h-4 sm:w-5 sm:h-5 text-primary"
-                          strokeWidth={2.5}
-                        />
-                      </div>
-                      <div>
-                        <h3 className="text-sm sm:text-base font-bold text-foreground tracking-tight">
-                          {mandi.name}
-                        </h3>
-                        <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                          {mandi.distance} away
-                        </p>
-                      </div>
-                    </div>
-                    <button className="text-[10px] sm:text-[11px] font-bold text-primary hover:bg-primary/10 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full transition-colors">
-                      Details
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
-                    {Object.entries(mandi.prices).map(([cropId, price]) => {
-                      const crop = crops.find((c) => c.id === cropId);
-                      const insight = marketInsights.find(
-                        (m) => m.cropId === cropId,
-                      );
-                      const isHighest = insight && price >= insight.price;
-
-                      return (
-                        <div
-                          key={cropId}
-                          className={cn(
-                            "p-2 sm:p-2.5 rounded-xl sm:rounded-2xl flex flex-col items-center justify-center transition-colors",
-                            isHighest
-                              ? "bg-agri-success/15 border border-agri-success/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]"
-                              : "bg-secondary/50 border border-transparent",
-                          )}
-                        >
-                          <span className="text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5 truncate w-full text-center">
-                            {crop?.name || cropId}
-                          </span>
-                          <span
-                            className={cn(
-                              "font-bold text-xs sm:text-sm md:text-base",
-                              isHighest
-                                ? "text-agri-success drop-shadow-sm"
-                                : "text-foreground",
-                            )}
-                          >
-                            ₹{price.toLocaleString("en-IN")}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </motion.div>
-              ))}
+          {/* Main Card */}
+          <div className="relative h-full overflow-hidden rounded-[32px] border border-white/10 bg-gradient-to-b from-white/[0.08] to-transparent backdrop-blur-2xl shadow-xl flex flex-col p-4">
+            
+            {/* 1. IMAGE SECTION (Compact) */}
+            <div className="relative w-full h-28 flex items-center justify-center mt-2">
+              <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent rounded-full blur-2xl" />
+              <motion.div 
+                animate={{ y: [0, -5, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                className="relative w-24 h-24 z-10"
+              >
+                <Image 
+                  src={cropImages[crop.id] || cropImages.wheat} 
+                  alt={crop.name} 
+                  fill 
+                  className="object-contain drop-shadow-2xl"
+                />
+              </motion.div>
             </div>
-          </section>
 
-          {/* 4. PRICE HISTORY CHART */}
-          <section className="lg:col-span-7 lg:sticky lg:top-36 space-y-3 sm:space-y-4">
-            <h2 className="text-base sm:text-lg font-bold text-foreground tracking-tight px-1">
-              Analytics
-            </h2>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.4 }}
-              className="w-full glass-card premium-shadow rounded-2xl sm:rounded-3xl p-2 sm:p-4 border border-border/50"
-            >
-              <PriceHistoryChart />
-            </motion.div>
-          </section>
+            {/* 2. CONTENT SECTION */}
+            <div className="flex-grow flex flex-col items-center justify-center text-center mt-2">
+              <span className="text-[8px] font-black text-green-400/60 uppercase tracking-[0.4em] mb-1">
+                Top Mover
+              </span>
+              <h3 className="text-lg font-bold text-white tracking-tight leading-tight mb-3">
+                {crop.name}
+              </h3>
+
+              <div className="relative px-4 py-1">
+                <div className="flex items-baseline justify-center gap-0.5">
+                  <span className="text-sm font-bold text-white/40">₹</span>
+                  <p className="text-3xl font-black text-white tracking-tighter tabular-nums">
+                    {insight.price.toLocaleString("en-IN")}
+                  </p>
+                </div>
+                <p className="text-[9px] font-medium text-white/30 uppercase tracking-widest">
+                  per {crop.unit}
+                </p>
+              </div>
+            </div>
+
+            {/* 3. TREND FOOTER */}
+            <div className="mt-auto pt-2">
+              <div className={cn(
+                "flex items-center justify-center gap-1.5 py-2 rounded-2xl border transition-colors",
+                isUp 
+                  ? "bg-green-500/10 border-green-500/20 text-green-400" 
+                  : "bg-red-500/10 border-red-500/20 text-red-400"
+              )}>
+                <TrendIcon className="w-3.5 h-3.5" strokeWidth={3} />
+                <span className="text-xs font-black">
+                  {isUp ? '+' : ''}{insight.percentChange}%
+                </span>
+              </div>
+            </div>
+
+            {/* Subtle Reflection Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-white/[0.05] via-transparent to-transparent pointer-events-none" />
+          </div>
+        </motion.div>
+      );
+    })}
+  </div>
+</section>
+
+
+
+
+
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+         {/* NEARBY MANDIS */}
+<section className="lg:col-span-5 space-y-4">
+  <div className="flex items-center justify-between px-1">
+    <div className="flex items-center gap-2">
+      <div className="p-2.5 rounded-xl bg-white/10 border border-white/10 shadow-inner">
+        <MapPin className="w-4 h-4 text-green-400" />
+      </div>
+      <h2 className="text-xl font-bold text-white tracking-tight">Nearby Mandis</h2>
+    </div>
+    <span className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">Live Data</span>
+  </div>
+
+  <div className="space-y-4">
+    {mandiData.map((mandi, index) => (
+      <motion.div
+        key={mandi.name}
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: index * 0.1 }}
+        className="relative overflow-hidden bg-white/[0.03] backdrop-blur-2xl rounded-[32px] p-6 border border-white/10 hover:border-white/20 hover:bg-white/[0.05] transition-all duration-500 group shadow-2xl"
+      >
+        {/* Subtle decorative glow */}
+        <div className="absolute -top-10 -right-10 w-32 h-32 bg-green-500/5 rounded-full blur-[60px] pointer-events-none group-hover:bg-green-500/10 transition-all duration-700" />
+
+        {/* Mandi Info Header */}
+        <div className="flex items-start justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-white/10 to-transparent border border-white/10 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-500">
+                <MapPin className="w-7 h-7 text-green-400 drop-shadow-[0_0_8px_rgba(74,222,128,0.4)]" />
+              </div>
+              {/* Pulsing Live Dot */}
+              <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-[#121212] animate-pulse" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-white tracking-tight group-hover:text-green-400 transition-colors">
+                {mandi.name}
+              </h3>
+              <p className="text-[12px] font-bold text-white/40 uppercase tracking-widest flex items-center gap-1.5">
+                <Activity className="w-3.5 h-3.5" />
+                {mandi.distance} away
+              </p>
+            </div>
+          </div>
+          
+          <button className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all">
+            <ArrowLeft className="w-5 h-5 rotate-180" />
+          </button>
+        </div>
+
+        {/* Price Grid with Crop Images */}
+        <div className="grid grid-cols-3 gap-4">
+          {Object.entries(mandi.prices).map(([cropId, price]) => {
+            const crop = crops.find((c) => c.id === cropId);
+            return (
+              <motion.div 
+                key={cropId} 
+               whileTap={{ filter: "brightness(1.5)", scale: 0.98 }}
+                className="relative overflow-hidden group/item p-4 rounded-[24px] bg-white/[0.04] border border-white/5 flex flex-col items-center hover:bg-white/[0.08] hover:border-white/20 hover:brightness-125 transition-all duration-300 cursor-pointer"
+              >
+                {/* Crop Image Circle - Size increased to w-12 h-12 */}
+                <div className="w-12 h-12 rounded-full overflow-hidden mb-3 border-2 border-white/10 shadow-xl group-hover/item:scale-110 group-hover/item:border-green-400/50 transition-all duration-300">
+                  <Image 
+                    src={cropImages[cropId] || cropImages.wheat} 
+                    alt={cropId}
+                    width={48}
+                    height={48}
+                    className="object-cover w-full h-full brightness-90 group-hover/item:brightness-110"
+                  />
+                </div>
+                
+                {/* Text sizes increased to text-xs and text-base */}
+                <span className="text-[11px] font-bold text-white/30 uppercase tracking-tight mb-1">
+                  {crop?.name || cropId}
+                </span>
+                <span className="font-extrabold text-base text-white tabular-nums">
+                  ₹{price.toLocaleString("en-IN")}
+                </span>
+
+                {/* Glass highlight bar at bottom */}
+                <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-green-500/0 group-hover/item:bg-green-400/60 transition-all duration-300 blur-[1px]" />
+              </motion.div>
+            );
+          })}
+        </div>
+      </motion.div>
+    ))}
+  </div>
+</section>
+
+
+          {/* ANALYTICS CHART */}
+          <section className="lg:col-span-7 space-y-4">
+  {/* Section Header with Actions */}
+  <div className="flex items-center justify-between px-1">
+    <div className="flex items-center gap-2">
+      <div className="p-2 rounded-lg bg-white/10 border border-white/10">
+        <Activity className="w-4 h-4 text-green-400" />
+      </div>
+      <h2 className="text-lg font-bold text-white tracking-tight">Analytics</h2>
+    </div>
+
+    {/* Time Range Switcher (UX Improvement) */}
+    <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 backdrop-blur-md">
+      {["7D", "30D", "90D"].map((range, i) => (
+        <button
+          key={range}
+          className={cn(
+            "px-3 py-1.5 text-[10px] font-bold rounded-lg transition-all",
+            i === 0 ? "bg-white/10 text-white shadow-lg" : "text-white/40 hover:text-white/70"
+          )}
+        >
+          {range}
+        </button>
+      ))}
+    </div>
+  </div>
+
+  {/* The Glass Chart Card */}
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="group relative overflow-hidden bg-white/[0.03] backdrop-blur-2xl rounded-[32px] p-6 border border-white/10 shadow-2xl transition-all hover:border-white/20"
+  >
+    {/* Background Glow Effect (Visual Polish) */}
+    <div className="absolute -top-24 -right-24 w-48 h-48 bg-green-500/10 rounded-full blur-[80px] pointer-events-none group-hover:bg-green-500/20 transition-colors" />
+
+    {/* Chart Stats / Legend Area */}
+    <div className="flex flex-wrap items-center gap-6 mb-8">
+      <div>
+        <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-1">Current Avg</p>
+        <div className="flex items-baseline gap-1">
+          <span className="text-2xl font-bold text-white">₹2,350</span>
+          <span className="text-xs font-medium text-green-400">+3.8%</span>
+        </div>
+      </div>
+      
+      {/* Legend Indicators */}
+      <div className="flex items-center gap-4 ml-auto">
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.5)]" />
+          <span className="text-[10px] font-bold text-white/60">Wheat</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-yellow-400" />
+          <span className="text-[10px] font-bold text-white/60">Mustard</span>
+        </div>
+      </div>
+    </div>
+
+    {/* The Actual Chart Component */}
+    <div className="h-[280px] w-full relative">
+      <PriceHistoryChart />
+    </div>
+
+    {/* Footer Info */}
+    <div className="mt-6 pt-6 border-t border-white/5 flex items-center justify-between">
+      <p className="text-[10px] text-white/30 font-medium">Last updated: Just now</p>
+      <button className="text-[10px] font-bold text-green-400 hover:underline">View Full Report</button>
+    </div>
+  </motion.div>
+</section>
         </div>
       </main>
 
