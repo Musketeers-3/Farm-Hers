@@ -1,15 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+
 import { Pool } from "@/types/pool";
 
-function useCurrentFarmer() {
-  // 🔁 Replace with your real auth hook
-  return { id: "farmer_123", name: "Ranjit Singh" };
-}
-
 export default function FarmerPools() {
-  const farmer = useCurrentFarmer();
+  const { user: authUser, authReady } = useCurrentUser();
+  const farmer = {
+    id: authUser?.uid ?? "",
+    name: authUser?.displayName ?? authUser?.email ?? "Farmer",
+  };
   const [pools, setPools] = useState<Pool[]>([]);
   const [tab, setTab] = useState<"browse" | "mine" | "create">("browse");
   const [loading, setLoading] = useState(false);
@@ -46,8 +47,8 @@ export default function FarmerPools() {
   };
 
   useEffect(() => {
-    if (tab === "browse" || tab === "mine") fetchPools();
-  }, [tab]);
+    if (authReady && (tab === "browse" || tab === "mine")) fetchPools();
+  }, [tab, authReady]);
 
   // ─── CREATE ───────────────────────────────────────────────────────────────
   const handleCreate = async () => {
@@ -131,8 +132,8 @@ export default function FarmerPools() {
             {t === "browse"
               ? "Buyer Requests"
               : t === "mine"
-              ? "My Pools"
-              : "Create Pool"}
+                ? "My Pools"
+                : "Create Pool"}
           </button>
         ))}
       </div>
@@ -176,14 +177,17 @@ export default function FarmerPools() {
                   <p>
                     Filled: {pool.filledQuantity} {pool.unit} (
                     {Math.round(
-                      ((pool.filledQuantity || 0) / (pool.targetQuantity || 1)) * 100
+                      ((pool.filledQuantity || 0) /
+                        (pool.targetQuantity || 1)) *
+                        100,
                     )}
                     %)
                   </p>
                   {pool.location && <p>📍 {pool.location}</p>}
                   {pool.deadline && (
                     <p>
-                      ⏰ By {new Date(pool.deadline).toLocaleDateString("en-IN")}
+                      ⏰ By{" "}
+                      {new Date(pool.deadline).toLocaleDateString("en-IN")}
                     </p>
                   )}
                   {pool.description && (
@@ -202,7 +206,7 @@ export default function FarmerPools() {
                         ((pool.filledQuantity || 0) /
                           (pool.targetQuantity || 1)) *
                           100,
-                        100
+                        100,
                       )}%`,
                     }}
                   />
@@ -322,9 +326,7 @@ export default function FarmerPools() {
             placeholder="Description (optional)"
             rows={2}
             value={form.description}
-            onChange={(e) =>
-              setForm({ ...form, description: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
           />
 
           <button
@@ -351,9 +353,7 @@ export default function FarmerPools() {
               type="number"
               placeholder={`Quantity in ${joining.pool.unit}`}
               value={joining.qty}
-              onChange={(e) =>
-                setJoining({ ...joining, qty: e.target.value })
-              }
+              onChange={(e) => setJoining({ ...joining, qty: e.target.value })}
             />
             <div className="flex gap-2">
               <button
