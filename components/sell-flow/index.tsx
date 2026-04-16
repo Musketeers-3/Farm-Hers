@@ -84,11 +84,9 @@ export function SellFlow() {
     }
   };
 
-  // ── API INTEGRATION: Aligned with your POST /api/pools schema ────────────
   const handleConfirmSale = async () => {
     if (!selectedCrop) return;
 
-    // Fallback data if profile is not fully hydrated
     const farmerId = userProfile?.uid || "demo-farmer-123";
     const farmerName = userProfile?.fullName || "Arshvir Kaur";
     const farmerRole = userProfile?.role || "farmer";
@@ -98,7 +96,6 @@ export function SellFlow() {
 
     try {
       if (sellMethod === "pool") {
-        // Prepare the strictly validated payload for your backend
         const poolPayload = {
           creatorId: farmerId,
           creatorRole: farmerRole,
@@ -106,14 +103,12 @@ export function SellFlow() {
           commodity: selectedCrop.id,
           pricePerUnit: selectedCrop.currentPrice,
           unit: "quintal",
-          targetQuantity: sellQuantity * 3, // Initial goal
-          requestedQuantity: sellQuantity * 3, // Duplicate field for backward compatibility
-          location: "Punjab, India", // Mock location for the fallback creation
+          targetQuantity: sellQuantity * 3,
+          requestedQuantity: sellQuantity * 3,
+          location: "Punjab, India",
         };
 
         if (matchingPool) {
-          // Note: If you want to join an existing pool, your backend will need a PUT/PATCH endpoint.
-          // For now, this mimics the creation flow to prevent a 404 block.
           const res = await fetch("/api/pools", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -122,7 +117,6 @@ export function SellFlow() {
           if (!res.ok)
             throw new Error((await res.json()).error || "Failed to join pool");
         } else {
-          // Creating a new pool
           const res = await fetch("/api/pools", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -180,6 +174,7 @@ export function SellFlow() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
+      {/* ── HEADER ── */}
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50 pt-4 pb-0">
         <div className="flex items-center gap-4 px-4 pb-4">
           <button
@@ -207,6 +202,9 @@ export function SellFlow() {
         </div>
       </header>
 
+      {/* ── MAIN CONTENT ──
+          pb-56: clears the Continue button bar (~90px) + the floating BottomNav (~80px) + breathing room
+      */}
       <main className="flex-1 relative w-full max-w-2xl mx-auto">
         <AnimatePresence initial={false} custom={direction} mode="wait">
           <motion.div
@@ -217,7 +215,7 @@ export function SellFlow() {
             animate="center"
             exit="exit"
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="w-full p-4 sm:p-6 pb-32 absolute top-0 left-0"
+            className="w-full p-4 sm:p-6 pb-56 absolute top-0 left-0"
           >
             {step === "select-crop" && (
               <CropSelection
@@ -270,8 +268,13 @@ export function SellFlow() {
         </AnimatePresence>
       </main>
 
-      <div className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none">
-        <div className="h-12 w-full bg-linear-to-t from-background to-transparent" />
+      {/* ── CONTINUE BUTTON BAR ──
+          Positioned above the floating BottomNav (which is at bottom-4 ~16px, height ~80px).
+          bottom-24 = 96px keeps us safely above the nav on mobile.
+          z-40 keeps it below the nav's z-50 so the nav always renders on top.
+      -->*/}
+      <div className="fixed bottom-24 sm:bottom-28 left-0 right-0 z-40 pointer-events-none">
+        <div className="h-12 w-full bg-gradient-to-t from-background to-transparent" />
         <div className="p-4 sm:p-6 bg-background/90 backdrop-blur-xl border-t border-border/50 pointer-events-auto">
           <div className="max-w-2xl mx-auto">
             <Button

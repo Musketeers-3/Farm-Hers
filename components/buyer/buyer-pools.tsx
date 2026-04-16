@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import {
   Flame,
   MapPin,
@@ -24,9 +25,6 @@ import { useAppStore } from "@/lib/store";
 import type { Pool } from "@/types/pool";
 
 // ─── AUTH HOOK (swap with your real auth) ──────────────────────────────────────
-function useCurrentBuyer() {
-  return { id: "buyer_001", name: "Pam Agro Pvt Ltd" };
-}
 
 // ─── TOKEN FACTORY ─────────────────────────────────────────────────────────────
 const makeTokens = (isDark: boolean) =>
@@ -116,7 +114,11 @@ function RoleBadge({
 // ═══════════════════════════════════════════════════════════════════════════════
 export function BuyerPools({ isDark = true }: { isDark?: boolean }) {
   const G = makeTokens(isDark);
-  const buyer = useCurrentBuyer();
+  const { user: authUser, authReady } = useCurrentUser();
+  const buyer = {
+    id: authUser?.uid ?? "",
+    name: authUser?.displayName ?? authUser?.email ?? "Buyer",
+  };
   const crops = useAppStore((s) => s.crops);
   const addOrder = useAppStore((s) => s.addOrder);
 
@@ -157,9 +159,8 @@ export function BuyerPools({ isDark = true }: { isDark?: boolean }) {
   };
 
   useEffect(() => {
-    if (tab === "browse" || tab === "mine") fetchPools();
-  }, [tab]);
-
+    if (authReady && (tab === "browse" || tab === "mine")) fetchPools();
+  }, [tab, authReady]);
   const togglePool = (poolId: string, maxQty: number) => {
     if (activePoolId === poolId) {
       setActivePoolId(null);
@@ -201,7 +202,7 @@ export function BuyerPools({ isDark = true }: { isDark?: boolean }) {
     poolId: string,
     cropId: string,
     price: number,
-    qty: number
+    qty: number,
   ) => {
     setIsProcessing(true);
     setTimeout(() => {
@@ -262,9 +263,18 @@ export function BuyerPools({ isDark = true }: { isDark?: boolean }) {
     }
   };
 
-  const myPools = pools.filter((p) => p.creatorId === buyer.id);
-  const farmerPools = pools.filter((p) => p.creatorRole === "farmer");
-  const buyerPools = pools.filter((p) => p.creatorRole === "buyer");
+  // Deduplicate by id first (guards against double Firestore docs)
+  const uniquePools = pools.filter(
+    (p, idx, arr) => arr.findIndex((x) => x.id === p.id) === idx,
+  );
+
+  const myPools = uniquePools.filter((p) => p.creatorId === buyer.id);
+  const farmerPools = uniquePools.filter(
+    (p) => p.creatorRole === "farmer" && p.creatorId !== buyer.id,
+  );
+  const buyerPools = uniquePools.filter(
+    (p) => p.creatorRole === "buyer" && p.creatorId !== buyer.id,
+  );
 
   const tabs = [
     { key: "browse", label: "Browse Pools" },
@@ -288,8 +298,8 @@ export function BuyerPools({ isDark = true }: { isDark?: boolean }) {
     const isActive = activePoolId === pool.id;
     const isSigned = contractSigned === pool.id;
     const isMyPool = pool.creatorId === buyer.id;
-    const canInteract = !isMyPool && !isSigned;
-
+    const alreadyJoined = pool.members?.some((m) => m.farmerId === buyer.id);
+    const canInteract = !isMyPool && !isSigned && !alreadyJoined;
     return (
       <motion.div
         layout
@@ -313,7 +323,10 @@ export function BuyerPools({ isDark = true }: { isDark?: boolean }) {
           <div className="flex items-center gap-4">
             <div
               className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center shrink-0"
-              style={{ background: G.accentBg, border: `1px solid ${G.accentBorder}` }}
+              style={{
+                background: G.accentBg,
+                border: `1px solid ${G.accentBorder}`,
+              }}
             >
               <Wheat className="w-6 h-6" style={{ color: G.accent }} />
             </div>
@@ -336,7 +349,10 @@ export function BuyerPools({ isDark = true }: { isDark?: boolean }) {
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-3 text-xs sm:text-sm font-semibold" style={{ color: G.textSub }}>
+              <div
+                className="flex items-center gap-3 text-xs sm:text-sm font-semibold"
+                style={{ color: G.textSub }}
+              >
                 <span className="flex items-center gap-1">
                   <Users className="w-3.5 h-3.5" />
                   {pool.creatorName || "Unknown"}
@@ -352,18 +368,27 @@ export function BuyerPools({ isDark = true }: { isDark?: boolean }) {
 
           <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 sm:gap-0.5">
             <div className="text-left sm:text-right">
-              <p className="text-[10px] uppercase font-bold tracking-widest" style={{ color: G.textLabel }}>
+              <p
+                className="text-[10px] uppercase font-bold tracking-widest"
+                style={{ color: G.textLabel }}
+              >
                 {pool.creatorRole === "buyer" ? "Offering" : "Asking"} Rate
               </p>
               <p className="text-xl sm:text-2xl font-mono font-black text-white">
                 ₹{finalPrice}
-                <span className="text-sm font-medium ml-1" style={{ color: G.textSub }}>
+                <span
+                  className="text-sm font-medium ml-1"
+                  style={{ color: G.textSub }}
+                >
                   /{pool.unit || "q"}
                 </span>
               </p>
             </div>
             {canInteract && !isActive && (
-              <div className="p-2 rounded-xl" style={{ background: G.chevronBg }}>
+              <div
+                className="p-2 rounded-xl"
+                style={{ background: G.chevronBg }}
+              >
                 <ChevronRight className="w-5 h-5 text-white/40" />
               </div>
             )}
@@ -376,18 +401,33 @@ export function BuyerPools({ isDark = true }: { isDark?: boolean }) {
             <span style={{ color: G.textLabel }}>Pool Filled</span>
             <span style={{ color: G.accent }}>{fillPct}%</span>
           </div>
-          <div className="h-1.5 w-full rounded-full overflow-hidden" style={{ background: G.progressTrack }}>
+          <div
+            className="h-1.5 w-full rounded-full overflow-hidden"
+            style={{ background: G.progressTrack }}
+          >
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${fillPct}%` }}
               transition={{ duration: 1, ease: "easeOut" }}
               className="h-full rounded-full"
-              style={{ background: `linear-gradient(90deg, ${G.accentDark}, ${G.accent})` }}
+              style={{
+                background: `linear-gradient(90deg, ${G.accentDark}, ${G.accent})`,
+              }}
             />
           </div>
-          <p className="text-[10px] font-semibold mt-2" style={{ color: G.textLabel }}>
-            {filledQty} / {targetQty} {pool.unit || "q"} · {pool.members?.length || 0} member(s)
-            {pool.deadline && <span> · Deadline: {new Date(pool.deadline).toLocaleDateString("en-IN")}</span>}
+          <p
+            className="text-[10px] font-semibold mt-2"
+            style={{ color: G.textLabel }}
+          >
+            {filledQty} / {targetQty} {pool.unit || "q"} ·{" "}
+            {pool.members?.length || 0} member(s)
+            {pool.deadline && (
+              <span>
+                {" "}
+                · Deadline:{" "}
+                {new Date(pool.deadline).toLocaleDateString("en-IN")}
+              </span>
+            )}
           </p>
         </div>
 
@@ -401,28 +441,48 @@ export function BuyerPools({ isDark = true }: { isDark?: boolean }) {
               className="overflow-hidden"
               style={{ borderTop: `1px solid ${G.border}` }}
             >
-              <div className="p-5 sm:p-6 space-y-5" style={{ background: G.expandBg }}>
+              <div
+                className="p-5 sm:p-6 space-y-5"
+                style={{ background: G.expandBg }}
+              >
                 <div
                   className="p-5 rounded-xl"
-                  style={{ background: G.card, border: `1px solid ${G.border}`, backdropFilter: G.blur, WebkitBackdropFilter: G.blur }}
+                  style={{
+                    background: G.card,
+                    border: `1px solid ${G.border}`,
+                    backdropFilter: G.blur,
+                    WebkitBackdropFilter: G.blur,
+                  }}
                 >
                   <div className="flex justify-between items-end mb-4">
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: G.textLabel }}>
+                      <p
+                        className="text-xs font-bold uppercase tracking-wider mb-1"
+                        style={{ color: G.textLabel }}
+                      >
                         Procurement Volume
                       </p>
                       <p className="text-2xl font-black font-mono text-white">
                         {selectedQty}{" "}
-                        <span className="text-base font-medium" style={{ color: G.textSub }}>
+                        <span
+                          className="text-base font-medium"
+                          style={{ color: G.textSub }}
+                        >
                           {pool.unit || "Quintals"}
                         </span>
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: G.textLabel }}>
+                      <p
+                        className="text-xs font-bold uppercase tracking-wider mb-1"
+                        style={{ color: G.textLabel }}
+                      >
                         Total Value
                       </p>
-                      <p className="text-xl font-bold font-mono" style={{ color: G.accent }}>
+                      <p
+                        className="text-xl font-bold font-mono"
+                        style={{ color: G.accent }}
+                      >
                         ₹{(selectedQty * finalPrice).toLocaleString("en-IN")}
                       </p>
                     </div>
@@ -435,7 +495,10 @@ export function BuyerPools({ isDark = true }: { isDark?: boolean }) {
                     step={pool.unit === "kg" ? 50 : 5}
                     className="py-4"
                   />
-                  <p className="text-[10px] mt-1 font-semibold" style={{ color: G.textLabel }}>
+                  <p
+                    className="text-[10px] mt-1 font-semibold"
+                    style={{ color: G.textLabel }}
+                  >
                     Max available: {availableQty} {pool.unit || "q"}
                   </p>
                 </div>
@@ -446,7 +509,12 @@ export function BuyerPools({ isDark = true }: { isDark?: boolean }) {
                     if (pool.creatorRole === "farmer") {
                       handleJoinAsBuyer(pool, selectedQty);
                     } else {
-                      handleInitiateContract(pool.id!, pool.commodity, finalPrice, selectedQty);
+                      handleInitiateContract(
+                        pool.id!,
+                        pool.commodity,
+                        finalPrice,
+                        selectedQty,
+                      );
                     }
                   }}
                   className="w-full py-4 rounded-xl font-bold text-sm uppercase tracking-widest flex items-center justify-center gap-2 transition-all"
@@ -462,13 +530,22 @@ export function BuyerPools({ isDark = true }: { isDark?: boolean }) {
                   }
                 >
                   {isProcessing ? (
-                    <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }}>
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{
+                        repeat: Infinity,
+                        duration: 1,
+                        ease: "linear",
+                      }}
+                    >
                       <Clock className="w-5 h-5" />
                     </motion.div>
                   ) : (
                     <>
                       <span>
-                        {pool.creatorRole === "farmer" ? "Commit to Purchase" : "Initiate Contract"}
+                        {pool.creatorRole === "farmer"
+                          ? "Commit to Purchase"
+                          : "Initiate Contract"}
                       </span>
                       <ArrowRight className="w-4 h-4" />
                     </>
@@ -483,17 +560,25 @@ export function BuyerPools({ isDark = true }: { isDark?: boolean }) {
               initial={{ opacity: 0, scale: 0.97 }}
               animate={{ opacity: 1, scale: 1 }}
               className="p-6 flex flex-col items-center text-center gap-3"
-              style={{ background: G.signedBg, borderTop: `1px solid ${G.accentBorder}` }}
+              style={{
+                background: G.signedBg,
+                borderTop: `1px solid ${G.accentBorder}`,
+              }}
             >
               <div
                 className="w-12 h-12 rounded-full flex items-center justify-center"
-                style={{ background: G.accentBg, border: `1px solid ${G.accentBorder}` }}
+                style={{
+                  background: G.accentBg,
+                  border: `1px solid ${G.accentBorder}`,
+                }}
               >
                 <CheckCircle2 className="w-6 h-6" style={{ color: G.accent }} />
               </div>
               <div>
                 <h4 className="font-bold text-white">
-                  {pool.creatorRole === "farmer" ? "Purchase Committed!" : "Contract Initiated!"}
+                  {pool.creatorRole === "farmer"
+                    ? "Purchase Committed!"
+                    : "Contract Initiated!"}
                 </h4>
                 <p className="text-xs mt-1" style={{ color: G.textSub }}>
                   {pool.creatorRole === "farmer"
@@ -502,6 +587,20 @@ export function BuyerPools({ isDark = true }: { isDark?: boolean }) {
                 </p>
               </div>
             </motion.div>
+          )}
+          {alreadyJoined && !isSigned && (
+            <div
+              className="p-4 flex items-center gap-3"
+              style={{
+                borderTop: `1px solid ${G.border}`,
+                background: G.signedBg,
+              }}
+            >
+              <CheckCircle2 className="w-5 h-5" style={{ color: G.accent }} />
+              <p className="text-sm font-semibold" style={{ color: G.accent }}>
+                You've already committed to this pool.
+              </p>
+            </div>
           )}
         </AnimatePresence>
       </motion.div>
@@ -542,9 +641,21 @@ export function BuyerPools({ isDark = true }: { isDark?: boolean }) {
       {tab !== "create" && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
           {[
-            { label: "Total Open Pools", value: pools.length, icon: Package },
-            { label: "Farmer Pools", value: farmerPools.length, icon: TrendingUp },
-            { label: "Buyer Requests", value: buyerPools.length, icon: CircleDollarSign },
+            {
+              label: "Total Open Pools",
+              value: uniquePools.length,
+              icon: Package,
+            },
+            {
+              label: "Farmer Pools",
+              value: farmerPools.length,
+              icon: TrendingUp,
+            },
+            {
+              label: "Buyer Requests",
+              value: buyerPools.length,
+              icon: CircleDollarSign,
+            },
           ].map((stat, i) => (
             <motion.div
               key={stat.label}
@@ -561,16 +672,25 @@ export function BuyerPools({ isDark = true }: { isDark?: boolean }) {
               }}
             >
               <div>
-                <p className="text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-1" style={{ color: G.textLabel }}>
+                <p
+                  className="text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-1"
+                  style={{ color: G.textLabel }}
+                >
                   {stat.label}
                 </p>
-                <p className="text-2xl sm:text-3xl font-black tracking-tight" style={{ color: G.textPrimary }}>
+                <p
+                  className="text-2xl sm:text-3xl font-black tracking-tight"
+                  style={{ color: G.textPrimary }}
+                >
                   {stat.value}
                 </p>
               </div>
               <div
                 className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center rounded-2xl"
-                style={{ background: G.accentBg, border: `1px solid ${G.accentBorder}` }}
+                style={{
+                  background: G.accentBg,
+                  border: `1px solid ${G.accentBorder}`,
+                }}
               >
                 <stat.icon className="w-6 h-6" style={{ color: G.accent }} />
               </div>
@@ -585,27 +705,49 @@ export function BuyerPools({ isDark = true }: { isDark?: boolean }) {
           <div className="lg:col-span-8 space-y-6">
             {loading ? (
               <div className="flex flex-col items-center justify-center py-24 gap-4">
-                <Loader2 className="w-8 h-8 animate-spin" style={{ color: G.accent }} />
-                <p className="text-sm font-semibold" style={{ color: G.textSub }}>Loading pools...</p>
+                <Loader2
+                  className="w-8 h-8 animate-spin"
+                  style={{ color: G.accent }}
+                />
+                <p
+                  className="text-sm font-semibold"
+                  style={{ color: G.textSub }}
+                >
+                  Loading pools...
+                </p>
               </div>
             ) : fetchError ? (
               <div className="flex flex-col items-center justify-center py-24 gap-4">
                 <AlertCircle className="w-8 h-8 text-red-400" />
-                <p className="text-sm font-semibold text-red-400">{fetchError}</p>
-                <button onClick={fetchPools} className="px-4 py-2 rounded-xl text-sm font-bold text-white" style={{ background: G.accentDark }}>
+                <p className="text-sm font-semibold text-red-400">
+                  {fetchError}
+                </p>
+                <button
+                  onClick={fetchPools}
+                  className="px-4 py-2 rounded-xl text-sm font-bold text-white"
+                  style={{ background: G.accentDark }}
+                >
                   Retry
                 </button>
               </div>
             ) : pools.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-24 gap-4">
                 <Package className="w-10 h-10" style={{ color: G.textLabel }} />
-                <p className="text-sm font-semibold" style={{ color: G.textSub }}>No open pools available right now.</p>
+                <p
+                  className="text-sm font-semibold"
+                  style={{ color: G.textSub }}
+                >
+                  No open pools available right now.
+                </p>
               </div>
             ) : (
               <>
                 {farmerPools.length > 0 && (
                   <div className="space-y-3">
-                    <p className="text-xs font-bold uppercase tracking-widest px-1" style={{ color: G.textLabel }}>
+                    <p
+                      className="text-xs font-bold uppercase tracking-widest px-1"
+                      style={{ color: G.textLabel }}
+                    >
                       🌾 Farmer Pools — Commit to Buy
                     </p>
                     {farmerPools.map((pool, i) => (
@@ -615,11 +757,18 @@ export function BuyerPools({ isDark = true }: { isDark?: boolean }) {
                 )}
                 {buyerPools.length > 0 && (
                   <div className="space-y-3">
-                    <p className="text-xs font-bold uppercase tracking-widest px-1" style={{ color: G.textLabel }}>
+                    <p
+                      className="text-xs font-bold uppercase tracking-widest px-1"
+                      style={{ color: G.textLabel }}
+                    >
                       🏢 Buyer Requests — Open for Farmers
                     </p>
                     {buyerPools.map((pool, i) => (
-                      <PoolCard key={pool.id} pool={pool} index={farmerPools.length + i} />
+                      <PoolCard
+                        key={pool.id}
+                        pool={pool}
+                        index={farmerPools.length + i}
+                      />
                     ))}
                   </div>
                 )}
@@ -631,7 +780,13 @@ export function BuyerPools({ isDark = true }: { isDark?: boolean }) {
           <div className="lg:col-span-4 space-y-5 lg:sticky lg:top-32">
             <div
               className="rounded-2xl p-6"
-              style={{ background: G.card, border: `1px solid ${G.border}`, backdropFilter: G.blur, WebkitBackdropFilter: G.blur, boxShadow: G.shadow }}
+              style={{
+                background: G.card,
+                border: `1px solid ${G.border}`,
+                backdropFilter: G.blur,
+                WebkitBackdropFilter: G.blur,
+                boxShadow: G.shadow,
+              }}
             >
               <h3 className="font-bold text-lg flex items-center gap-2 mb-5 text-white">
                 <ShieldCheck className="w-5 h-5" style={{ color: G.accent }} />
@@ -639,29 +794,63 @@ export function BuyerPools({ isDark = true }: { isDark?: boolean }) {
               </h3>
               <div className="space-y-3">
                 {[
-                  { title: "Moisture Content", value: "< 12%", status: "Optimal" },
+                  {
+                    title: "Moisture Content",
+                    value: "< 12%",
+                    status: "Optimal",
+                  },
                   { title: "Foreign Matter", value: "< 1%", status: "Grade A" },
-                  { title: "Pesticide Residue", value: "Zero", status: "Certified Organic" },
+                  {
+                    title: "Pesticide Residue",
+                    value: "Zero",
+                    status: "Certified Organic",
+                  },
                 ].map((m, i) => (
                   <div
                     key={i}
                     className="flex items-center justify-between p-3.5 rounded-xl"
-                    style={{ background: G.statBox, border: `1px solid ${G.border}` }}
+                    style={{
+                      background: G.statBox,
+                      border: `1px solid ${G.border}`,
+                    }}
                   >
-                    <span className="text-sm font-semibold" style={{ color: G.textSub }}>{m.title}</span>
+                    <span
+                      className="text-sm font-semibold"
+                      style={{ color: G.textSub }}
+                    >
+                      {m.title}
+                    </span>
                     <div className="text-right">
                       <p className="text-sm font-bold text-white">{m.value}</p>
-                      <p className="text-[9px] uppercase tracking-wider font-bold" style={{ color: G.accent }}>{m.status}</p>
+                      <p
+                        className="text-[9px] uppercase tracking-wider font-bold"
+                        style={{ color: G.accent }}
+                      >
+                        {m.status}
+                      </p>
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="mt-5 p-4 rounded-xl flex items-start gap-3" style={{ background: G.accentBg, border: `1px solid ${G.accentBorder}` }}>
-                <Star className="w-5 h-5 shrink-0 mt-0.5" style={{ color: G.accent }} />
+              <div
+                className="mt-5 p-4 rounded-xl flex items-start gap-3"
+                style={{
+                  background: G.accentBg,
+                  border: `1px solid ${G.accentBorder}`,
+                }}
+              >
+                <Star
+                  className="w-5 h-5 shrink-0 mt-0.5"
+                  style={{ color: G.accent }}
+                />
                 <div>
                   <p className="text-sm font-bold text-white">Premium Supply</p>
-                  <p className="text-xs mt-1 leading-relaxed" style={{ color: G.textSub }}>
-                    Pools are sourced from verified farmer collectives with strict quality controls.
+                  <p
+                    className="text-xs mt-1 leading-relaxed"
+                    style={{ color: G.textSub }}
+                  >
+                    Pools are sourced from verified farmer collectives with
+                    strict quality controls.
                   </p>
                 </div>
               </div>
@@ -675,7 +864,10 @@ export function BuyerPools({ isDark = true }: { isDark?: boolean }) {
         <div className="space-y-4">
           {loading ? (
             <div className="flex items-center justify-center py-16">
-              <Loader2 className="w-7 h-7 animate-spin" style={{ color: G.accent }} />
+              <Loader2
+                className="w-7 h-7 animate-spin"
+                style={{ color: G.accent }}
+              />
             </div>
           ) : myPools.length === 0 ? (
             <div
@@ -689,7 +881,10 @@ export function BuyerPools({ isDark = true }: { isDark?: boolean }) {
               <button
                 onClick={() => setTab("create")}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white"
-                style={{ background: G.accentDark, border: `1px solid ${G.accentBorder}` }}
+                style={{
+                  background: G.accentDark,
+                  border: `1px solid ${G.accentBorder}`,
+                }}
               >
                 <Plus className="w-4 h-4" /> Post a Request
               </button>
@@ -702,43 +897,71 @@ export function BuyerPools({ isDark = true }: { isDark?: boolean }) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.06 }}
                 className="rounded-2xl p-5 sm:p-6"
-                style={{ background: G.card, border: `1px solid ${G.border}`, backdropFilter: G.blur, WebkitBackdropFilter: G.blur, boxShadow: G.shadow }}
+                style={{
+                  background: G.card,
+                  border: `1px solid ${G.border}`,
+                  backdropFilter: G.blur,
+                  WebkitBackdropFilter: G.blur,
+                  boxShadow: G.shadow,
+                }}
               >
                 <div className="flex justify-between items-start gap-3 flex-wrap">
                   <div>
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <h3 className="font-black text-lg text-white capitalize">{pool.commodity}</h3>
+                      <h3 className="font-black text-lg text-white capitalize">
+                        {pool.commodity}
+                      </h3>
                       <span
                         className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest"
                         style={{
-                          background: pool.status === "open" ? G.accentBg : "rgba(255,255,255,0.06)",
-                          color: pool.status === "open" ? G.accent : G.textLabel,
+                          background:
+                            pool.status === "open"
+                              ? G.accentBg
+                              : "rgba(255,255,255,0.06)",
+                          color:
+                            pool.status === "open" ? G.accent : G.textLabel,
                           border: `1px solid ${pool.status === "open" ? G.accentBorder : G.border}`,
                         }}
                       >
                         {pool.status}
                       </span>
                     </div>
-                    <p className="text-sm font-semibold" style={{ color: G.textSub }}>
-                      ₹{pool.pricePerUnit}/{pool.unit} · {pool.filledQuantity}/{pool.targetQuantity} {pool.unit} filled
+                    <p
+                      className="text-sm font-semibold"
+                      style={{ color: G.textSub }}
+                    >
+                      ₹{pool.pricePerUnit}/{pool.unit} · {pool.filledQuantity}/
+                      {pool.targetQuantity} {pool.unit} filled
                     </p>
                     {pool.location && (
-                      <p className="text-xs mt-1 flex items-center gap-1" style={{ color: G.textLabel }}>
+                      <p
+                        className="text-xs mt-1 flex items-center gap-1"
+                        style={{ color: G.textLabel }}
+                      >
                         <MapPin className="w-3 h-3" /> {pool.location}
                       </p>
                     )}
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] uppercase font-bold tracking-widest mb-1" style={{ color: G.textLabel }}>
+                    <p
+                      className="text-[10px] uppercase font-bold tracking-widest mb-1"
+                      style={{ color: G.textLabel }}
+                    >
                       Farmers Joined
                     </p>
-                    <p className="text-2xl font-black font-mono" style={{ color: G.accent }}>
+                    <p
+                      className="text-2xl font-black font-mono"
+                      style={{ color: G.accent }}
+                    >
                       {pool.members?.length || 0}
                     </p>
                   </div>
                 </div>
                 <div className="mt-4">
-                  <div className="h-1.5 w-full rounded-full overflow-hidden" style={{ background: G.progressTrack }}>
+                  <div
+                    className="h-1.5 w-full rounded-full overflow-hidden"
+                    style={{ background: G.progressTrack }}
+                  >
                     <div
                       className="h-full rounded-full transition-all duration-700"
                       style={{
@@ -747,9 +970,26 @@ export function BuyerPools({ isDark = true }: { isDark?: boolean }) {
                       }}
                     />
                   </div>
-                  <p className="text-[10px] mt-1.5 font-semibold" style={{ color: G.textLabel }}>
-                    {Math.min(100, Math.round(((pool.filledQuantity || 0) / (pool.targetQuantity || 1)) * 100))}% filled
-                    {pool.deadline && <span> · Deadline: {new Date(pool.deadline).toLocaleDateString("en-IN")}</span>}
+                  <p
+                    className="text-[10px] mt-1.5 font-semibold"
+                    style={{ color: G.textLabel }}
+                  >
+                    {Math.min(
+                      100,
+                      Math.round(
+                        ((pool.filledQuantity || 0) /
+                          (pool.targetQuantity || 1)) *
+                          100,
+                      ),
+                    )}
+                    % filled
+                    {pool.deadline && (
+                      <span>
+                        {" "}
+                        · Deadline:{" "}
+                        {new Date(pool.deadline).toLocaleDateString("en-IN")}
+                      </span>
+                    )}
                   </p>
                 </div>
               </motion.div>
@@ -760,28 +1000,71 @@ export function BuyerPools({ isDark = true }: { isDark?: boolean }) {
 
       {/* ══ CREATE TAB ══ */}
       {tab === "create" && (
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="max-w-xl">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="max-w-xl"
+        >
           <div
             className="rounded-2xl p-6 sm:p-8 space-y-5"
-            style={{ background: G.card, border: `1px solid ${G.border}`, backdropFilter: G.blur, WebkitBackdropFilter: G.blur, boxShadow: G.shadow }}
+            style={{
+              background: G.card,
+              border: `1px solid ${G.border}`,
+              backdropFilter: G.blur,
+              WebkitBackdropFilter: G.blur,
+              boxShadow: G.shadow,
+            }}
           >
             <div>
-              <h2 className="font-black text-xl text-white mb-1">Post a Buying Request</h2>
+              <h2 className="font-black text-xl text-white mb-1">
+                Post a Buying Request
+              </h2>
               <p className="text-sm" style={{ color: G.textSub }}>
-                Create a pool and let farmer collectives respond with their produce.
+                Create a pool and let farmer collectives respond with their
+                produce.
               </p>
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-widest mb-2" style={{ color: G.textLabel }}>Commodity</label>
-              <input style={inputStyle(G)} placeholder="e.g. Wheat, Rice, Soybean" value={form.commodity} onChange={(e) => setForm({ ...form, commodity: e.target.value })} />
+              <label
+                className="block text-xs font-bold uppercase tracking-widest mb-2"
+                style={{ color: G.textLabel }}
+              >
+                Commodity
+              </label>
+              <input
+                style={inputStyle(G)}
+                placeholder="e.g. Wheat, Rice, Soybean"
+                value={form.commodity}
+                onChange={(e) =>
+                  setForm({ ...form, commodity: e.target.value })
+                }
+              />
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-widest mb-2" style={{ color: G.textLabel }}>Offered Price per Unit</label>
+              <label
+                className="block text-xs font-bold uppercase tracking-widest mb-2"
+                style={{ color: G.textLabel }}
+              >
+                Offered Price per Unit
+              </label>
               <div className="flex gap-3">
-                <input style={{ ...inputStyle(G), flex: 1, width: "auto" }} type="number" placeholder="Price in ₹" value={form.pricePerUnit} onChange={(e) => setForm({ ...form, pricePerUnit: e.target.value })} />
-                <select style={{ ...inputStyle(G), flex: "0 0 110px", width: "auto" }} value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })}>
+                <input
+                  style={{ ...inputStyle(G), flex: 1, width: "auto" }}
+                  type="number"
+                  placeholder="Price in ₹"
+                  value={form.pricePerUnit}
+                  onChange={(e) =>
+                    setForm({ ...form, pricePerUnit: e.target.value })
+                  }
+                />
+                <select
+                  style={{ ...inputStyle(G), flex: "0 0 110px", width: "auto" }}
+                  value={form.unit}
+                  onChange={(e) => setForm({ ...form, unit: e.target.value })}
+                >
                   <option value="kg">kg</option>
                   <option value="quintal">quintal</option>
                   <option value="ton">ton</option>
@@ -790,34 +1073,100 @@ export function BuyerPools({ isDark = true }: { isDark?: boolean }) {
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-widest mb-2" style={{ color: G.textLabel }}>Total Quantity Needed</label>
-              <input style={inputStyle(G)} type="number" placeholder={`Target quantity in ${form.unit}`} value={form.targetQuantity} onChange={(e) => setForm({ ...form, targetQuantity: e.target.value })} />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-widest mb-2" style={{ color: G.textLabel }}>
-                Preferred Location <span style={{ color: G.textLabel, textTransform: "none", letterSpacing: "normal" }}>(optional)</span>
+              <label
+                className="block text-xs font-bold uppercase tracking-widest mb-2"
+                style={{ color: G.textLabel }}
+              >
+                Total Quantity Needed
               </label>
-              <input style={inputStyle(G)} placeholder="e.g. Ludhiana, Punjab" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
+              <input
+                style={inputStyle(G)}
+                type="number"
+                placeholder={`Target quantity in ${form.unit}`}
+                value={form.targetQuantity}
+                onChange={(e) =>
+                  setForm({ ...form, targetQuantity: e.target.value })
+                }
+              />
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-widest mb-2" style={{ color: G.textLabel }}>
-                Deadline <span style={{ color: G.textLabel, textTransform: "none", letterSpacing: "normal" }}>(optional)</span>
+              <label
+                className="block text-xs font-bold uppercase tracking-widest mb-2"
+                style={{ color: G.textLabel }}
+              >
+                Preferred Location{" "}
+                <span
+                  style={{
+                    color: G.textLabel,
+                    textTransform: "none",
+                    letterSpacing: "normal",
+                  }}
+                >
+                  (optional)
+                </span>
               </label>
-              <input style={inputStyle(G)} type="date" value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })} />
+              <input
+                style={inputStyle(G)}
+                placeholder="e.g. Ludhiana, Punjab"
+                value={form.location}
+                onChange={(e) => setForm({ ...form, location: e.target.value })}
+              />
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-widest mb-2" style={{ color: G.textLabel }}>
-                Additional Notes <span style={{ color: G.textLabel, textTransform: "none", letterSpacing: "normal" }}>(optional)</span>
+              <label
+                className="block text-xs font-bold uppercase tracking-widest mb-2"
+                style={{ color: G.textLabel }}
+              >
+                Deadline{" "}
+                <span
+                  style={{
+                    color: G.textLabel,
+                    textTransform: "none",
+                    letterSpacing: "normal",
+                  }}
+                >
+                  (optional)
+                </span>
+              </label>
+              <input
+                style={inputStyle(G)}
+                type="date"
+                value={form.deadline}
+                onChange={(e) => setForm({ ...form, deadline: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <label
+                className="block text-xs font-bold uppercase tracking-widest mb-2"
+                style={{ color: G.textLabel }}
+              >
+                Additional Notes{" "}
+                <span
+                  style={{
+                    color: G.textLabel,
+                    textTransform: "none",
+                    letterSpacing: "normal",
+                  }}
+                >
+                  (optional)
+                </span>
               </label>
               <textarea
-                style={{ ...inputStyle(G), resize: "vertical" } as React.CSSProperties}
+                style={
+                  {
+                    ...inputStyle(G),
+                    resize: "vertical",
+                  } as React.CSSProperties
+                }
                 placeholder="Quality requirements, packaging specs, delivery terms..."
                 rows={3}
                 value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, description: e.target.value })
+                }
               />
             </div>
 
