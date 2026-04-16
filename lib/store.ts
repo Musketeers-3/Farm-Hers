@@ -5,12 +5,13 @@ import type { UserProfile } from "./auth"; // 🚀 Imported UserProfile
 
 export type Language = "en" | "hi" | "pa";
 export type UserRole = "farmer" | "buyer";
-export type OrderStatus =
+type OrderStatus =
   | "pending"
   | "in-transit"
   | "quality-verified"
-  | "payment-released";
-
+  | "payment-released"
+  | "disputed";
+  
 export type Screen =
   | "home"
   | "sell"
