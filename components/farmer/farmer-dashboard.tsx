@@ -25,6 +25,7 @@ import { format } from "date-fns";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
 import { auth, db } from "@/lib/firebase";
 import {
   collection,
@@ -35,7 +36,6 @@ import {
   updateDoc,
 } from "firebase/firestore";
 
-// ─── Location Picker Modal ────────────────────────────────────────────────────
 interface LocationPickerModalProps {
   isOpen: boolean;
   currentLocation: string;
@@ -110,7 +110,6 @@ function LocationPickerModal({
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -118,8 +117,6 @@ function LocationPickerModal({
             onClick={onClose}
             className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm"
           />
-
-          {/* Modal */}
           <motion.div
             initial={{ opacity: 0, y: 60, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -127,31 +124,29 @@ function LocationPickerModal({
             transition={{ type: "spring", damping: 26, stiffness: 300 }}
             className="fixed bottom-0 left-0 right-0 z-50 sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:max-w-sm w-full"
           >
-            <div className="bg-white dark:bg-[#111] rounded-t-[32px] sm:rounded-[32px] shadow-2xl p-6 space-y-4">
-              {/* Header */}
+            <div className="bg-white dark:bg-[#1a2a1e] rounded-t-[32px] sm:rounded-[32px] shadow-2xl p-6 space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center">
                     <MapPin
-                      className="w-4 h-4 text-emerald-600"
+                      className="w-4 h-4 text-emerald-600 dark:text-emerald-400"
                       strokeWidth={2.5}
                     />
                   </div>
-                  <h2 className="text-[15px] font-black text-[#14532d]">
+                  <h2 className="text-[15px] font-black text-[#14532d] dark:text-emerald-300">
                     Change Location
                   </h2>
                 </div>
                 <button
                   onClick={onClose}
-                  className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition"
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/20 transition"
                 >
-                  <X className="w-4 h-4 text-gray-500" />
+                  <X className="w-4 h-4 text-gray-500 dark:text-gray-300" />
                 </button>
               </div>
 
-              {/* City Text Input */}
               <div className="space-y-1.5">
-                <label className="text-[11px] font-black text-[#15803d]/50 uppercase tracking-widest">
+                <label className="text-[11px] font-black text-[#15803d]/50 dark:text-emerald-400/60 uppercase tracking-widest">
                   City Name
                 </label>
                 <input
@@ -161,15 +156,14 @@ function LocationPickerModal({
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleConfirm()}
                   placeholder="e.g. Ludhiana, Nashik, Jaipur..."
-                  className="w-full px-4 py-3.5 rounded-2xl bg-gray-50 border border-gray-200 text-[15px] text-gray-800 font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-transparent transition placeholder:text-gray-300"
+                  className="w-full px-4 py-3.5 rounded-2xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-[15px] text-gray-800 dark:text-gray-100 font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-transparent transition placeholder:text-gray-300 dark:placeholder:text-gray-600"
                 />
               </div>
 
-              {/* Detect Button */}
               <button
                 onClick={handleDetect}
                 disabled={isDetecting}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 font-bold text-sm hover:bg-emerald-100 active:scale-[0.98] transition disabled:opacity-60"
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-800/40 text-emerald-700 dark:text-emerald-300 font-bold text-sm hover:bg-emerald-100 dark:hover:bg-emerald-900/50 active:scale-[0.98] transition disabled:opacity-60"
               >
                 {isDetecting ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -185,7 +179,6 @@ function LocationPickerModal({
                 </p>
               )}
 
-              {/* Confirm */}
               <button
                 onClick={handleConfirm}
                 disabled={!inputValue.trim()}
@@ -201,7 +194,6 @@ function LocationPickerModal({
   );
 }
 
-// ─── Main Farmer Dashboard ────────────────────────────────────────────────────
 export function FarmerDashboard() {
   const router = useRouter();
   const userName = useAppStore((state) => state.userName);
@@ -209,8 +201,8 @@ export function FarmerDashboard() {
   const setUserLocation = useAppStore((state) => state.setUserLocation);
   const t = useTranslation();
 
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [isDark, setIsDark] = useState(false);
   const [earnings, setEarnings] = useState<number | null>(null);
   const [earningsGrowth, setEarningsGrowth] = useState<number | null>(null);
   const [earningsLoading, setEarningsLoading] = useState(true);
@@ -218,10 +210,14 @@ export function FarmerDashboard() {
 
   useEffect(() => {
     setMounted(true);
-    setIsDark(document.documentElement.classList.contains("dark"));
   }, []);
 
-  // Fetch real earnings from Firestore orders
+  const isDark = resolvedTheme === "dark";
+
+  const toggleDarkMode = () => {
+    setTheme(isDark ? "light" : "dark");
+  };
+
   useEffect(() => {
     const fetchEarnings = async () => {
       const user = auth.currentUser;
@@ -234,11 +230,7 @@ export function FarmerDashboard() {
 
         const now = new Date();
         const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        const lastMonthStart = new Date(
-          now.getFullYear(),
-          now.getMonth() - 1,
-          1
-        );
+        const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
         const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
 
         let thisTotal = 0;
@@ -250,10 +242,7 @@ export function FarmerDashboard() {
           const createdAt = new Date(data.createdAt);
           if (createdAt >= thisMonthStart) {
             thisTotal += data.totalAmount || 0;
-          } else if (
-            createdAt >= lastMonthStart &&
-            createdAt <= lastMonthEnd
-          ) {
+          } else if (createdAt >= lastMonthStart && createdAt <= lastMonthEnd) {
             lastTotal += data.totalAmount || 0;
           }
         });
@@ -275,17 +264,6 @@ export function FarmerDashboard() {
     fetchEarnings();
   }, []);
 
-  const toggleDarkMode = () => {
-    const html = document.documentElement;
-    if (isDark) {
-      html.classList.remove("dark");
-    } else {
-      html.classList.add("dark");
-    }
-    setIsDark(!isDark);
-  };
-
-  // Update Zustand + persist to Firestore
   const handleLocationChange = async (newCity: string) => {
     setUserLocation(newCity);
     setLocationModalOpen(false);
@@ -293,9 +271,7 @@ export function FarmerDashboard() {
     const user = auth.currentUser;
     if (user) {
       try {
-        await updateDoc(doc(db, "users", user.uid), {
-          location: newCity,
-        });
+        await updateDoc(doc(db, "users", user.uid), { location: newCity });
       } catch (err) {
         console.error("Failed to save location:", err);
       }
@@ -312,12 +288,12 @@ export function FarmerDashboard() {
   const formattedDate = format(today, "EEEE, dd MMM yyyy");
 
   return (
-    <div
-      className="min-h-screen pb-28 lg:pb-8"
-      style={{ background: "linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%)" }}
-    >
+    // ✅ FIX: was dark:from-[#071a0a] dark:to-[#0d1117] — too black
+    // Now uses a softer dark blue-green that still feels "nature" themed
+    <div className="min-h-screen pb-28 lg:pb-8 bg-gradient-to-b from-[#f0fdf4] to-white dark:from-[#0e1f12] dark:to-[#131f17]">
       {/* ── HEADER ── */}
-      <header className="sticky top-0 z-50 bg-white/70 backdrop-blur-2xl transition-all duration-300">
+      {/* ✅ FIX: was dark:bg-[#0a1a0c]/80 — now slightly lighter */}
+      <header className="sticky top-0 z-50 bg-white/70 dark:bg-[#0e1f12]/85 backdrop-blur-2xl transition-all duration-300 border-b border-transparent dark:border-white/8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4.5 space-y-4">
           <div className="flex items-center justify-between">
             <AgriLinkLogo size="sm" className="scale-105 origin-left" />
@@ -326,49 +302,40 @@ export function FarmerDashboard() {
               {mounted && (
                 <button
                   onClick={toggleDarkMode}
-                  className="w-10.5 h-10.5 rounded-2xl bg-white flex items-center justify-center hover:bg-emerald-50 transition-all duration-200 shadow-sm"
+                  className="w-10.5 h-10.5 rounded-2xl bg-white dark:bg-white/10 flex items-center justify-center hover:bg-emerald-50 dark:hover:bg-white/15 transition-all duration-200 shadow-sm"
                   aria-label="Toggle Dark Mode"
                 >
                   {isDark ? (
-                    <Sun
-                      className="w-5.5 h-5.5 text-[#14532d]"
-                      strokeWidth={2}
-                    />
+                    <Sun className="w-5.5 h-5.5 text-[#14532d] dark:text-emerald-300" strokeWidth={2} />
                   ) : (
-                    <Moon
-                      className="w-5.5 h-5.5 text-[#14532d]"
-                      strokeWidth={2}
-                    />
+                    <Moon className="w-5.5 h-5.5 text-[#14532d]" strokeWidth={2} />
                   )}
                 </button>
               )}
 
-              <div className="hidden sm:block scale-105 bg-[#f2f8f5] rounded-2xl shadow-sm p-1 border border-emerald-100/20">
+              <div className="hidden sm:block scale-105 bg-[#f2f8f5] dark:bg-white/10 rounded-2xl shadow-sm p-1 border border-emerald-100/20 dark:border-white/10">
                 <LanguageSwitcher />
               </div>
 
               <button
                 onClick={() => router.push("/farmer/notifications")}
-                className="relative w-10.5 h-10.5 rounded-2xl bg-[#f2f8f5] flex items-center justify-center shadow-sm"
+                className="relative w-10.5 h-10.5 rounded-2xl bg-[#f2f8f5] dark:bg-white/10 flex items-center justify-center shadow-sm"
               >
-                <Bell
-                  className="w-5.5 h-5.5 text-[#14532d]"
-                  strokeWidth={2}
-                />
-                <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-[#f2f8f5]" />
+                <Bell className="w-5.5 h-5.5 text-[#14532d] dark:text-emerald-300" strokeWidth={2} />
+                <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-[#f2f8f5] dark:border-[#0e1f12]" />
               </button>
             </div>
           </div>
 
           <div className="flex flex-row items-center justify-between gap-4 pt-1">
             <div className="flex flex-col">
-              <h1 className="text-xl sm:text-2xl font-black text-[#14532d] leading-tight tracking-tight">
+              <h1 className="text-xl sm:text-2xl font-black text-[#14532d] dark:text-emerald-200 leading-tight tracking-tight">
                 {t.hello},{" "}
-                <span className="text-[#16a34a]">
+                <span className="text-[#16a34a] dark:text-emerald-400">
                   {userName ? userName.split(" ")[0] : "Farmer"}
                 </span>
               </h1>
-              <p className="text-[10px] text-[#15803d]/40 tracking-[0.15em] uppercase font-black">
+              <p className="text-[10px] text-[#15803d]/40 dark:text-emerald-500/50 tracking-[0.15em] uppercase font-black">
                 {formattedDate}
               </p>
             </div>
@@ -378,23 +345,16 @@ export function FarmerDashboard() {
                 <LanguageSwitcher />
               </div>
 
-              {/* ── Location Button ── */}
               <motion.button
                 whileTap={{ scale: 0.96 }}
                 onClick={() => setLocationModalOpen(true)}
-                className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-white shadow-sm border-none"
+                className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-white dark:bg-white/10 shadow-sm border-none"
               >
-                <MapPin
-                  className="w-4 h-4 text-[#16a34a]"
-                  strokeWidth={2.5}
-                />
-                <span className="text-[13px] font-black text-[#14532d] truncate max-w-[110px]">
+                <MapPin className="w-4 h-4 text-[#16a34a] dark:text-emerald-400" strokeWidth={2.5} />
+                <span className="text-[13px] font-black text-[#14532d] dark:text-emerald-200 truncate max-w-[110px]">
                   {userLocation || "Location"}
                 </span>
-                <ChevronDown
-                  className="w-3.5 h-3.5 text-[#15803d]/30"
-                  strokeWidth={3}
-                />
+                <ChevronDown className="w-3.5 h-3.5 text-[#15803d]/30 dark:text-emerald-500/40" strokeWidth={3} />
               </motion.button>
             </div>
           </div>
@@ -405,12 +365,12 @@ export function FarmerDashboard() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
-          {/* UNIFIED GLASS CONTAINER */}
           <div className="lg:col-span-5 flex flex-col order-1 lg:order-2 lg:sticky lg:top-36">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="relative overflow-hidden rounded-[40px] border border-white/40 bg-white/40 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.05)] p-2"
+              // ✅ FIX: was dark:bg-white/[0.03] — cards almost invisible. Now clearly visible.
+              className="relative overflow-hidden rounded-[40px] border border-white/40 dark:border-white/8 bg-white/40 dark:bg-white/[0.06] backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.05)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.25)] p-2"
             >
               <div className="mb-2">
                 <SearchBar />
@@ -427,16 +387,17 @@ export function FarmerDashboard() {
                     whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => router.push("/farmer/earnings")}
-                    className="w-full relative overflow-hidden rounded-[28px] p-5 flex items-center justify-between bg-emerald-50/50 border border-emerald-100/20 shadow-sm"
+                    // ✅ FIX: was dark:bg-emerald-900/20 — barely visible. Now slightly more opaque.
+                    className="w-full relative overflow-hidden rounded-[28px] p-5 flex items-center justify-between bg-emerald-50/50 dark:bg-emerald-900/30 border border-emerald-100/20 dark:border-emerald-700/25 shadow-sm"
                   >
                     <div className="text-left relative z-10">
                       <div className="flex items-center gap-2 mb-1">
-                        <Wallet className="w-4 h-4 text-emerald-600" />
-                        <p className="text-[10px] text-emerald-800/80 uppercase tracking-widest font-black">
+                        <Wallet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                        <p className="text-[10px] text-emerald-800/80 dark:text-emerald-300/70 uppercase tracking-widest font-black">
                           Monthly Earnings
                         </p>
                       </div>
-                      <p className="text-2xl font-black text-slate-800">
+                      <p className="text-2xl font-black text-slate-800 dark:text-emerald-100">
                         {earningsLoading
                           ? "..."
                           : earnings !== null
@@ -450,15 +411,15 @@ export function FarmerDashboard() {
                         <div
                           className={`px-3 py-1 rounded-full text-xs font-black shadow-sm ${
                             earningsGrowth >= 0
-                              ? "bg-white/80 text-emerald-700"
-                              : "bg-red-50 text-red-600"
+                              ? "bg-white/80 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300"
+                              : "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400"
                           }`}
                         >
                           {earningsGrowth >= 0 ? "+" : ""}
                           {earningsGrowth}%
                         </div>
                       )}
-                      <span className="text-[10px] text-emerald-800/40 font-black">
+                      <span className="text-[10px] text-emerald-800/40 dark:text-emerald-500/50 font-black">
                         vs last month
                       </span>
                     </div>
@@ -470,7 +431,6 @@ export function FarmerDashboard() {
             </motion.div>
           </div>
 
-          {/* MAIN BLOCK */}
           <div className="lg:col-span-7 flex flex-col gap-8 order-2 lg:order-1">
             <AIRecommendationCard />
             <CommoditiesGrid />
@@ -480,7 +440,6 @@ export function FarmerDashboard() {
         </div>
       </main>
 
-      {/* ── LOCATION MODAL ── */}
       <LocationPickerModal
         isOpen={locationModalOpen}
         currentLocation={userLocation || ""}

@@ -1,126 +1,32 @@
 import { motion } from "framer-motion";
 import { Users, TrendingUp } from "lucide-react";
-import { type Crop } from "@/lib/store";
 
-interface PoolDetailsProps {
-  pool: any;
-  crop: Crop;
-  quantity: number;
-  getCropName: (crop: Crop) => string;
-  t: any;
-}
-
-export function PoolDetails({
-  pool,
-  crop,
-  quantity,
-  getCropName,
-  t,
-}: PoolDetailsProps) {
-  if (!pool) {
-    return (
-      <div className="space-y-6">
-        <h2 className="text-2xl font-bold text-foreground tracking-tight">
-          Creating New Pool
-        </h2>
-        <div className="glass-card premium-shadow border border-border/50 rounded-3xl p-6">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-agri-gold to-agri-earth flex items-center justify-center shadow-lg">
-              <Users className="w-7 h-7 text-white" />
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-foreground">
-                {getCropName(crop)} Pool
-              </h3>
-              <p className="text-sm font-medium text-muted-foreground">
-                You'll be the first member
-              </p>
-            </div>
-          </div>
-          <div className="bg-agri-success/10 border border-agri-success/20 rounded-2xl p-4">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-semibold text-foreground">
-                Your Contribution
-              </span>
-              <span className="font-bold text-lg text-foreground">
-                {quantity}q
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-semibold text-agri-success flex items-center gap-1">
-                <TrendingUp className="w-4 h-4" /> Default Bonus
-              </span>
-              <span className="font-bold text-lg text-agri-success">
-                +₹150/q
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const progressPercent =
-    ((pool.filledQuantity || pool.totalQuantity || 0) / pool.targetQuantity) *
-    100;
-
+export function PoolDetails({ pool, crop, quantity, getCropName, t }: any) {
+  const isNew = !pool;
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-foreground tracking-tight">
-        Pool Insights
-      </h2>
-      <div className="glass-card premium-shadow border border-border/50 rounded-3xl p-6 relative overflow-hidden">
-        <div className="absolute -top-10 -right-10 w-32 h-32 bg-agri-gold/20 blur-3xl rounded-full" />
-        <div className="flex items-center gap-4 mb-6 relative z-10">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-agri-gold to-agri-earth flex items-center justify-center shadow-lg shadow-agri-gold/20">
+      <h2 className="text-2xl font-bold text-foreground tracking-tight">{isNew ? "Creating New Pool" : "Pool Insights"}</h2>
+      <div className="bg-secondary/20 dark:bg-[#1a2e1e]/80 border border-border/40 dark:border-emerald-700/25 rounded-[2.5rem] p-8 relative overflow-hidden">
+        <div className="flex items-center gap-5 mb-8">
+          <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center shadow-2xl shadow-primary/40">
             <Users className="w-7 h-7 text-white" />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-foreground">
-              {getCropName(crop)} Community Pool
-            </h3>
-            <p className="text-sm font-medium text-muted-foreground">
-              {pool.members?.length || pool.contributors || 1} local farmers
-              joined
+            <h3 className="text-xl font-bold">{isNew ? `${getCropName(crop)} Pool` : "Community Pool"}</h3>
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest opacity-60">
+              {isNew ? "First Member" : `${pool.members?.length || 1} local farmers`}
             </p>
           </div>
         </div>
-        <div className="space-y-3 relative z-10">
-          <div className="flex justify-between text-sm font-bold uppercase tracking-wider">
-            <span className="text-muted-foreground">Volume Target</span>
-            <span className="text-foreground">
-              {pool.filledQuantity || pool.totalQuantity || 0}q /{" "}
-              {pool.targetQuantity}q
-            </span>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-white/5 dark:bg-[#0e1f12]/70 rounded-2xl p-4 border border-white/10 dark:border-emerald-700/20">
+            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Your Share</p>
+            <p className="text-xl font-black">{quantity}q</p>
           </div>
-          <div className="h-4 bg-secondary rounded-full overflow-hidden shadow-inner">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${progressPercent}%` }}
-              transition={{ duration: 1, ease: "easeOut" }}
-              className="h-full bg-gradient-to-r from-agri-gold to-agri-wheat rounded-full"
-            />
-          </div>
-        </div>
-        <div className="mt-8 bg-agri-success/10 border border-agri-success/20 rounded-2xl p-4 relative z-10">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-semibold text-foreground">
-              Your Share
-            </span>
-            <span className="font-bold text-lg text-foreground">
-              {quantity}q
-            </span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-sm font-semibold text-agri-success flex items-center gap-1">
-              <TrendingUp className="w-4 h-4" /> Expected Bonus
-            </span>
-            <span className="font-bold text-lg text-agri-success">
-              +₹
-              {(quantity * (pool.bonusPerQuintal || 150)).toLocaleString(
-                "en-IN",
-              )}
-            </span>
+          <div className="bg-primary/10 rounded-2xl p-4 border border-primary/20">
+            <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Bonus</p>
+            <p className="text-xl font-black text-primary">+₹150/q</p>
           </div>
         </div>
       </div>
