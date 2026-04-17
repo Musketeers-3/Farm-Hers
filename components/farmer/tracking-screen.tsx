@@ -71,6 +71,9 @@ export function TrackingScreen() {
   // Dynamic State Engine
   const [status, setStatus] = useState<OrderStatus>("disputed");
   const currentIndex = trackingSteps.findIndex((step) => step.id === status);
+  // Grab the global transactions and pick the most recent one (index 0)
+  const transactions = useAppStore((state) => state.transactions);
+  const latestOrder = transactions[0];
 
   // Language Mapper
   const getTitle = (step: (typeof trackingSteps)[0]) => {
@@ -116,16 +119,23 @@ export function TrackingScreen() {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="font-semibold text-foreground">
-                Wheat - 50 Quintals
+                {latestOrder
+                  ? `${latestOrder.crop} - ${latestOrder.qty}`
+                  : "Wheat - 50q"}
               </h3>
               <p className="text-sm text-muted-foreground">
                 Sold via FarmHers Pool
               </p>
             </div>
             <div className="text-right">
-              <p className="text-xl font-bold text-primary">₹1,21,250</p>
+              <p className="text-xl font-bold text-primary">
+                ₹
+                {latestOrder
+                  ? latestOrder.amount.toLocaleString("en-IN")
+                  : "1,21,250"}
+              </p>
               <p className="text-xs text-[#1e4d2b] font-semibold">
-                +₹7,500 bonus
+                Escrow Secured
               </p>
             </div>
           </div>

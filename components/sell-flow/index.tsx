@@ -35,6 +35,7 @@ export function SellFlow() {
     language,
     userProfile,
     setActiveScreen,
+    addTransaction,
   } = useAppStore();
   const t = useTranslation();
 
@@ -129,6 +130,22 @@ export function SellFlow() {
         }
       }
 
+      // 👇 INJECT THE TRANSACTION LOGGING HERE 👇
+      addTransaction({
+        id: `AGR-${Math.floor(Math.random() * 10000)}`, // Generates a realistic ID
+        crop: selectedCrop.name,
+        qty: `${sellQuantity}q`,
+        amount: totalValue + (sellMethod === "pool" ? poolBonus : 0), // Make sure bonus only applies to pools!
+        date: new Date().toLocaleDateString("en-IN", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }),
+        status: "pending", // Escrow starts as pending!
+      });
+      // 👆 ------------------------------------ 👆
+
+      // ⚡ 3. The Router Fix: Sync global UI state before redirecting
       setActiveScreen("tracking");
       router.push("/farmer/tracking");
     } catch (err: any) {

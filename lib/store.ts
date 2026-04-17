@@ -11,7 +11,7 @@ type OrderStatus =
   | "quality-verified"
   | "payment-released"
   | "disputed";
-  
+
 export type Screen =
   | "home"
   | "sell"
@@ -31,6 +31,15 @@ export interface Crop {
   image: string;
   currentPrice: number;
   unit: string;
+}
+
+export interface Transaction {
+  id: string;
+  crop: string;
+  qty: string;
+  amount: number;
+  date: string;
+  status: "pending" | "paid";
 }
 
 // 🚀 UPGRADED: Merged UI expectations with Firebase Schema
@@ -168,6 +177,10 @@ interface AppState {
   setSellQuantity: (qty: number) => void;
   sellPrice: number;
   setSellPrice: (price: number) => void;
+
+  // Earnings Record
+  transactions: Transaction[];
+  addTransaction: (tx: Transaction) => void;
 }
 
 const sampleCrops: Crop[] = [
@@ -313,6 +326,12 @@ export const useAppStore = create<AppState>()(
       setUserName: (name) => set({ userName: name }),
       userLocation: "",
       setUserLocation: (location) => set({ userLocation: location }),
+
+      transactions: [],
+      addTransaction: (tx) =>
+        set((state) => ({
+          transactions: [tx, ...state.transactions], // Adds new sales to the top of the list
+        })),
 
       crops: sampleCrops,
       selectedCrop: null,
