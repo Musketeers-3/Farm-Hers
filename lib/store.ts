@@ -21,7 +21,8 @@ export type Screen =
   | "profile"
   | "notifications"
   | "earnings"
-  | "pools";
+  | "pools"
+  | "demands";
 
 export interface Crop {
   id: string;

@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useAppStore, useHydrated } from "@/lib/store";
 import { useRouter } from "next/navigation";
 import { OnboardingScreen } from "@/components/onboarding/onboarding-screen";
+import { Sprout } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type AppStep = "loading" | "onboarding" | "redirecting";
 
@@ -34,6 +36,7 @@ export default function AgriLinkApp() {
         setStep("redirecting");
         router.replace(`/${state.userRole}`);
       } else if (state.hasOnboarded && !state.isLoggedIn) {
+        setStep("redirecting"); // Keep the premium UI visible while routing
         router.replace("/login");
       } else {
         setStep("onboarding");
@@ -41,7 +44,7 @@ export default function AgriLinkApp() {
     } catch (error) {
       setStep("onboarding");
     }
-  }, [hydrated]);
+  }, [hydrated, router, setHasOnboarded, setIsLoggedIn]);
 
   const handleOnboardingComplete = (role: "farmer" | "buyer") => {
     setHasOnboarded(true);
@@ -49,12 +52,12 @@ export default function AgriLinkApp() {
     router.push("/login");
   };
 
+  // 🚀 UPGRADED: Premium Glassmorphic Loading State matching the rest of the app
   if (step === "loading" || step === "redirecting") {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="relative w-12 h-12">
-          <div className="absolute inset-0 rounded-full border-4 border-primary/20" />
-          <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+      <div className="min-h-screen bg-[linear-gradient(135deg,#dcfce7_0%,#dcfce7_20%,#bfdbfe_100%)] dark:bg-slate-950 flex items-center justify-center transition-colors duration-500">
+        <div className="w-24 h-24 rounded-3xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-white/50 dark:border-white/10 flex items-center justify-center shadow-2xl animate-pulse">
+          <Sprout className="w-10 h-10 text-emerald-600 dark:text-emerald-400 animate-bounce" />
         </div>
       </div>
     );

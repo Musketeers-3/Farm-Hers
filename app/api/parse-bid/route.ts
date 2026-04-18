@@ -32,27 +32,27 @@ Detected Language: ${language}
 Context (Last Crop): ${context?.lastCrop || "None"}
 
 YOUR MISSION:
-1. Extract intent (Hindi, Punjabi, English, Hinglish). Use "Context" if the crop is omitted.
-2. Normalize target screens EXACTLY to: ["sell", "auction", "tracking", "market", "profile", "notifications", "earnings"].
-   - Rules: "mandi", "bhav", "rate", "daam" -> "market". "orders" -> "tracking".
+1. Extract intent. Use "Context" if the crop is omitted.
+2. Normalize target screens EXACTLY to: ["sell", "auction", "tracking", "market", "profile", "notifications", "earnings", "demands", "pools"].
+   - Rules: "mandi", "bhav", "rate", "daam" -> "market". "orders" -> "tracking". "corporate", "company" -> "demands".
 3. Calculate Standard KGs for "amount" (1 'man'=40kg, 1 'bori'=50kg, 1 'quintal'=100kg).
-4. Craft a "reply" (max 8-10 words). It MUST be empathetic, helpful, and natural in the exact language spoken.
+4. Craft a "reply" (max 8-10 words). It MUST be empathetic, helpful, and natural.
+   - 🚀 CRITICAL: You MUST reply in Romanized Hindi (Hinglish) or Romanized Punjabi (Punglish). NEVER use Devanagari (हिंदी) or Gurmukhi (ਪੰਜਾਬੀ) scripts. This is required for our TTS engine.
 
-FEW-SHOT EXAMPLES FOR THE "reply" FIELD (DO NOT HALLUCINATE):
-Input: "aajkal ka rate kya hai" -> Reply: "Mandi ke taza bhav yeh rahe, bhaiyya." (NOT repeating their words)
+FEW-SHOT EXAMPLES FOR THE "reply" FIELD:
+Input: "aajkal ka rate kya hai" -> Reply: "Mandi ke taza bhav yeh rahe, bhaiyya."
 Input: "ki haal aa" -> Reply: "Main vadiya ji! Daso, kivein madad karaan?"
 Input: "2 bori kanak bechni hai" -> Reply: "Bilkul, main tuhadi 100 kilo kanak list kar dinda haan."
 Input: "sell my potatoes" -> Reply: "Sure, let's get your potatoes listed on the market."
 
-STRICT OUTPUT: Return ONLY valid JSON. No markdown. No conversational filler outside the JSON.
-
+STRICT OUTPUT: Return ONLY valid JSON matching this schema exactly.
 {
   "intent": "bid" | "sell" | "navigation" | "social" | "unknown",
-  "target": "sell" | "auction" | "tracking" | "market" | "profile" | "notifications" | "earnings" | null,
+  "target": "sell" | "auction" | "tracking" | "market" | "profile" | "notifications" | "earnings" | "demands" | "pools" | null,
   "crop": "wheat" | "rice" | "corn" | "mustard" | "potato" | "onion" | null,
   "amount": number | null,
   "price": number | null,
-  "reply": "string (your warm, natural human response)"
+  "reply": "string (Romanized text only!)"
 }
 `;
 
@@ -65,16 +65,16 @@ STRICT OUTPUT: Return ONLY valid JSON. No markdown. No conversational filler out
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
     const result = await ai.models.generateContent({
-      model: "gemini-1.5-flash",
+      // 🚀 THE FIX: The active, free-tier-friendly 2026 model alias
+      model: "gemini-2.5-flash-lite",
       contents: systemPrompt,
-      config: { temperature: 0.1 },
+      config: {
+        temperature: 0.1,
+        responseMimeType: "application/json",
+      },
     });
 
-    const text = result.text
-      ?.replace(/```json/gi, "")
-      ?.replace(/```/g, "")
-      ?.trim();
-    const parsedData = JSON.parse(text || "");
+    const parsedData = JSON.parse(result.text || "{}");
 
     return NextResponse.json({
       success: true,
@@ -82,9 +82,8 @@ STRICT OUTPUT: Return ONLY valid JSON. No markdown. No conversational filler out
       source: "tier-1-gemini",
     });
   } catch (geminiError: any) {
-    console.warn(
-      "⚠️ Tier 1 (Gemini) Failed or Timeout. Initializing Edge-AI...",
-    );
+    console.error("GEMINI FATAL ERROR:", geminiError);
+    console.warn("⚠️ Tier 1 (Gemini) Failed. Initializing Edge-AI...");
 
     // ==========================================
     // TIER 2: OLLAMA (Local Edge-AI Fallback)
@@ -96,7 +95,7 @@ STRICT OUTPUT: Return ONLY valid JSON. No markdown. No conversational filler out
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "mistral",
+          model: "qwen2",
           prompt: systemPrompt,
           stream: false,
           format: "json",

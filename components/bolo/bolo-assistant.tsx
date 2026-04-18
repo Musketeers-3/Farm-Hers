@@ -142,12 +142,13 @@ import { useAppStore } from "@/lib/store";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import * as googleTTS from "google-tts-api";
+
+const GLASS_CLASSES =
+  "bg-white/[0.55] dark:bg-slate-900/[0.55] backdrop-blur-[24px] border border-white/40 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)]";
 
 export function BoloAssistant() {
   const router = useRouter();
 
-  // --- GLOBAL STORE ---
   const {
     language,
     userRole,
@@ -160,70 +161,44 @@ export function BoloAssistant() {
     addAuction,
   } = useAppStore();
 
-  // --- LOCAL STATE ---
   const [transcript, setTranscript] = useState("");
   const [textInput, setTextInput] = useState("");
   const [response, setResponse] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [showResponse, setShowResponse] = useState(false);
 
-  // ⚡ SHORT-TERM MEMORY BUFFER FOR CONTEXT
   const lastCropRef = useRef<string | null>(null);
 
-  // --- 1. TEXT-TO-SPEECH (Option 2: Direct Google Bypass) ---
-  const speak = useCallback(
-    (textToSpeak: string) => {
-      // TIER 3: The unkillable fallback function (Browser native)
-      const executeBrowserFallback = () => {
-        console.log("⚙️ Executing Tier 3 Browser TTS Failsafe...");
-        if (typeof window !== "undefined" && window.speechSynthesis) {
-          window.speechSynthesis.cancel();
-          const utterance = new SpeechSynthesisUtterance(textToSpeak);
-          utterance.lang =
-            language === "hi" ? "hi-IN" : language === "pa" ? "pa-IN" : "en-IN";
-          utterance.rate = language === "en" ? 1.0 : 0.9;
-          window.speechSynthesis.speak(utterance);
-        }
-      };
+  // 🚀 NATIVE OFFLINE SPEECH SYNTHESIS (The Hinglish Hack)
+  const speak = useCallback((textToSpeak: string) => {
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
 
-      try {
-        console.log("🔊 Generating voice via Google Translate Bypass...");
+    window.speechSynthesis.cancel(); // Stop any current speech
 
-        // 1. Clean text and enforce 200-character limit for the open endpoint
-        const cleanText = textToSpeak.replace(/[*#_]/g, "").substring(0, 199);
+    const utterance = new SpeechSynthesisUtterance(textToSpeak);
 
-        // 2. Map language for the Translate engine
-        const translateLang =
-          language === "hi" ? "hi" : language === "pa" ? "pa" : "en";
+    // 🚀 THE HACK: Force the Indian-English voice to read Hinglish/Punglish
+    // It sounds 10x more natural than the robotic native Hindi voice.
+    utterance.lang = "en-IN";
+    utterance.rate = 0.95; // Slightly slower for a warmer tone
+    utterance.pitch = 1.0;
 
-        // 3. Construct the direct audio URL
-        // We use the 'tw-ob' client ID which is the stable public endpoint
-        const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(
-          cleanText,
-        )}&tl=${translateLang}&client=tw-ob&ttsspeed=1`;
+    // Attempt to find a high-quality native voice
+    const voices = window.speechSynthesis.getVoices();
+    const premiumVoice = voices.find(
+      (v) =>
+        v.lang === "en-IN" &&
+        (v.name.includes("Natural") ||
+          v.name.includes("Premium") ||
+          v.name.includes("Google")),
+    );
 
-        // 4. Play the audio
-        const audio = new Audio(url);
-        const playPromise = audio.play();
+    if (premiumVoice) utterance.voice = premiumVoice;
 
-        if (playPromise !== undefined) {
-          playPromise.catch((error) => {
-            console.warn(
-              "Autoplay blocked or network error, falling back:",
-              error,
-            );
-            executeBrowserFallback();
-          });
-        }
-      } catch (error) {
-        console.error("Bypass failed. Triggering Tier 3 fallback:", error);
-        executeBrowserFallback();
-      }
-    },
-    [language],
-  );
+    window.speechSynthesis.speak(utterance);
+  }, []); // Removed language dependency since we strictly use en-IN
 
-  // --- 2. INTENT RESOLVER (BRAIN) ---
+  // ─── INTENT RESOLVER (BRAIN) ───
   const handleIntent = useCallback(
     async (input: string) => {
       if (!input.trim()) return;
@@ -246,15 +221,11 @@ export function BoloAssistant() {
         if (result.success && result.data) {
           const ai = result.data;
 
-          // ⚡ SYNCED: This now triggers the local Google Bypass speak()
           setResponse(ai.reply);
           if (ai.reply) speak(ai.reply);
           setShowResponse(true);
 
-          // UPDATE MEMORY BUFFER
-          if (ai.crop) {
-            lastCropRef.current = ai.crop;
-          }
+          if (ai.crop) lastCropRef.current = ai.crop;
 
           // FARMER SELL INTENT
           if (ai.intent === "sell" && ai.crop && ai.amount && ai.price) {
@@ -364,12 +335,11 @@ export function BoloAssistant() {
     ],
   );
 
-  // --- 3. PUSH-TO-TALK ENGINE (Clean, No-Loop Architecture) ---
+  // ─── PUSH-TO-TALK ENGINE (MIC LOGIC) ───
   const recognitionRef = useRef<any>(null);
   const handleIntentRef = useRef(handleIntent);
   const languageRef = useRef(language);
 
-  // Sync refs so callbacks have fresh state without triggering re-renders
   useEffect(() => {
     handleIntentRef.current = handleIntent;
   }, [handleIntent]);
@@ -377,54 +347,33 @@ export function BoloAssistant() {
     languageRef.current = language;
   }, [language]);
 
-  // INITIALIZE ENGINE ONCE
   useEffect(() => {
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      console.error("🚨 Speech Recognition API not supported.");
-      return;
-    }
+    if (!SpeechRecognition) return;
 
     if (!recognitionRef.current) {
       const recognition = new SpeechRecognition();
-      recognition.continuous = false; // ⚡ PUSH-TO-TALK MODE
+      recognition.continuous = false;
       recognition.interimResults = true;
-
-      recognition.onstart = () => {
-        console.log("🟢 Bolo is actively listening (PTT Mode)...");
-      };
 
       recognition.onresult = (event: any) => {
         const current = event.results[event.results.length - 1][0].transcript;
         setTranscript(current);
 
         if (event.results[event.results.length - 1].isFinal) {
-          console.log("✅ Final Command captured:", current);
-          setBoloListening(false); // Turn off mic state immediately
+          setBoloListening(false);
           handleIntentRef.current(current);
         }
       };
 
-      recognition.onerror = (e: any) => {
-        if (e.error !== "no-speech" && e.error !== "aborted") {
-          console.warn("🚨 Mic Error:", e.error);
-        }
-        setBoloListening(false); // Reset UI on error
-      };
-
-      recognition.onend = () => {
-        // Natural end of speech
-        setBoloListening(false);
-      };
-
+      recognition.onerror = () => setBoloListening(false);
+      recognition.onend = () => setBoloListening(false);
       recognitionRef.current = recognition;
     }
 
     return () => {
-      // Hard cleanup on unmount
       if (recognitionRef.current) {
-        recognitionRef.current.onstart = null;
         recognitionRef.current.onresult = null;
         recognitionRef.current.onerror = null;
         recognitionRef.current.onend = null;
@@ -435,11 +384,8 @@ export function BoloAssistant() {
     };
   }, [setBoloListening]);
 
-  // ⚡ THE HARDWARE CONTROLLER
-  // Reacts purely to the global `isBoloListening` toggle
   useEffect(() => {
     if (!recognitionRef.current) return;
-
     try {
       if (isBoloListening) {
         recognitionRef.current.lang =
@@ -452,15 +398,12 @@ export function BoloAssistant() {
       } else {
         recognitionRef.current.stop();
       }
-    } catch (e) {
-      // Safely ignore start/stop collisions
-    }
+    } catch (e) {}
   }, [isBoloListening]);
 
   const isVisible =
     isBoloListening || isProcessing || showResponse || transcript !== "";
 
-  // --- UI RENDER ---
   return (
     <>
       <AnimatePresence>
@@ -469,25 +412,27 @@ export function BoloAssistant() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[90] bg-black/50 backdrop-blur-sm pointer-events-none"
+            className="fixed inset-0 z-[90] bg-slate-900/40 dark:bg-slate-950/60 backdrop-blur-sm pointer-events-none"
           />
         )}
       </AnimatePresence>
 
-      <div className="fixed bottom-6 right-6 z-[100] flex flex-col items-end gap-4">
-        {/* Main Bolo Modal */}
+      <div className="fixed bottom-24 right-6 sm:bottom-6 sm:right-6 z-[100] flex flex-col items-end gap-4">
         <AnimatePresence>
           {isVisible && (
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="w-[340px] rounded-[2.5rem] p-6 shadow-2xl border border-white/20 bg-black/85 backdrop-blur-3xl pointer-events-auto flex flex-col"
+              className={cn(
+                "w-[340px] rounded-[32px] p-6 pointer-events-auto flex flex-col shadow-2xl",
+                GLASS_CLASSES,
+              )}
             >
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2 text-primary">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
                   <Sparkles className="w-5 h-5" />
-                  <span className="font-bold text-white tracking-wide text-xs uppercase">
+                  <span className="font-bold text-slate-900 dark:text-slate-50 tracking-wide text-xs uppercase">
                     Bolo Assistant
                   </span>
                 </div>
@@ -498,20 +443,20 @@ export function BoloAssistant() {
                     setShowResponse(false);
                     setTextInput("");
                   }}
-                  className="text-white/40 hover:text-white transition-colors bg-white/5 p-1.5 rounded-full"
+                  className="text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors bg-white/40 dark:bg-white/10 p-1.5 rounded-full"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
-              <div className="min-h-[100px] flex flex-col justify-center text-center mb-4">
+              <div className="min-h-[100px] flex flex-col justify-center text-center mb-6">
                 <AnimatePresence mode="wait">
                   {isBoloListening && !isProcessing && (
                     <motion.div
                       key="listen"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      className="flex flex-col items-center gap-4"
+                      className="flex flex-col items-center gap-5"
                     >
                       <div className="flex gap-1.5 items-center h-10">
                         {[1, 2, 3, 4, 5].map((i) => (
@@ -523,11 +468,11 @@ export function BoloAssistant() {
                               duration: 0.8,
                               delay: i * 0.1,
                             }}
-                            className="w-1.5 bg-primary rounded-full shadow-[0_0_15px_rgba(30,77,43,0.6)]"
+                            className="w-1.5 bg-emerald-500 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.5)]"
                           />
                         ))}
                       </div>
-                      <p className="text-white/80 font-serif italic text-lg leading-tight">
+                      <p className="text-slate-700 dark:text-slate-200 font-serif italic text-lg leading-tight">
                         "{transcript || "Listening..."}"
                       </p>
                     </motion.div>
@@ -539,9 +484,9 @@ export function BoloAssistant() {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                     >
-                      <Loader2 className="w-8 h-8 text-primary animate-spin mx-auto" />
-                      <p className="text-xs text-white/50 mt-2 tracking-widest uppercase">
-                        Processing
+                      <Loader2 className="w-8 h-8 text-emerald-500 animate-spin mx-auto" />
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 tracking-widest uppercase font-bold">
+                        Processing Context
                       </p>
                     </motion.div>
                   )}
@@ -551,12 +496,12 @@ export function BoloAssistant() {
                       key="resp"
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="flex flex-col items-center gap-3"
+                      className="flex flex-col items-center gap-4"
                     >
-                      <div className="p-3 rounded-full bg-primary/20 shadow-[0_0_20px_rgba(30,77,43,0.2)]">
-                        <Volume2 className="w-6 h-6 text-primary" />
+                      <div className="p-3 rounded-full bg-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+                        <Volume2 className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
                       </div>
-                      <p className="text-white font-medium px-2 leading-relaxed">
+                      <p className="text-slate-900 dark:text-slate-50 font-bold px-2 leading-relaxed text-lg">
                         {response}
                       </p>
                     </motion.div>
@@ -564,7 +509,6 @@ export function BoloAssistant() {
                 </AnimatePresence>
               </div>
 
-              {/* Text Chat Input */}
               <div className="mt-auto relative">
                 <form
                   onSubmit={(e) => {
@@ -583,12 +527,12 @@ export function BoloAssistant() {
                     }
                     value={textInput}
                     onChange={(e) => setTextInput(e.target.value)}
-                    className="w-full bg-white/10 border border-white/10 rounded-2xl py-3 pl-4 pr-12 text-sm text-white placeholder-white/30 outline-none focus:border-primary/50 transition-colors"
+                    className="w-full bg-white/40 dark:bg-slate-800/40 border border-white/50 dark:border-white/10 rounded-2xl py-3 pl-4 pr-12 text-sm text-slate-900 dark:text-slate-50 placeholder-slate-500 dark:placeholder-slate-400 outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all backdrop-blur-md"
                   />
                   <button
                     type="submit"
                     disabled={!textInput.trim() || isProcessing}
-                    className="absolute right-2 p-1.5 bg-primary rounded-xl text-white disabled:opacity-50 hover:bg-green-600 transition-colors"
+                    className="absolute right-2 p-2 bg-emerald-500 rounded-xl text-white disabled:opacity-50 hover:bg-emerald-600 transition-colors shadow-md"
                   >
                     <Send className="w-4 h-4" />
                   </button>
@@ -598,19 +542,18 @@ export function BoloAssistant() {
           )}
         </AnimatePresence>
 
-        {/* Floating Mic Button */}
+        {/* 🎙️ THE FLOATING MIC BUTTON */}
         <motion.button
           onClick={() => {
-            // Toggles the state. The useEffect will handle starting/stopping the hardware.
             setBoloListening(!isBoloListening);
             setTranscript("");
           }}
           whileTap={{ scale: 0.9 }}
           className={cn(
-            "w-16 h-16 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(0,0,0,0.5)] border-2 transition-all duration-500 relative",
+            "w-16 h-16 rounded-full flex items-center justify-center shadow-2xl border-2 transition-all duration-500 relative",
             isBoloListening
               ? "bg-red-500 border-red-400"
-              : "bg-[#1e4d2b] border-[#1e4d2b]/50 hover:bg-[#2a6b3d]",
+              : "bg-emerald-600 border-emerald-500 hover:bg-emerald-500",
           )}
         >
           {isBoloListening ? (
