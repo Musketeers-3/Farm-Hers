@@ -38,7 +38,7 @@ const cropImages: Record<string, string> = {
     "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=400&h=400&fit=crop",
   corn: "https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=400&h=400&fit=crop",
   potato:
-    "https://images.unsplash.com/photo-1518977676601-b53f82ber95?w=400&h=400&fit=crop",
+    "https://images.unsplash.com/photo-1518977676601-b53f82be95?w=400&h=400&fit=crop",
   onion:
     "https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=400&h=400&fit=crop",
 };
@@ -47,13 +47,14 @@ type SellStep =
   | "select-crop"
   | "enter-quantity"
   | "choose-method"
-  | "pool-details"
+  | "select-pool"
   | "confirm";
+
 const stepOrder: SellStep[] = [
   "select-crop",
   "enter-quantity",
   "choose-method",
-  "pool-details",
+  "select-pool",
   "confirm",
 ];
 
@@ -67,6 +68,9 @@ export function SellFlow() {
   const [isMounted, setIsMounted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const [matchingBuyerPools, setMatchingBuyerPools] = useState<any[]>([]);
+  const [selectedPoolId, setSelectedPoolId] = useState<string | null>(null);
 
   const crops = useAppStore((state) => state.crops);
   const selectedCrop = useAppStore((state) => state.selectedCrop);
@@ -87,20 +91,41 @@ export function SellFlow() {
     return crop.name;
   };
 
-  // ⚡ Upgraded to support the new `commodity` schema while maintaining backward compatibility
-  const matchingPool = selectedCrop
-    ? pools.find(
-        (p) =>
-          (p.commodity === selectedCrop.id || p.cropId === selectedCrop.id) &&
-          p.status === "open",
-      )
-    : null;
+  const [matchingBuyerPool, setMatchingBuyerPool] = useState<any>(null);
+  const [poolSearchDone, setPoolSearchDone] = useState(false);
+
+  // Search for best matching buyer request when crop is selected
+  useEffect(() => {
+    if (!selectedCrop) return;
+    setPoolSearchDone(false);
+    fetch(
+      `/api/pools?status=open&creatorRole=buyer&commodity=${selectedCrop.id}`,
+    )
+      .then((r) => r.json())
+      .then((data) => {
+        const available = (data.pools || []).filter(
+          (p: any) => p.status === "open",
+        );
+        setMatchingBuyerPools(available);
+        // Keep best match for direct sell fallback
+        const best =
+          [...available].sort(
+            (a, b) =>
+              b.targetQuantity -
+              (b.filledQuantity || 0) -
+              (a.targetQuantity - (a.filledQuantity || 0)),
+          )[0] || null;
+        setMatchingBuyerPool(best);
+        setPoolSearchDone(true);
+      })
+      .catch(() => setPoolSearchDone(true));
+  }, [selectedCrop]);
 
   const totalValue = selectedCrop
     ? sellQuantity * selectedCrop.currentPrice
     : 0;
-  const poolBonus = matchingPool
-    ? sellQuantity * (matchingPool.bonusPerQuintal || 150)
+  const poolBonus = matchingBuyerPool
+    ? sellQuantity * (matchingBuyerPool.bonusPerQuintal || 150)
     : 0;
 
   const changeStep = (newStep: SellStep, dir: number) => {
@@ -114,11 +139,11 @@ export function SellFlow() {
         return changeStep("select-crop", -1);
       case "choose-method":
         return changeStep("enter-quantity", -1);
-      case "pool-details":
+      case "select-pool":
         return changeStep("choose-method", -1);
       case "confirm":
         return changeStep(
-          sellMethod === "pool" ? "pool-details" : "choose-method",
+          sellMethod === "pool" ? "select-pool" : "choose-method",
           -1,
         );
       default:
@@ -128,63 +153,90 @@ export function SellFlow() {
 
   // ── CONFIRM SALE: calls the Pools API ──────────────────────────────────────
   const handleConfirmSale = async () => {
-    // ⚡ 1. Fix the Silent Return: Only block if the crop is missing.
+    console.log("STATE CHECK", {
+      selectedPoolId,
+      matchingBuyerPoolsLength: matchingBuyerPools.length,
+      matchingBuyerPools: matchingBuyerPools.map((p) => p.id),
+      chosenPool: matchingBuyerPools.find((p) => p.id === selectedPoolId),
+    });
     if (!selectedCrop) return;
 
-    // ⚡ 2. The Demo Fallback: Never fail a presentation due to a cleared cache.
+    // Resolve chosen pool HERE with fresh state
+    const chosenPool =
+      matchingBuyerPools.find((p) => p.id === selectedPoolId) ||
+      (sellMethod === "direct" ? matchingBuyerPool : null);
+
+    console.log("🔥 handleConfirmSale fired", {
+      sellMethod,
+      sellQuantity,
+      selectedPoolId,
+      chosenPool,
+    });
+
     const farmerId = userProfile?.uid || "demo-farmer-123";
-    const farmerName = userProfile?.fullName || "Arshvir Kaur";
-    const farmerRole = userProfile?.role || "farmer";
+    const farmerName =
+      userProfile?.fullName || "Demo Farmer";
 
     setIsSubmitting(true);
     setSubmitError(null);
 
     try {
-      if (sellMethod === "pool") {
-        if (matchingPool) {
-          // Join an existing open pool
-          // Create a new pool
-          const res = await fetch("/api/pools", {
+      if (sellMethod === "pool" || sellMethod === "direct") {
+        if (chosenPool) {
+          // Join the chosen/matched buyer pool
+          const remaining =
+            chosenPool.targetQuantity - (chosenPool.filledQuantity || 0);
+          const joinQty = Math.min(sellQuantity, remaining);
+
+          const res = await fetch(`/api/pools/${chosenPool.id}/join`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              commodity: selectedCrop.id,
-              targetQuantity: sellQuantity * 3, // Our UI uses this
-              requestedQuantity: sellQuantity * 3, // ⚡ ADDED: Your teammate's backend strictly demands this!
-              pricePerUnit: selectedCrop.currentPrice,
-              bonusPerQuintal: 150,
-              creatorId: farmerId,
-              creatorName: farmerName,
-              creatorRole: farmerRole,
-              filledQuantity: sellQuantity,
-              status: "open",
-              members: [
-                {
-                  farmerId,
-                  farmerName,
-                  quantity: sellQuantity,
-                  joinedAt: new Date().toISOString(),
-                },
-              ],
-            }),
+            body: JSON.stringify({ farmerId, farmerName, quantity: joinQty }),
           });
-          if (!res.ok)
-            throw new Error((await res.json()).error || "Failed to join pool");
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Failed to join pool");
+
+          // Handle leftover quantity — create a new farmer pool for the rest
+          const leftover = sellQuantity - joinQty;
+          if (leftover > 0) {
+            await fetch("/api/pools", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                commodity: selectedCrop.id,
+                targetQuantity: leftover * 3,
+                requestedQuantity: leftover * 3,
+                pricePerUnit: selectedCrop.currentPrice,
+                creatorId: farmerId,
+                creatorName: farmerName,
+                creatorRole: "farmer",
+                filledQuantity: leftover,
+                members: [
+                  {
+                    farmerId,
+                    farmerName,
+                    quantity: leftover,
+                    joinedAt: new Date().toISOString(),
+                  },
+                ],
+                status: "open",
+              }),
+            });
+          }
         } else {
-          // Create a new pool
+          // No buyer pool — create a new farmer pool
           const res = await fetch("/api/pools", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               commodity: selectedCrop.id,
-              targetQuantity: sellQuantity * 3, // default: 3x your quantity
+              targetQuantity: sellQuantity * 3,
+              requestedQuantity: sellQuantity * 3,
               pricePerUnit: selectedCrop.currentPrice,
-              bonusPerQuintal: 150,
               creatorId: farmerId,
               creatorName: farmerName,
-              creatorRole: farmerRole,
+              creatorRole: "farmer",
               filledQuantity: sellQuantity,
-              status: "open",
               members: [
                 {
                   farmerId,
@@ -193,6 +245,7 @@ export function SellFlow() {
                   joinedAt: new Date().toISOString(),
                 },
               ],
+              status: "open",
             }),
           });
           if (!res.ok)
@@ -202,7 +255,6 @@ export function SellFlow() {
         }
       }
 
-      // ⚡ 3. The Router Fix: Sync global UI state before redirecting
       setActiveScreen("tracking");
       router.push("/farmer/tracking");
     } catch (err: any) {
@@ -213,6 +265,7 @@ export function SellFlow() {
   };
 
   const handleNext = () => {
+    console.log("handleNext called, step:", step);
     switch (step) {
       case "select-crop":
         if (selectedCrop) changeStep("enter-quantity", 1);
@@ -221,12 +274,14 @@ export function SellFlow() {
         if (sellQuantity > 0) changeStep("choose-method", 1);
         break;
       case "choose-method":
-        if (sellMethod === "pool") changeStep("pool-details", 1);
+        if (sellMethod === "pool") changeStep("select-pool", 1);
         else if (sellMethod === "auction") router.push("/farmer/auction");
         else changeStep("confirm", 1);
         break;
-      case "pool-details":
-        changeStep("confirm", 1);
+      case "select-pool":
+        console.log("select-pool next", { selectedPoolId, poolsLen: matchingBuyerPools.length });
+        if (selectedPoolId || matchingBuyerPools.length === 0)
+          changeStep("confirm", 1);
         break;
       case "confirm":
         handleConfirmSale();
@@ -308,18 +363,25 @@ export function SellFlow() {
               <MethodSelection
                 sellMethod={sellMethod}
                 onMethodSelect={setMethod}
-                hasPool={!!matchingPool}
-                poolBonus={matchingPool?.bonusPerQuintal || 150}
+                hasPool={!!matchingBuyerPool}
+                poolBonus={
+                  matchingBuyerPool?.pricePerUnit
+                    ? matchingBuyerPool.pricePerUnit -
+                      (selectedCrop?.currentPrice || 0) +
+                      150
+                    : 150
+                }
                 t={t}
               />
             )}
-            {step === "pool-details" && selectedCrop && (
-              <PoolDetails
-                pool={matchingPool}
+            {step === "select-pool" && selectedCrop && (
+              <SelectPool
+                pools={matchingBuyerPools}
+                selectedPoolId={selectedPoolId}
+                onSelect={setSelectedPoolId}
                 crop={selectedCrop}
                 quantity={sellQuantity}
                 getCropName={getCropName}
-                t={t}
               />
             )}
             {step === "confirm" && selectedCrop && (
@@ -332,6 +394,10 @@ export function SellFlow() {
                 getCropName={getCropName}
                 t={t}
                 error={submitError}
+                chosenPool={
+                  matchingBuyerPools.find((p) => p.id === selectedPoolId) ||
+                  (sellMethod === "direct" ? matchingBuyerPool : null)
+                }
               />
             )}
           </motion.div>
@@ -773,6 +839,7 @@ function ConfirmationScreen({
   getCropName,
   t,
   error,
+  chosenPool,
 }: any) {
   return (
     <div className="space-y-6">
@@ -803,6 +870,26 @@ function ConfirmationScreen({
           }
           highlight
         />
+        {chosenPool && (
+          <>
+            <ReceiptRow label="Buyer" value={chosenPool.creatorName} />
+            <ReceiptRow
+              label="Offered Rate"
+              value={`₹${chosenPool.pricePerUnit}/${chosenPool.unit}`}
+              success
+            />
+            {chosenPool.location && (
+              <ReceiptRow
+                label="Location"
+                value={`📍 ${chosenPool.location}`}
+              />
+            )}
+            <ReceiptRow
+              label="Your Contribution"
+              value={`${Math.min(quantity, chosenPool.targetQuantity - (chosenPool.filledQuantity || 0))}/${chosenPool.targetQuantity} ${chosenPool.unit}`}
+            />
+          </>
+        )}
         {poolBonus > 0 && (
           <ReceiptRow
             label="Pool Bonus"
@@ -829,6 +916,176 @@ function ConfirmationScreen({
         By tapping confirm, you agree to FarmHers' terms. Funds are secured in
         escrow until handover.
       </p>
+    </div>
+  );
+}
+
+function SelectPool({
+  pools,
+  selectedPoolId,
+  onSelect,
+  crop,
+  quantity,
+  getCropName,
+}: any) {
+  return (
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-2xl font-bold text-foreground tracking-tight">
+          Choose a Buyer Pool
+        </h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          These buyers are looking for {getCropName(crop)}. Pick the best deal.
+        </p>
+      </div>
+
+      {pools.length === 0 ? (
+        <div className="glass-card border border-border/50 rounded-3xl p-8 text-center space-y-3">
+          <Users className="w-10 h-10 text-muted-foreground mx-auto" />
+          <p className="font-semibold text-foreground">
+            No buyer requests right now
+          </p>
+          <p className="text-sm text-muted-foreground">
+            We'll create a new pool and notify buyers automatically.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {pools.map((pool: any) => {
+            const remaining = pool.targetQuantity - (pool.filledQuantity || 0);
+            const fillPct = Math.round(
+              ((pool.filledQuantity || 0) / pool.targetQuantity) * 100,
+            );
+            const isSelected = selectedPoolId === pool.id;
+            const canFulfill = remaining >= quantity;
+
+            return (
+              <motion.button
+                key={pool.id}
+                onClick={() => onSelect(pool.id)}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.98 }}
+                className={cn(
+                  "w-full text-left rounded-3xl p-5 border-2 transition-all duration-300",
+                  isSelected
+                    ? "border-primary bg-primary/5 shadow-md"
+                    : "border-border/50 bg-card hover:border-primary/30 premium-shadow",
+                )}
+              >
+                {/* Header */}
+                <div className="flex items-start justify-between gap-3 mb-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <h3 className="font-bold text-lg text-foreground">
+                        {pool.creatorName}
+                      </h3>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                        Verified Buyer
+                      </span>
+                    </div>
+                    {pool.location && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        📍 {pool.location}
+                      </p>
+                    )}
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider">
+                      Offering
+                    </p>
+                    <p className="text-2xl font-black font-mono text-primary">
+                      ₹{pool.pricePerUnit}
+                      <span className="text-sm font-medium text-muted-foreground">
+                        /{pool.unit}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Stats row */}
+                <div className="grid grid-cols-3 gap-2 mb-4">
+                  {[
+                    {
+                      label: "Needs",
+                      value: `${pool.targetQuantity} ${pool.unit}`,
+                    },
+                    { label: "Remaining", value: `${remaining} ${pool.unit}` },
+                    { label: "Farmers", value: pool.members?.length || 0 },
+                  ].map((stat) => (
+                    <div
+                      key={stat.label}
+                      className="bg-secondary/50 rounded-xl p-2.5 text-center"
+                    >
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        {stat.label}
+                      </p>
+                      <p className="text-sm font-bold text-foreground mt-0.5">
+                        {stat.value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Progress */}
+                <div className="mb-3">
+                  <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider mb-1.5">
+                    <span className="text-muted-foreground">Pool Filled</span>
+                    <span className="text-primary">{fillPct}%</span>
+                  </div>
+                  <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${fillPct}%` }}
+                      transition={{ duration: 0.8, ease: "easeOut" }}
+                      className="h-full bg-gradient-to-r from-primary/70 to-primary rounded-full"
+                    />
+                  </div>
+                </div>
+
+                {/* Your contribution preview */}
+                <div
+                  className={cn(
+                    "rounded-xl p-3 flex items-center justify-between",
+                    canFulfill
+                      ? "bg-agri-success/10 border border-agri-success/20"
+                      : "bg-amber-500/10 border border-amber-500/20",
+                  )}
+                >
+                  <span className="text-xs font-semibold text-muted-foreground">
+                    {canFulfill
+                      ? `Your ${quantity}q fits perfectly`
+                      : `Pool needs ${remaining}q — you have ${quantity}q`}
+                  </span>
+                  <span
+                    className={cn(
+                      "text-xs font-bold",
+                      canFulfill ? "text-agri-success" : "text-amber-400",
+                    )}
+                  >
+                    {canFulfill
+                      ? "✓ Full match"
+                      : `Partial: ${Math.min(quantity, remaining)}q`}
+                  </span>
+                </div>
+
+                {pool.description && (
+                  <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
+                    📋 {pool.description}
+                  </p>
+                )}
+
+                {/* Selected indicator */}
+                {isSelected && (
+                  <div className="mt-3 flex items-center justify-center gap-2 text-primary text-sm font-bold">
+                    <Check className="w-4 h-4" strokeWidth={3} />
+                    Selected
+                  </div>
+                )}
+              </motion.button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

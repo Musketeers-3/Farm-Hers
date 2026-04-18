@@ -419,6 +419,8 @@ export const useAppStore = create<AppState>()(
         hasOnboarded: state.hasOnboarded,
         isLoggedIn: state.isLoggedIn,
         userProfile: state.userProfile,
+        selectedCrop: state.selectedCrop, 
+        sellQuantity: state.sellQuantity, 
       }),
     },
   ),

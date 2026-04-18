@@ -10,25 +10,28 @@ import { motion, AnimatePresence } from "framer-motion";
 type NavId = "home" | "sell" | "market" | "pools" | "profile";
 
 const navItems: { id: NavId; icon: React.ElementType; path: string }[] = [
-  { id: "home",    icon: Home,        path: "/farmer" },
-  { id: "sell",    icon: ShoppingBag, path: "/farmer/sell" },
-  { id: "market",  icon: BarChart2,   path: "/farmer/market" },
-  { id: "pools",   icon: Layers,      path: "/farmer/pools" },
-  { id: "profile", icon: User,        path: "/farmer/profile" },
+  { id: "home", icon: Home, path: "/farmer" },
+  { id: "sell", icon: ShoppingBag, path: "/farmer/sell" },
+  { id: "market", icon: BarChart2, path: "/farmer/market" },
+  { id: "pools", icon: Layers, path: "/farmer/pools" },
+  { id: "profile", icon: User, path: "/farmer/profile" },
 ];
 
 export function BottomNav() {
   const pathname = usePathname();
+  if (pathname === "/farmer/sell" || pathname?.startsWith("/farmer/sell")) {
+    return null;
+  }
   const router = useRouter();
   const setBoloListening = useAppStore((state) => state.setBoloListening);
   const setActiveScreen = useAppStore((state) => state.setActiveScreen);
   const t = useTranslation();
 
   const labels: Record<string, string> = {
-    home:    (t as any)?.home    ?? "Home",
-    sell:    t?.sell             ?? "Sell",
-    market:  t?.market           ?? "Market",
-    pools:   (t as any)?.pools   ?? "Pools",
+    home: (t as any)?.home ?? "Home",
+    sell: t?.sell ?? "Sell",
+    market: t?.market ?? "Market",
+    pools: (t as any)?.pools ?? "Pools",
     profile: (t as any)?.profile ?? "Profile",
   };
 
@@ -49,10 +52,8 @@ export function BottomNav() {
   return (
     <nav className="fixed bottom-4 sm:bottom-6 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
       <div className="pointer-events-auto w-full max-w-[420px] relative">
-        
         {/* Main Nav Bar */}
         <div className="bg-background/80 backdrop-blur-2xl border border-border/50 shadow-[0_12px_40px_rgba(0,0,0,0.1)] rounded-[32px] flex items-center justify-between px-2 h-[72px]">
-          
           {/* Left Nav Items: home, sell */}
           <div className="flex items-center gap-1">
             {navItems.slice(0, 2).map((item) => (
@@ -95,7 +96,11 @@ export function BottomNav() {
             <div className="relative z-10 w-full h-full rounded-full bg-gradient-to-br from-[#1e4d2b] to-[#0f2916] border-[4px] border-background shadow-lg flex items-center justify-center">
               <motion.div
                 animate={{ scale: [1, 1.15, 1] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
               >
                 <Mic
                   className="w-9 h-9 text-white drop-shadow-[0_0_10px_rgba(52,211,153,0.8)]"
@@ -108,7 +113,6 @@ export function BottomNav() {
             BOLO
           </span>
         </div>
-        
       </div>
     </nav>
   );
@@ -131,7 +135,9 @@ const NavItem = React.memo(function NavItem({
       onClick={onClick}
       className={cn(
         "relative flex flex-col items-center justify-center w-[46px] h-[56px] rounded-2xl transition-all duration-300",
-        isActive ? "text-primary" : "text-muted-foreground hover:text-foreground",
+        isActive
+          ? "text-primary"
+          : "text-muted-foreground hover:text-foreground",
       )}
     >
       <AnimatePresence>
@@ -150,7 +156,8 @@ const NavItem = React.memo(function NavItem({
       <Icon
         className={cn(
           "w-5 h-5 transition-transform duration-300",
-          isActive && "scale-110 translate-y-[-2px] drop-shadow-[0_0_8px_rgba(var(--primary),0.5)]",
+          isActive &&
+            "scale-110 translate-y-[-2px] drop-shadow-[0_0_8px_rgba(var(--primary),0.5)]",
         )}
         strokeWidth={isActive ? 2.5 : 2}
       />
