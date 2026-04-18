@@ -10,10 +10,10 @@ import { MarketScreen } from "@/components/farmer/market-screen";
 import { ProfileScreen } from "@/components/farmer/profile-screen";
 import { NotificationsScreen } from "@/components/farmer/notifications-screen";
 import { EarningsScreen } from "@/components/farmer/earnings-screen";
-import { BoloAssistant } from "@/components/bolo/bolo-assistant";
-import { Loader2 } from "lucide-react";
 import { FarmerDemands } from "@/components/farmer/farmer-demands";
 import FarmerPools from "@/components/farmer/farmer-pools";
+import { Sprout } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function FarmerScreenClient({ screen }: { screen: string }) {
   const hasOnboarded = useAppStore((state) => state.hasOnboarded);
@@ -21,7 +21,7 @@ export function FarmerScreenClient({ screen }: { screen: string }) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
-  // Define valid screens to prevent invalid navigation loops
+  // 🚀 FIXED: Added "demands" to prevent the infinite redirect loop bug
   const VALID_SCREENS = [
     "home",
     "sell",
@@ -32,6 +32,7 @@ export function FarmerScreenClient({ screen }: { screen: string }) {
     "notifications",
     "earnings",
     "pools",
+    "demands",
   ];
 
   useEffect(() => {
@@ -47,7 +48,6 @@ export function FarmerScreenClient({ screen }: { screen: string }) {
   }, [mounted, hasOnboarded, isLoggedIn, router]);
 
   // --- Navigation Side-Effect Guard ---
-  // Fixes the "Cannot update a component while rendering" error
   useEffect(() => {
     if (mounted && !VALID_SCREENS.includes(screen)) {
       console.warn(`Invalid screen: ${screen}. Redirecting to /farmer...`);
@@ -55,11 +55,12 @@ export function FarmerScreenClient({ screen }: { screen: string }) {
     }
   }, [mounted, screen, router]);
 
+  // 🚀 UPGRADED: Premium Glassmorphic Loading State
   if (!mounted || !hasOnboarded || !isLoggedIn) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-pulse">
-          <div className="w-16 h-16 rounded-full bg-primary/20" />
+      <div className="min-h-screen bg-[linear-gradient(135deg,#dcfce7_0%,#dcfce7_20%,#bfdbfe_100%)] dark:bg-slate-950 flex items-center justify-center">
+        <div className="w-24 h-24 rounded-3xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-white/50 dark:border-white/10 flex items-center justify-center shadow-2xl animate-pulse">
+          <Sprout className="w-10 h-10 text-emerald-600 dark:text-emerald-400 animate-bounce" />
         </div>
       </div>
     );
@@ -86,19 +87,16 @@ export function FarmerScreenClient({ screen }: { screen: string }) {
       case "pools":
         return <FarmerPools />;
       default:
-        // Return a loader while the useEffect handles the router.replace
         return (
-          <div className="min-h-screen bg-background flex items-center justify-center">
-            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+          <div className="min-h-screen bg-[linear-gradient(135deg,#dcfce7_0%,#dcfce7_20%,#bfdbfe_100%)] dark:bg-slate-950 flex items-center justify-center">
+            <div className="w-24 h-24 rounded-3xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-white/50 flex items-center justify-center shadow-2xl animate-pulse">
+              <Sprout className="w-10 h-10 text-emerald-600 dark:text-emerald-400 animate-bounce" />
+            </div>
           </div>
         );
     }
   };
 
-  return (
-    <>
-      {renderScreen()}
-      <BoloAssistant />
-    </>
-  );
+  // 🚀 FIXED: Removed <BoloAssistant /> to prevent double-rendering with layout.tsx
+  return <>{renderScreen()}</>;
 }

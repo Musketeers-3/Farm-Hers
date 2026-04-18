@@ -154,11 +154,9 @@ export default function FarmerPools() {
   if (!isMounted) return null;
 
   return (
-    // ✅ FIX: was dark:bg-slate-950 (pure blue-black). Now warm dark green-grey.
-    <div className="min-h-screen pb-28 lg:pb-8 overflow-x-hidden relative bg-[linear-gradient(135deg,#dcfce7_0%,#dcfce7_20%,#bfdbfe_100%)] dark:bg-none dark:bg-[#111a13] transition-colors duration-500">
-
-      {/* Background Wave Pattern */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-40 dark:opacity-15 transition-opacity duration-500">
+    <div className="min-h-screen pb-28 lg:pb-8 overflow-x-hidden relative bg-[linear-gradient(135deg,#dcfce7_0%,#dcfce7_20%,#bfdbfe_100%)] dark:bg-none dark:bg-slate-950 transition-colors duration-500">
+      {/* ── Background Wave Pattern ── */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-60 dark:opacity-70 transition-opacity duration-500">
         <svg viewBox="0 0 1200 800" className="w-full h-full object-cover">
           <defs>
             <linearGradient id="waveGrad" x1="0%" y1="0%" x2="100%" y2="0%">

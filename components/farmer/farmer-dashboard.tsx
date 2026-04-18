@@ -20,6 +20,8 @@ import {
   Wallet,
   X,
   Loader2,
+  Building2, // 👈 ADD THIS
+  ArrowRight, // 👈 ADD THIS
 } from "lucide-react";
 import { format } from "date-fns";
 import { useState, useEffect, useRef } from "react";
@@ -78,7 +80,7 @@ function LocationPickerModal({
         try {
           const { latitude, longitude } = pos.coords;
           const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
           );
           const data = await res.json();
           const city =
@@ -97,7 +99,7 @@ function LocationPickerModal({
       () => {
         setGeoError("Location access denied. Please type your city below.");
         setIsDetecting(false);
-      }
+      },
     );
   };
 
@@ -194,6 +196,53 @@ function LocationPickerModal({
   );
 }
 
+export function CorporateDemandsBanner() {
+  const router = useRouter();
+  const setActiveScreen = useAppStore((state) => state.setActiveScreen);
+
+  const navigateToDemands = () => {
+    setActiveScreen("demands");
+    // Ensure this route matches your actual Next.js folder structure for Demands
+    router.push("/farmer/demands");
+  };
+
+  return (
+    <motion.button
+      whileHover={{ scale: 1.01 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={navigateToDemands}
+      className="w-full relative overflow-hidden rounded-[32px] p-6 sm:p-8 text-left group border border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-900/20 shadow-lg shadow-emerald-500/10 transition-all"
+    >
+      <div className="absolute -top-10 -right-10 w-40 h-40 bg-emerald-500/20 rounded-full blur-[50px] group-hover:bg-emerald-500/30 transition-all duration-700" />
+
+      <div className="relative z-10 flex items-center justify-between">
+        <div className="flex items-center gap-4 sm:gap-5">
+          <div className="w-14 h-14 rounded-2xl bg-white dark:bg-slate-900 shadow-sm border border-emerald-100 dark:border-emerald-800/50 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+            <Building2 className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="text-xl font-bold text-slate-900 dark:text-slate-50 tracking-tight">
+                Corporate Demands
+              </h3>
+              <span className="px-2 py-0.5 rounded-md bg-emerald-500 text-white text-[9px] font-black uppercase tracking-widest animate-pulse">
+                Live
+              </span>
+            </div>
+            <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
+              Direct high-volume contracts from verified enterprise buyers.
+            </p>
+          </div>
+        </div>
+
+        <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0 group-hover:bg-emerald-500 group-hover:text-white text-emerald-600 dark:text-emerald-400 transition-all duration-300 ml-4">
+          <ArrowRight className="w-5 h-5" />
+        </div>
+      </div>
+    </motion.button>
+  );
+}
+
 export function FarmerDashboard() {
   const router = useRouter();
   const userName = useAppStore((state) => state.userName);
@@ -230,7 +279,11 @@ export function FarmerDashboard() {
 
         const now = new Date();
         const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const lastMonthStart = new Date(
+          now.getFullYear(),
+          now.getMonth() - 1,
+          1,
+        );
         const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
 
         let thisTotal = 0;
@@ -306,9 +359,15 @@ export function FarmerDashboard() {
                   aria-label="Toggle Dark Mode"
                 >
                   {isDark ? (
-                    <Sun className="w-5.5 h-5.5 text-[#14532d] dark:text-emerald-300" strokeWidth={2} />
+                    <Sun
+                      className="w-5.5 h-5.5 text-[#14532d] dark:text-emerald-300"
+                      strokeWidth={2}
+                    />
                   ) : (
-                    <Moon className="w-5.5 h-5.5 text-[#14532d]" strokeWidth={2} />
+                    <Moon
+                      className="w-5.5 h-5.5 text-[#14532d]"
+                      strokeWidth={2}
+                    />
                   )}
                 </button>
               )}
@@ -321,7 +380,10 @@ export function FarmerDashboard() {
                 onClick={() => router.push("/farmer/notifications")}
                 className="relative w-10.5 h-10.5 rounded-2xl bg-[#f2f8f5] dark:bg-white/10 flex items-center justify-center shadow-sm"
               >
-                <Bell className="w-5.5 h-5.5 text-[#14532d] dark:text-emerald-300" strokeWidth={2} />
+                <Bell
+                  className="w-5.5 h-5.5 text-[#14532d] dark:text-emerald-300"
+                  strokeWidth={2}
+                />
                 <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-[#f2f8f5] dark:border-[#0e1f12]" />
               </button>
             </div>
@@ -350,11 +412,17 @@ export function FarmerDashboard() {
                 onClick={() => setLocationModalOpen(true)}
                 className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-white dark:bg-white/10 shadow-sm border-none"
               >
-                <MapPin className="w-4 h-4 text-[#16a34a] dark:text-emerald-400" strokeWidth={2.5} />
+                <MapPin
+                  className="w-4 h-4 text-[#16a34a] dark:text-emerald-400"
+                  strokeWidth={2.5}
+                />
                 <span className="text-[13px] font-black text-[#14532d] dark:text-emerald-200 truncate max-w-[110px]">
                   {userLocation || "Location"}
                 </span>
-                <ChevronDown className="w-3.5 h-3.5 text-[#15803d]/30 dark:text-emerald-500/40" strokeWidth={3} />
+                <ChevronDown
+                  className="w-3.5 h-3.5 text-[#15803d]/30 dark:text-emerald-500/40"
+                  strokeWidth={3}
+                />
               </motion.button>
             </div>
           </div>
@@ -364,7 +432,6 @@ export function FarmerDashboard() {
       {/* ── MAIN ── */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-
           <div className="lg:col-span-5 flex flex-col order-1 lg:order-2 lg:sticky lg:top-36">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -401,8 +468,8 @@ export function FarmerDashboard() {
                         {earningsLoading
                           ? "..."
                           : earnings !== null
-                          ? formatEarnings(earnings)
-                          : "₹0"}
+                            ? formatEarnings(earnings)
+                            : "₹0"}
                       </p>
                     </div>
 
@@ -433,10 +500,10 @@ export function FarmerDashboard() {
 
           <div className="lg:col-span-7 flex flex-col gap-8 order-2 lg:order-1">
             <AIRecommendationCard />
+            <CorporateDemandsBanner />
             <CommoditiesGrid />
             <MyFieldsCard />
           </div>
-
         </div>
       </main>
 
