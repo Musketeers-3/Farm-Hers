@@ -20,14 +20,15 @@ import {
   Wallet,
   X,
   Loader2,
-  Building2, // 👈 ADD THIS
-  ArrowRight, // 👈 ADD THIS
+  Building2,
+  ArrowRight,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
+import Image from "next/image";
 import { auth, db } from "@/lib/firebase";
 import {
   collection,
@@ -38,6 +39,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 
+// ─── Location Picker Modal ────────────────────────────────────────────────────
 interface LocationPickerModalProps {
   isOpen: boolean;
   currentLocation: string;
@@ -74,7 +76,6 @@ function LocationPickerModal({
     }
     setIsDetecting(true);
     setGeoError(null);
-
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         try {
@@ -117,7 +118,7 @@ function LocationPickerModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm"
+            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
           />
           <motion.div
             initial={{ opacity: 0, y: 60, scale: 0.97 }}
@@ -126,18 +127,13 @@ function LocationPickerModal({
             transition={{ type: "spring", damping: 26, stiffness: 300 }}
             className="fixed bottom-0 left-0 right-0 z-50 sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:max-w-sm w-full"
           >
-            <div className="bg-white dark:bg-[#1a2a1e] rounded-t-[32px] sm:rounded-[32px] shadow-2xl p-6 space-y-4">
+            <div className="bg-white dark:bg-[#0d1f10]/95 dark:backdrop-blur-xl rounded-t-[32px] sm:rounded-[32px] shadow-2xl p-6 space-y-4 border-0 dark:border dark:border-white/[0.08]">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center">
-                    <MapPin
-                      className="w-4 h-4 text-emerald-600 dark:text-emerald-400"
-                      strokeWidth={2.5}
-                    />
+                  <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 flex items-center justify-center">
+                    <MapPin className="w-4 h-4 text-emerald-600 dark:text-emerald-400" strokeWidth={2.5} />
                   </div>
-                  <h2 className="text-[15px] font-black text-[#14532d] dark:text-emerald-300">
-                    Change Location
-                  </h2>
+                  <h2 className="text-[15px] font-black text-[#14532d] dark:text-emerald-300">Change Location</h2>
                 </div>
                 <button
                   onClick={onClose}
@@ -165,21 +161,13 @@ function LocationPickerModal({
               <button
                 onClick={handleDetect}
                 disabled={isDetecting}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-800/40 text-emerald-700 dark:text-emerald-300 font-bold text-sm hover:bg-emerald-100 dark:hover:bg-emerald-900/50 active:scale-[0.98] transition disabled:opacity-60"
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-100 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold text-sm hover:bg-emerald-100 dark:hover:bg-emerald-500/25 active:scale-[0.98] transition disabled:opacity-60"
               >
-                {isDetecting ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <MapPin className="w-4 h-4" strokeWidth={2.5} />
-                )}
+                {isDetecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" strokeWidth={2.5} />}
                 {isDetecting ? "Detecting..." : "Auto-detect my location"}
               </button>
 
-              {geoError && (
-                <p className="text-xs text-red-500 text-center -mt-1 px-2">
-                  {geoError}
-                </p>
-              )}
+              {geoError && <p className="text-xs text-red-500 text-center -mt-1 px-2">{geoError}</p>}
 
               <button
                 onClick={handleConfirm}
@@ -196,46 +184,40 @@ function LocationPickerModal({
   );
 }
 
+// ─── Corporate Demands Banner ─────────────────────────────────────────────────
 export function CorporateDemandsBanner() {
   const router = useRouter();
   const setActiveScreen = useAppStore((state) => state.setActiveScreen);
-
-  const navigateToDemands = () => {
-    setActiveScreen("demands");
-    // Ensure this route matches your actual Next.js folder structure for Demands
-    router.push("/farmer/demands");
-  };
 
   return (
     <motion.button
       whileHover={{ scale: 1.01 }}
       whileTap={{ scale: 0.98 }}
-      onClick={navigateToDemands}
-      className="w-full relative overflow-hidden rounded-[32px] p-6 sm:p-8 text-left group border border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-900/20 shadow-lg shadow-emerald-500/10 transition-all"
+      onClick={() => { setActiveScreen("demands"); router.push("/farmer/demands"); }}
+      className="w-full relative overflow-hidden rounded-[32px] p-6 sm:p-8 text-left group
+        border border-emerald-500/30 dark:border-white/[0.09]
+        bg-emerald-500/10 dark:bg-white/[0.05]
+        backdrop-blur-sm dark:backdrop-blur-xl
+        shadow-lg shadow-emerald-500/10 dark:shadow-[0_8px_32px_rgba(0,0,0,0.35)]
+        transition-all duration-300"
     >
-      <div className="absolute -top-10 -right-10 w-40 h-40 bg-emerald-500/20 rounded-full blur-[50px] group-hover:bg-emerald-500/30 transition-all duration-700" />
-
+      <div className="absolute -top-10 -right-10 w-40 h-40 bg-emerald-500/20 dark:bg-emerald-400/10 rounded-full blur-[50px] group-hover:scale-110 transition-transform duration-700" />
       <div className="relative z-10 flex items-center justify-between">
         <div className="flex items-center gap-4 sm:gap-5">
-          <div className="w-14 h-14 rounded-2xl bg-white dark:bg-slate-900 shadow-sm border border-emerald-100 dark:border-emerald-800/50 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+          <div className="w-14 h-14 rounded-2xl bg-white dark:bg-white/[0.08] shadow-sm border border-emerald-100 dark:border-white/[0.1] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform backdrop-blur-sm">
             <Building2 className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
           </div>
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <h3 className="text-xl font-bold text-slate-900 dark:text-slate-50 tracking-tight">
-                Corporate Demands
-              </h3>
-              <span className="px-2 py-0.5 rounded-md bg-emerald-500 text-white text-[9px] font-black uppercase tracking-widest animate-pulse">
-                Live
-              </span>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Corporate Demands</h3>
+              <span className="px-2 py-0.5 rounded-md bg-emerald-500 text-white text-[9px] font-black uppercase tracking-widest animate-pulse">Live</span>
             </div>
-            <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
+            <p className="text-sm font-medium text-slate-600 dark:text-white/50">
               Direct high-volume contracts from verified enterprise buyers.
             </p>
           </div>
         </div>
-
-        <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0 group-hover:bg-emerald-500 group-hover:text-white text-emerald-600 dark:text-emerald-400 transition-all duration-300 ml-4">
+        <div className="w-10 h-10 rounded-full bg-emerald-500/20 dark:bg-white/[0.08] flex items-center justify-center shrink-0 group-hover:bg-emerald-500 text-emerald-600 dark:text-emerald-400 group-hover:text-white transition-all duration-300 ml-4">
           <ArrowRight className="w-5 h-5" />
         </div>
       </div>
@@ -243,6 +225,7 @@ export function CorporateDemandsBanner() {
   );
 }
 
+// ─── Main Farmer Dashboard ────────────────────────────────────────────────────
 export function FarmerDashboard() {
   const router = useRouter();
   const userName = useAppStore((state) => state.userName);
@@ -250,84 +233,57 @@ export function FarmerDashboard() {
   const setUserLocation = useAppStore((state) => state.setUserLocation);
   const t = useTranslation();
 
-  const { theme, setTheme, resolvedTheme } = useTheme();
+  const { setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [earnings, setEarnings] = useState<number | null>(null);
   const [earningsGrowth, setEarningsGrowth] = useState<number | null>(null);
   const [earningsLoading, setEarningsLoading] = useState(true);
   const [locationModalOpen, setLocationModalOpen] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  useEffect(() => { setMounted(true); }, []);
 
   const isDark = resolvedTheme === "dark";
-
-  const toggleDarkMode = () => {
-    setTheme(isDark ? "light" : "dark");
-  };
+  const toggleDarkMode = () => setTheme(isDark ? "light" : "dark");
 
   useEffect(() => {
     const fetchEarnings = async () => {
       const user = auth.currentUser;
       if (!user) return;
-
       try {
         const ordersRef = collection(db, "orders");
         const q = query(ordersRef, where("farmerId", "==", user.uid));
         const snap = await getDocs(q);
-
         const now = new Date();
         const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        const lastMonthStart = new Date(
-          now.getFullYear(),
-          now.getMonth() - 1,
-          1,
-        );
+        const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
         const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
-
-        let thisTotal = 0;
-        let lastTotal = 0;
-
-        snap.docs.forEach((doc) => {
-          const data = doc.data();
+        let thisTotal = 0, lastTotal = 0;
+        snap.docs.forEach((d) => {
+          const data = d.data();
           if (data.status !== "payment-released") return;
           const createdAt = new Date(data.createdAt);
-          if (createdAt >= thisMonthStart) {
-            thisTotal += data.totalAmount || 0;
-          } else if (createdAt >= lastMonthStart && createdAt <= lastMonthEnd) {
-            lastTotal += data.totalAmount || 0;
-          }
+          if (createdAt >= thisMonthStart) thisTotal += data.totalAmount || 0;
+          else if (createdAt >= lastMonthStart && createdAt <= lastMonthEnd) lastTotal += data.totalAmount || 0;
         });
-
         setEarnings(thisTotal);
-        if (lastTotal > 0) {
-          const growth = ((thisTotal - lastTotal) / lastTotal) * 100;
-          setEarningsGrowth(Math.round(growth * 10) / 10);
-        } else {
-          setEarningsGrowth(null);
-        }
+        setEarningsGrowth(lastTotal > 0 ? Math.round(((thisTotal - lastTotal) / lastTotal) * 1000) / 10 : null);
       } catch (err) {
         console.error("Failed to fetch earnings:", err);
       } finally {
         setEarningsLoading(false);
       }
     };
-
     fetchEarnings();
   }, []);
 
   const handleLocationChange = async (newCity: string) => {
     setUserLocation(newCity);
     setLocationModalOpen(false);
-
     const user = auth.currentUser;
     if (user) {
       try {
         await updateDoc(doc(db, "users", user.uid), { location: newCity });
-      } catch (err) {
-        console.error("Failed to save location:", err);
-      }
+      } catch (err) { console.error("Failed to save location:", err); }
     }
   };
 
@@ -337,16 +293,40 @@ export function FarmerDashboard() {
     return `₹${amount}`;
   };
 
-  const today = new Date();
-  const formattedDate = format(today, "EEEE, dd MMM yyyy");
+  const formattedDate = format(new Date(), "EEEE, dd MMM yyyy");
 
   return (
-    // ✅ FIX: was dark:from-[#071a0a] dark:to-[#0d1117] — too black
-    // Now uses a softer dark blue-green that still feels "nature" themed
-    <div className="min-h-screen pb-28 lg:pb-8 bg-gradient-to-b from-[#f0fdf4] to-white dark:from-[#0e1f12] dark:to-[#131f17]">
+    <div className="min-h-screen pb-28 lg:pb-8 relative overflow-x-hidden">
+
+      {/* ── FIXED BACKGROUND ── */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        {/* Light mode: soft green gradient */}
+        <div className={`absolute inset-0 bg-gradient-to-b from-[#f0fdf4] to-white transition-opacity duration-500 ${mounted && isDark ? "opacity-0" : "opacity-100"}`} />
+
+        {/* Dark mode: farmers_bg.jpg with heavy scrim */}
+        {mounted && isDark && (
+          <>
+            <Image
+              src="/images/farmers_bg.jpg"
+              alt=""
+              fill
+              priority
+              className="object-cover object-center"
+              style={{ opacity: 0.28 }}
+            />
+            {/* Primary dark gradient scrim */}
+            <div className="absolute inset-0 bg-gradient-to-b from-[#020c04]/85 via-[#040f06]/75 to-[#020c04]/92" />
+            {/* Radial vignette for depth */}
+            <div
+              className="absolute inset-0"
+              style={{ background: "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(6,20,8,0.3) 0%, rgba(2,8,3,0.7) 100%)" }}
+            />
+          </>
+        )}
+      </div>
+
       {/* ── HEADER ── */}
-      {/* ✅ FIX: was dark:bg-[#0a1a0c]/80 — now slightly lighter */}
-      <header className="sticky top-0 z-50 bg-white/70 dark:bg-[#0e1f12]/85 backdrop-blur-2xl transition-all duration-300 border-b border-transparent dark:border-white/8">
+      <header className="sticky top-0 z-50 bg-white/75 dark:bg-[#020c04]/75 backdrop-blur-2xl transition-all duration-300 border-b border-transparent dark:border-white/[0.06]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4.5 space-y-4">
           <div className="flex items-center justify-between">
             <AgriLinkLogo size="sm" className="scale-105 origin-left" />
@@ -355,49 +335,39 @@ export function FarmerDashboard() {
               {mounted && (
                 <button
                   onClick={toggleDarkMode}
-                  className="w-10.5 h-10.5 rounded-2xl bg-white dark:bg-white/10 flex items-center justify-center hover:bg-emerald-50 dark:hover:bg-white/15 transition-all duration-200 shadow-sm"
+                  className="w-10.5 h-10.5 rounded-2xl bg-white dark:bg-white/[0.07] flex items-center justify-center hover:bg-emerald-50 dark:hover:bg-white/[0.12] transition-all duration-200 shadow-sm border-0 dark:border dark:border-white/[0.08]"
                   aria-label="Toggle Dark Mode"
                 >
-                  {isDark ? (
-                    <Sun
-                      className="w-5.5 h-5.5 text-[#14532d] dark:text-emerald-300"
-                      strokeWidth={2}
-                    />
-                  ) : (
-                    <Moon
-                      className="w-5.5 h-5.5 text-[#14532d]"
-                      strokeWidth={2}
-                    />
-                  )}
+                  {isDark
+                    ? <Sun className="w-5.5 h-5.5 text-emerald-300" strokeWidth={2} />
+                    : <Moon className="w-5.5 h-5.5 text-[#14532d]" strokeWidth={2} />
+                  }
                 </button>
               )}
 
-              <div className="hidden sm:block scale-105 bg-[#f2f8f5] dark:bg-white/10 rounded-2xl shadow-sm p-1 border border-emerald-100/20 dark:border-white/10">
+              <div className="hidden sm:block scale-105 bg-[#f2f8f5] dark:bg-white/[0.07] rounded-2xl shadow-sm p-1 border border-emerald-100/20 dark:border-white/[0.08]">
                 <LanguageSwitcher />
               </div>
 
               <button
                 onClick={() => router.push("/farmer/notifications")}
-                className="relative w-10.5 h-10.5 rounded-2xl bg-[#f2f8f5] dark:bg-white/10 flex items-center justify-center shadow-sm"
+                className="relative w-10.5 h-10.5 rounded-2xl bg-[#f2f8f5] dark:bg-white/[0.07] flex items-center justify-center shadow-sm border-0 dark:border dark:border-white/[0.08]"
               >
-                <Bell
-                  className="w-5.5 h-5.5 text-[#14532d] dark:text-emerald-300"
-                  strokeWidth={2}
-                />
-                <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-[#f2f8f5] dark:border-[#0e1f12]" />
+                <Bell className="w-5.5 h-5.5 text-[#14532d] dark:text-emerald-300" strokeWidth={2} />
+                <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-[#f2f8f5] dark:border-transparent" />
               </button>
             </div>
           </div>
 
           <div className="flex flex-row items-center justify-between gap-4 pt-1">
             <div className="flex flex-col">
-              <h1 className="text-xl sm:text-2xl font-black text-[#14532d] dark:text-emerald-200 leading-tight tracking-tight">
+              <h1 className="text-xl sm:text-2xl font-black text-[#14532d] dark:text-white leading-tight tracking-tight">
                 {t.hello},{" "}
                 <span className="text-[#16a34a] dark:text-emerald-400">
                   {userName ? userName.split(" ")[0] : "Farmer"}
                 </span>
               </h1>
-              <p className="text-[10px] text-[#15803d]/40 dark:text-emerald-500/50 tracking-[0.15em] uppercase font-black">
+              <p className="text-[10px] text-[#15803d]/40 dark:text-white/30 tracking-[0.15em] uppercase font-black">
                 {formattedDate}
               </p>
             </div>
@@ -406,23 +376,16 @@ export function FarmerDashboard() {
               <div className="sm:hidden block scale-95 origin-right">
                 <LanguageSwitcher />
               </div>
-
               <motion.button
                 whileTap={{ scale: 0.96 }}
                 onClick={() => setLocationModalOpen(true)}
-                className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-white dark:bg-white/10 shadow-sm border-none"
+                className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-white dark:bg-white/[0.07] shadow-sm border-0 dark:border dark:border-white/[0.09] backdrop-blur-sm"
               >
-                <MapPin
-                  className="w-4 h-4 text-[#16a34a] dark:text-emerald-400"
-                  strokeWidth={2.5}
-                />
-                <span className="text-[13px] font-black text-[#14532d] dark:text-emerald-200 truncate max-w-[110px]">
+                <MapPin className="w-4 h-4 text-[#16a34a] dark:text-emerald-400" strokeWidth={2.5} />
+                <span className="text-[13px] font-black text-[#14532d] dark:text-white truncate max-w-[110px]">
                   {userLocation || "Location"}
                 </span>
-                <ChevronDown
-                  className="w-3.5 h-3.5 text-[#15803d]/30 dark:text-emerald-500/40"
-                  strokeWidth={3}
-                />
+                <ChevronDown className="w-3.5 h-3.5 text-[#15803d]/30 dark:text-white/25" strokeWidth={3} />
               </motion.button>
             </div>
           </div>
@@ -430,18 +393,22 @@ export function FarmerDashboard() {
       </header>
 
       {/* ── MAIN ── */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+          {/* RIGHT SIDEBAR — glass container */}
           <div className="lg:col-span-5 flex flex-col order-1 lg:order-2 lg:sticky lg:top-36">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              // ✅ FIX: was dark:bg-white/[0.03] — cards almost invisible. Now clearly visible.
-              className="relative overflow-hidden rounded-[40px] border border-white/40 dark:border-white/8 bg-white/40 dark:bg-white/[0.06] backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.05)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.25)] p-2"
+              className="relative overflow-hidden rounded-[40px]
+                border border-white/40 dark:border-white/[0.08]
+                bg-white/40 dark:bg-black/[0.35]
+                backdrop-blur-xl
+                shadow-[0_20px_50px_rgba(0,0,0,0.06)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.6)]
+                p-2"
             >
-              <div className="mb-2">
-                <SearchBar />
-              </div>
+              <div className="mb-2"><SearchBar /></div>
 
               <div className="space-y-4 p-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-4">
@@ -454,8 +421,11 @@ export function FarmerDashboard() {
                     whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => router.push("/farmer/earnings")}
-                    // ✅ FIX: was dark:bg-emerald-900/20 — barely visible. Now slightly more opaque.
-                    className="w-full relative overflow-hidden rounded-[28px] p-5 flex items-center justify-between bg-emerald-50/50 dark:bg-emerald-900/30 border border-emerald-100/20 dark:border-emerald-700/25 shadow-sm"
+                    className="w-full relative overflow-hidden rounded-[28px] p-5 flex items-center justify-between
+                      bg-emerald-50/50 dark:bg-white/[0.06]
+                      border border-emerald-100/20 dark:border-white/[0.08]
+                      backdrop-blur-sm dark:backdrop-blur-xl
+                      shadow-sm dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)]"
                   >
                     <div className="text-left relative z-10">
                       <div className="flex items-center gap-2 mb-1">
@@ -464,31 +434,21 @@ export function FarmerDashboard() {
                           Monthly Earnings
                         </p>
                       </div>
-                      <p className="text-2xl font-black text-slate-800 dark:text-emerald-100">
-                        {earningsLoading
-                          ? "..."
-                          : earnings !== null
-                            ? formatEarnings(earnings)
-                            : "₹0"}
+                      <p className="text-2xl font-black text-slate-800 dark:text-white">
+                        {earningsLoading ? "..." : earnings !== null ? formatEarnings(earnings) : "₹0"}
                       </p>
                     </div>
-
                     <div className="flex flex-col items-end gap-1.5">
                       {!earningsLoading && earningsGrowth !== null && (
-                        <div
-                          className={`px-3 py-1 rounded-full text-xs font-black shadow-sm ${
-                            earningsGrowth >= 0
-                              ? "bg-white/80 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300"
-                              : "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400"
-                          }`}
-                        >
-                          {earningsGrowth >= 0 ? "+" : ""}
-                          {earningsGrowth}%
+                        <div className={`px-3 py-1 rounded-full text-xs font-black shadow-sm ${
+                          earningsGrowth >= 0
+                            ? "bg-white/80 dark:bg-emerald-400/15 text-emerald-700 dark:text-emerald-300"
+                            : "bg-red-50 dark:bg-red-400/15 text-red-600 dark:text-red-400"
+                        }`}>
+                          {earningsGrowth >= 0 ? "+" : ""}{earningsGrowth}%
                         </div>
                       )}
-                      <span className="text-[10px] text-emerald-800/40 dark:text-emerald-500/50 font-black">
-                        vs last month
-                      </span>
+                      <span className="text-[10px] text-emerald-800/40 dark:text-white/25 font-black">vs last month</span>
                     </div>
                   </motion.button>
 
@@ -498,12 +458,14 @@ export function FarmerDashboard() {
             </motion.div>
           </div>
 
+          {/* LEFT MAIN COLUMN */}
           <div className="lg:col-span-7 flex flex-col gap-8 order-2 lg:order-1">
             <AIRecommendationCard />
             <CorporateDemandsBanner />
             <CommoditiesGrid />
             <MyFieldsCard />
           </div>
+
         </div>
       </main>
 

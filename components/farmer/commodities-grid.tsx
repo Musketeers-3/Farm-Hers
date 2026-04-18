@@ -8,24 +8,18 @@ import { useRef, useState } from "react"
 import { CheckCircle2 } from "lucide-react"
 
 const cropIcons: Record<string, string> = {
-  wheat: "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=200&h=200&fit=crop",
-  rice: "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=200&h=200&fit=crop",
-  corn: "https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=200&h=200&fit=crop",
+  wheat:   "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=200&h=200&fit=crop",
+  rice:    "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=200&h=200&fit=crop",
+  corn:    "https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=200&h=200&fit=crop",
   mustard: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=200&h=200&fit=crop",
-  potato: "https://images.unsplash.com/photo-1518977676601-b53f82ber95?w=200&h=200&fit=crop",
-  onion: "https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=200&h=200&fit=crop",
+  potato:  "https://images.unsplash.com/photo-1518977676601-b53f82ber95?w=200&h=200&fit=crop",
+  onion:   "https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?w=200&h=200&fit=crop",
 }
 
-function CropCard({ 
-  crop, 
-  isSelected, 
-  onClick, 
-  cropName 
-}: { 
-  crop: Crop, 
-  isSelected: boolean, 
-  onClick: () => void,
-  cropName: string
+function CropCard({
+  crop, isSelected, onClick, cropName,
+}: {
+  crop: Crop; isSelected: boolean; onClick: () => void; cropName: string;
 }) {
   const divRef = useRef<HTMLButtonElement>(null)
   const [position, setPosition] = useState({ x: 0, y: 0 })
@@ -49,7 +43,7 @@ function CropCard({
       layout
       className="relative flex flex-col items-center gap-2 group min-w-[80px]"
     >
-      {/* Spotlight Glow (hover only, not selected) */}
+      {/* Spotlight glow on hover */}
       {!isSelected && (
         <div
           className="pointer-events-none absolute -inset-px transition-opacity duration-500"
@@ -60,12 +54,12 @@ function CropCard({
         />
       )}
 
-      {/* Circle Image Container */}
+      {/* Circle image */}
       <div className={cn(
         "relative w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden transition-all duration-300 z-10 shadow-md",
         isSelected
-          ? "ring-4 ring-green-600 ring-offset-2"
-          : "ring-1 ring-slate-200 group-hover:ring-green-400/60"
+          ? "ring-4 ring-emerald-500 ring-offset-2 ring-offset-transparent dark:ring-offset-transparent dark:ring-emerald-400"
+          : "ring-1 ring-slate-200 dark:ring-white/20 group-hover:ring-emerald-400/60 dark:group-hover:ring-emerald-400/50"
       )}>
         <Image
           src={cropIcons[crop.id] || cropIcons.wheat}
@@ -76,15 +70,13 @@ function CropCard({
             isSelected ? "scale-110" : "group-hover:scale-110"
           )}
         />
-
-        {/* Selected Checkmark Overlay */}
         <AnimatePresence>
           {isSelected && (
             <motion.div
               initial={{ opacity: 0, scale: 0.5 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.5 }}
-              className="absolute inset-0 bg-green-900/40 backdrop-blur-[1px] flex items-center justify-center"
+              className="absolute inset-0 bg-emerald-900/55 backdrop-blur-[1px] flex items-center justify-center"
             >
               <CheckCircle2 className="w-6 h-6 text-white drop-shadow-md" strokeWidth={3} />
             </motion.div>
@@ -92,16 +84,18 @@ function CropCard({
         </AnimatePresence>
       </div>
 
-      {/* Text Label Below */}
+      {/* Text below */}
       <div className="relative z-10 flex flex-col items-center">
         <span className={cn(
           "text-[11px] sm:text-xs font-black text-center tracking-wide uppercase",
-          isSelected ? "text-green-800" : "text-slate-950 group-hover:text-green-700 transition-colors"
+          isSelected
+            ? "text-emerald-600 dark:text-emerald-400"
+            : "text-slate-700 dark:text-white/80 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors"
         )}>
           {cropName}
         </span>
         <span className={cn(
-          "text-[10px] font-bold text-green-700/70 mt-0.5 transition-all duration-300",
+          "text-[10px] font-bold text-green-700/70 dark:text-emerald-400/70 mt-0.5 transition-all duration-300",
           !isSelected && "sm:opacity-0 sm:-translate-y-1 sm:group-hover:opacity-100 sm:group-hover:translate-y-0"
         )}>
           ₹{crop.currentPrice}
@@ -119,18 +113,18 @@ export function CommoditiesGrid() {
   const t = useTranslation()
 
   const getCropName = (crop: Crop) => {
-    if (language === 'hi') return crop.nameHi
-    if (language === 'pa') return crop.namePa
+    if (language === "hi") return crop.nameHi
+    if (language === "pa") return crop.namePa
     return crop.name
   }
 
   return (
     <div className="space-y-6 w-full p-2">
       <div className="flex items-center justify-between px-1">
-        <h3 className="text-sm sm:text-base font-black text-slate-950 tracking-tight uppercase">
+        <h3 className="text-sm sm:text-base font-black text-slate-800 dark:text-white tracking-tight uppercase">
           {t.commodities}
         </h3>
-        <span className="text-[10px] font-black text-green-900 bg-[#f0fdf4] px-3 py-1 rounded-full uppercase">
+        <span className="text-[10px] font-black text-green-900 dark:text-emerald-300 bg-[#f0fdf4] dark:bg-white/[0.08] px-3 py-1 rounded-full uppercase border border-transparent dark:border-white/[0.1]">
           {crops.length} Available
         </span>
       </div>

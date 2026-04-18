@@ -7,7 +7,7 @@ import { SellFlow } from "@/components/sell-flow";
 import { AuctionScreen } from "@/components/auction/auction-screen";
 import { TrackingScreen } from "@/components/farmer/tracking-screen";
 import { MarketScreen } from "@/components/farmer/market-screen";
-import { ProfileScreen } from "@/components/farmer/profile-screen";
+import  ProfileScreen  from "@/components/farmer/profile-screen";
 import { NotificationsScreen } from "@/components/farmer/notifications-screen";
 import { EarningsScreen } from "@/components/farmer/earnings-screen";
 import { FarmerDemands } from "@/components/farmer/farmer-demands";

@@ -6,67 +6,50 @@ import { BottomNav } from "./bottom-nav";
 import { Pool } from "@/types/pool";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 import {
-  ArrowLeft,
-  Users,
-  Search,
-  PlusCircle,
-  MapPin,
-  Clock,
-  Target,
-  Sprout,
-  CheckCircle2,
-  TrendingUp,
-  Loader2,
-  IndianRupee,
+  ArrowLeft, Users, Search, PlusCircle, MapPin,
+  Clock, Target, Sprout, CheckCircle2, TrendingUp,
+  Loader2, IndianRupee, Sun, Moon,
 } from "lucide-react";
 
-// ✅ FIX: was dark:bg-slate-900/[0.55] — too dark/blue-black
-// Now uses a warm dark green tint to match the app's nature theme
-const GLASS_CLASSES =
-  "bg-white/[0.55] dark:bg-[#1a2e1e]/80 backdrop-blur-[24px] border border-white/40 dark:border-white/[0.09] shadow-[0_8px_32px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.2)]";
+// ── Shared glass tokens (same shade as farmer-dashboard) ─────────────────────
+const GLASS =
+  "bg-white/40 dark:bg-white/[0.06] backdrop-blur-xl border border-white/50 dark:border-white/[0.09] shadow-[0_8px_32px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]";
 
-// ✅ FIX: was dark:bg-slate-800/40 — slate tint clashes with green theme
-const GLASS_INNER_CLASSES =
-  "bg-white/40 dark:bg-[#1e3524]/60 border border-white/50 dark:border-white/[0.09] text-[#166534] dark:text-emerald-400";
+const GLASS_INNER =
+  "bg-white/60 dark:bg-white/[0.07] backdrop-blur-md border border-white/60 dark:border-white/[0.08]";
 
 const GLASS_INPUT =
-  "w-full bg-white/50 dark:bg-[#1a2e1e]/70 backdrop-blur-md border border-white/50 dark:border-white/10 rounded-2xl px-4 py-3 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all";
+  "w-full bg-white/60 dark:bg-white/[0.07] backdrop-blur-md border border-white/60 dark:border-white/[0.08] rounded-2xl px-4 py-3 text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition-all";
 
 export default function FarmerPools() {
   const router = useRouter();
+  const { setTheme, resolvedTheme } = useTheme();
   const userProfile = useAppStore((state) => state.userProfile);
   const setActiveScreen = useAppStore((state) => state.setActiveScreen);
-  const [isMounted, setIsMounted] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  const farmerId = userProfile?.uid || "demo-farmer-123";
+  const farmerId   = userProfile?.uid      || "demo-farmer-123";
   const farmerName = userProfile?.fullName || "Arshvir Kaur";
 
-  const [pools, setPools] = useState<Pool[]>([]);
-  const [tab, setTab] = useState<"browse" | "mine" | "create">("browse");
-  const [loading, setLoading] = useState(false);
+  const [pools, setPools]               = useState<Pool[]>([]);
+  const [tab, setTab]                   = useState<"browse" | "mine" | "create">("browse");
+  const [loading, setLoading]           = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
-
   const [form, setForm] = useState({
-    commodity: "",
-    pricePerUnit: "",
-    unit: "quintal",
-    targetQuantity: "",
-    deadline: "",
-    location: "",
-    description: "",
+    commodity: "", pricePerUnit: "", unit: "quintal",
+    targetQuantity: "", deadline: "", location: "", description: "",
   });
-
   const [joining, setJoining] = useState<{ pool: Pool | null; qty: string }>({
-    pool: null,
-    qty: "",
+    pool: null, qty: "",
   });
 
-  useEffect(() => {
-    setIsMounted(true);
-    setActiveScreen("pools");
-  }, [setActiveScreen]);
+  useEffect(() => { setMounted(true); setActiveScreen("pools"); }, [setActiveScreen]);
+
+  const isDark = resolvedTheme === "dark";
 
   const fetchPools = async () => {
     setLoading(true);
@@ -74,8 +57,8 @@ export default function FarmerPools() {
       const res = await fetch("/api/pools?status=open");
       const data = await res.json();
       setPools(data.pools || []);
-    } catch (err) {
-      console.error("Failed to fetch pools", err);
+    } catch (e) {
+      console.error(e);
     } finally {
       setLoading(false);
     }
@@ -93,120 +76,94 @@ export default function FarmerPools() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...form,
-          pricePerUnit: Number(form.pricePerUnit),
+          commodity:      form.commodity,
+          pricePerUnit:   Number(form.pricePerUnit),
+          unit:           form.unit,
           targetQuantity: Number(form.targetQuantity),
-          creatorId: farmerId,
-          creatorName: farmerName,
-          creatorRole: "farmer",
+          deadline:       form.deadline,
+          location:       form.location,
+          description:    form.description,
+          creatorId:      farmerId,
+          creatorName:    farmerName,
+          creatorRole:    "farmer",
+          status:         "open",
         }),
       });
-      if (res.ok) {
-        setTab("mine");
-        setForm({
-          commodity: "",
-          pricePerUnit: "",
-          unit: "quintal",
-          targetQuantity: "",
-          deadline: "",
-          location: "",
-          description: "",
-        });
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setActionLoading(false);
-    }
+      if (res.ok) { setTab("mine"); setForm({ commodity: "", pricePerUnit: "", unit: "quintal", targetQuantity: "", deadline: "", location: "", description: "" }); }
+    } catch (e) { console.error(e); }
+    finally { setActionLoading(false); }
   };
 
   const handleJoin = async () => {
     if (!joining.pool || !joining.qty) return;
     setActionLoading(true);
     try {
-      const res = await fetch(`/api/pools/${joining.pool.id}/join`, {
+      await fetch(`/api/pools/${joining.pool.id}/join`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          farmerId,
-          farmerName,
-          quantity: Number(joining.qty),
-        }),
+        body: JSON.stringify({ farmerId, farmerName, quantity: Number(joining.qty) }),
       });
-      if (res.ok) {
-        setJoining({ pool: null, qty: "" });
-        fetchPools();
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setActionLoading(false);
-    }
+      setJoining({ pool: null, qty: "" });
+      fetchPools();
+    } catch (e) { console.error(e); }
+    finally { setActionLoading(false); }
   };
 
   const buyerRequestPools = pools.filter((p) => p.creatorRole === "buyer");
   const myPools = pools.filter(
-    (p) =>
-      p.creatorId === farmerId ||
-      p.members?.some((m: any) => m.farmerId === farmerId),
+    (p) => p.creatorId === farmerId || p.members?.some((m: any) => m.farmerId === farmerId),
   );
 
-  if (!isMounted) return null;
+  if (!mounted) return null;
 
   return (
-    <div className="min-h-screen pb-28 lg:pb-8 overflow-x-hidden relative bg-[linear-gradient(135deg,#dcfce7_0%,#dcfce7_20%,#bfdbfe_100%)] dark:bg-none dark:bg-slate-950 transition-colors duration-500">
-      {/* ── Background Wave Pattern ── */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-60 dark:opacity-70 transition-opacity duration-500">
-        <svg viewBox="0 0 1200 800" className="w-full h-full object-cover">
-          <defs>
-            <linearGradient id="waveGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#22c55e" stopOpacity="0.2" />
-              <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.2" />
-            </linearGradient>
-          </defs>
-          {[...Array(15)].map((_, i) => (
-            <path
-              key={i}
-              d={`M-200 ${300 + i * 15} Q 300 ${100 - i * 10}, 600 ${400} T 1400 ${200 + i * 20}`}
-              fill="none"
-              stroke="url(#waveGrad)"
-              strokeWidth="1.5"
-              className="animate-pulse"
-              style={{ animationDelay: `${i * 0.2}s` }}
-            />
-          ))}
-        </svg>
+    <div className="min-h-screen pb-28 lg:pb-8 relative overflow-x-hidden">
+
+      {/* ── FIXED BACKGROUND — identical to farmer-dashboard ── */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <div className={`absolute inset-0 bg-gradient-to-b from-[#f0fdf4] to-white transition-opacity duration-500 ${isDark ? "opacity-0" : "opacity-100"}`} />
+        {isDark && (
+          <>
+            <Image src="/images/farmers_bg.jpg" alt="" fill priority
+              className="object-cover object-center" style={{ opacity: 0.28 }} />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#020c04]/85 via-[#040f06]/75 to-[#020c04]/92" />
+            <div className="absolute inset-0"
+              style={{ background: "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(6,20,8,0.3) 0%, rgba(2,8,3,0.7) 100%)" }} />
+          </>
+        )}
       </div>
 
-      {/* HEADER */}
-      {/* ✅ FIX: was dark:bg-slate-950/50 — now warm dark green */}
-      <header className="sticky top-0 z-40 transition-colors duration-300 bg-white/25 dark:bg-[#111a13]/80 backdrop-blur-[20px] border-b border-white/30 dark:border-white/[0.07]">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+      {/* ── HEADER ── */}
+      <header className="sticky top-0 z-40 bg-white/75 dark:bg-[#020c04]/75 backdrop-blur-2xl border-b border-white/50 dark:border-white/[0.06] transition-colors duration-300">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between relative z-10">
           <div className="flex items-center gap-3.5">
             <button
               onClick={() => router.push("/farmer")}
-              className={cn(
-                "w-10 h-10 rounded-xl flex items-center justify-center transition-transform hover:scale-105",
-                GLASS_INNER_CLASSES,
-              )}
+              className={cn("w-10 h-10 rounded-2xl flex items-center justify-center transition-transform hover:scale-105", GLASS_INNER)}
             >
-              <ArrowLeft className="w-5 h-5" strokeWidth={1.8} />
+              <ArrowLeft className="w-5 h-5 text-slate-700 dark:text-white" strokeWidth={1.8} />
             </button>
             <div>
-              <h1 className="text-xl font-bold tracking-tight text-slate-800 dark:text-slate-50">
+              <h1 className="text-xl font-bold tracking-tight text-slate-800 dark:text-white">
                 Community Pools
               </h1>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-emerald-400/80">
                 Micro-Pooling Engine
               </p>
             </div>
           </div>
+
+          <button
+            onClick={() => setTheme(isDark ? "light" : "dark")}
+            className={cn("w-10 h-10 rounded-2xl flex items-center justify-center transition-transform hover:scale-105 text-emerald-600 dark:text-emerald-400", GLASS_INNER)}
+          >
+            {isDark ? <Sun className="w-4.5 h-4.5" /> : <Moon className="w-4.5 h-4.5" />}
+          </button>
         </div>
 
-        {/* TABS */}
-        <div className="max-w-5xl mx-auto px-4 pb-4">
-          {/* ✅ FIX: was dark:bg-slate-800/40 — too dark blue */}
-          <div className="flex p-1 rounded-2xl bg-white/40 dark:bg-[#1a2e1e]/70 backdrop-blur-md border border-white/50 dark:border-white/[0.09]">
+        {/* Tab bar */}
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 pb-4 relative z-10">
+          <div className={cn("flex p-1 rounded-2xl shadow-sm", GLASS)}>
             {(["browse", "mine", "create"] as const).map((t) => (
               <button
                 key={t}
@@ -214,135 +171,106 @@ export default function FarmerPools() {
                 className={cn(
                   "flex-1 py-2.5 text-sm font-bold rounded-xl capitalize transition-all duration-300",
                   tab === t
-                    // ✅ FIX: was bg-emerald-500 (eye-burning bright). Now muted emerald-600.
-                    ? "bg-emerald-600 text-white shadow-md shadow-emerald-900/30"
-                    : "text-slate-600 dark:text-slate-400 hover:bg-white/40 dark:hover:bg-[#1e3524]/60",
+                    ? "bg-emerald-600 dark:bg-emerald-600/90 text-white shadow-lg shadow-emerald-900/30"
+                    : "text-slate-600 dark:text-white/50 hover:bg-white/60 dark:hover:bg-white/[0.07]",
                 )}
               >
-                {t === "browse"
-                  ? "Buyer Requests"
-                  : t === "mine"
-                  ? "My Pools"
-                  : "Create Pool"}
+                {t === "browse" ? "Buyer Requests" : t === "mine" ? "My Pools" : "Create Pool"}
               </button>
             ))}
           </div>
         </div>
       </header>
 
-      {/* MAIN CONTENT */}
+      {/* ── MAIN ── */}
       <main className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <AnimatePresence mode="wait">
 
-          {/* BROWSE TAB */}
+          {/* ── BROWSE TAB ── */}
           {tab === "browse" && (
-            <motion.div
-              key="browse"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="space-y-4"
-            >
+            <motion.div key="browse"
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+              className="space-y-4">
               {loading ? (
-                <div className="flex justify-center py-12">
-                  <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+                <div className="flex justify-center py-20">
+                  <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
                 </div>
               ) : buyerRequestPools.length === 0 ? (
-                <div className={cn("text-center py-16 rounded-[32px]", GLASS_CLASSES)}>
-                  <Search className="w-12 h-12 text-slate-400 mx-auto mb-4 opacity-50" />
-                  <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg">
-                    No active requests
-                  </h3>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-                    Check back later for new buyer pools.
-                  </p>
+                <div className={cn("text-center py-16 rounded-[32px]", GLASS)}>
+                  <Search className="w-12 h-12 text-slate-400 dark:text-white/30 mx-auto mb-4" />
+                  <h3 className="font-bold text-slate-800 dark:text-white text-lg">No active requests</h3>
+                  <p className="text-slate-500 dark:text-white/40 text-sm mt-1">Check back later for new buyer pools.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {buyerRequestPools.map((pool) => {
-                    const progress = Math.min(
-                      ((pool.filledQuantity || 0) / (pool.targetQuantity || 1)) * 100,
-                      100,
-                    );
+                    const fillPct = Math.round(((pool.filledQuantity || 0) / pool.targetQuantity) * 100);
+                    const remaining = pool.targetQuantity - (pool.filledQuantity || 0);
+                    const isMine = pool.members?.some((m: any) => m.farmerId === farmerId);
                     return (
-                      <div
-                        key={pool.id}
-                        className={cn(
-                          "rounded-[24px] p-5 hover:border-emerald-600/40 transition-colors group",
-                          GLASS_CLASSES,
-                        )}
-                      >
+                      <div key={pool.id} className={cn("rounded-[24px] p-5 hover:border-emerald-500/40 dark:hover:border-emerald-400/30 transition-all group", GLASS)}>
                         <div className="flex justify-between items-start mb-4">
                           <div className="flex gap-3 items-center">
-                            {/* ✅ FIX: was dark:bg-emerald-900/30 — barely visible. Now clearer. */}
-                            <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-800/40 flex items-center justify-center border border-emerald-200 dark:border-emerald-700/40">
+                            <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center shadow-sm", GLASS_INNER)}>
                               <Sprout className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
                             </div>
                             <div>
-                              <h3 className="font-bold text-slate-800 dark:text-slate-100 capitalize text-lg leading-none">
-                                {pool.commodity}
-                              </h3>
-                              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">
-                                by {pool.creatorName}
-                              </p>
+                              <h3 className="font-bold text-slate-800 dark:text-white capitalize text-lg leading-none">{pool.commodity}</h3>
+                              <p className="text-xs font-medium text-slate-500 dark:text-white/40 mt-1">by {pool.creatorName}</p>
                             </div>
                           </div>
                           <div className="text-right">
-                            {/* ✅ FIX: was dark:text-emerald-400 (bright). Now slightly softer. */}
-                            <span className="text-xl font-black text-emerald-600 dark:text-emerald-300">
-                              ₹{pool.pricePerUnit}
-                            </span>
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                              per {pool.unit}
-                            </p>
+                            <span className="text-xl font-black text-emerald-700 dark:text-emerald-300">₹{pool.pricePerUnit}</span>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-white/35">per {pool.unit}</p>
                           </div>
                         </div>
 
-                        <div className="space-y-3 mb-5">
-                          <div className="flex justify-between text-sm font-bold text-slate-700 dark:text-slate-300">
-                            <span>Filled: {pool.filledQuantity || 0} {pool.unit}</span>
-                            <span>Target: {pool.targetQuantity} {pool.unit}</span>
+                        <div className="grid grid-cols-3 gap-2 mb-4">
+                          {[
+                            { label: "Target",    value: `${pool.targetQuantity}q` },
+                            { label: "Remaining", value: `${remaining}q`           },
+                            { label: "Farmers",   value: pool.members?.length || 0  },
+                          ].map((s) => (
+                            <div key={s.label} className={cn("rounded-xl p-2.5 text-center", GLASS_INNER)}>
+                              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/30">{s.label}</p>
+                              <p className="text-sm font-bold text-slate-800 dark:text-white mt-0.5">{s.value}</p>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Progress */}
+                        <div className="mb-4">
+                          <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider mb-1.5">
+                            <span className="text-slate-500 dark:text-white/30">Filled</span>
+                            <span className="text-emerald-600 dark:text-emerald-400">{fillPct}%</span>
                           </div>
-                          {/* ✅ FIX: progress bar track was dark:bg-slate-800 — invisible. Now visible. */}
-                          <div className="h-2 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
-                            <div
-                              // ✅ FIX: was bg-emerald-500 (eye-burning). Now emerald-600.
-                              className="h-full bg-emerald-600 dark:bg-emerald-500 rounded-full transition-all duration-1000"
-                              style={{ width: `${progress}%` }}
+                          <div className="h-1.5 bg-black/5 dark:bg-white/10 rounded-full overflow-hidden">
+                            <motion.div
+                              initial={{ width: 0 }} animate={{ width: `${fillPct}%` }}
+                              transition={{ duration: 0.8, ease: "easeOut" }}
+                              className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-full"
                             />
                           </div>
                         </div>
 
-                        <div className="flex flex-wrap gap-2 mb-5">
-                          {pool.location && (
-                            <span className={cn(
-                              "px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider flex items-center gap-1",
-                              GLASS_INNER_CLASSES,
-                            )}>
-                              <MapPin className="w-3 h-3" /> {pool.location}
-                            </span>
-                          )}
-                          {pool.deadline && (
-                            <span className={cn(
-                              "px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider flex items-center gap-1",
-                              GLASS_INNER_CLASSES,
-                            )}>
-                              <Clock className="w-3 h-3" />{" "}
-                              {new Date(pool.deadline).toLocaleDateString("en-IN", {
-                                month: "short",
-                                day: "numeric",
-                              })}
-                            </span>
-                          )}
-                        </div>
+                        {pool.location && (
+                          <p className="text-xs text-slate-500 dark:text-white/40 flex items-center gap-1 mb-3">
+                            <MapPin className="w-3 h-3" /> {pool.location}
+                          </p>
+                        )}
 
-                        {/* ✅ FIX: was bg-emerald-500 — eye-burning bright green on dark bg */}
-                        <button
-                          onClick={() => setJoining({ pool, qty: "" })}
-                          className="w-full bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 text-white py-3 rounded-xl text-sm font-bold shadow-md shadow-emerald-900/20 transition-all flex items-center justify-center gap-2"
-                        >
-                          <PlusCircle className="w-4 h-4" /> Join & Add Quantity
-                        </button>
+                        {isMine ? (
+                          <div className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 dark:border-emerald-400/20 text-emerald-600 dark:text-emerald-400 text-xs font-bold">
+                            <CheckCircle2 className="w-4 h-4" /> Already Joined
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setJoining({ pool, qty: "" })}
+                            className="w-full py-2.5 rounded-xl text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-500 dark:bg-emerald-600/90 dark:hover:bg-emerald-500 transition-colors shadow-sm"
+                          >
+                            Join Pool
+                          </button>
+                        )}
                       </div>
                     );
                   })}
@@ -351,256 +279,208 @@ export default function FarmerPools() {
             </motion.div>
           )}
 
-          {/* MINE TAB */}
+          {/* ── MY POOLS TAB ── */}
           {tab === "mine" && (
-            <motion.div
-              key="mine"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="space-y-4"
-            >
+            <motion.div key="mine"
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+              className="space-y-4">
               {loading ? (
-                <div className="flex justify-center py-12">
-                  <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+                <div className="flex justify-center py-20">
+                  <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
                 </div>
               ) : myPools.length === 0 ? (
-                <div className={cn("text-center py-16 rounded-[32px]", GLASS_CLASSES)}>
-                  <Target className="w-12 h-12 text-slate-400 mx-auto mb-4 opacity-50" />
-                  <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg">
-                    No active pools
-                  </h3>
-                  <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-                    You haven't created or joined any pools yet.
-                  </p>
+                <div className={cn("text-center py-16 rounded-[32px]", GLASS)}>
+                  <Users className="w-12 h-12 text-slate-400 dark:text-white/30 mx-auto mb-4" />
+                  <h3 className="font-bold text-slate-800 dark:text-white text-lg">No pools yet</h3>
+                  <p className="text-slate-500 dark:text-white/40 text-sm mt-1">Create or join a pool to see it here.</p>
                   <button
                     onClick={() => setTab("create")}
-                    className="mt-4 px-6 py-2 bg-emerald-600 text-white rounded-full font-bold text-sm shadow-md"
+                    className="mt-4 px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-500 transition-colors"
                   >
-                    Create One Now
+                    Create Pool
                   </button>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {myPools.map((pool) => (
-                    <div key={pool.id} className={cn("rounded-[24px] p-5", GLASS_CLASSES)}>
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <h3 className="font-bold text-slate-800 dark:text-slate-100 capitalize text-lg">
-                            {pool.commodity}
-                          </h3>
-                          <span className={cn(
-                            "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider mt-1",
-                            pool.status === "open"
-                              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
-                              : "bg-slate-200 text-slate-600 dark:bg-slate-700/50 dark:text-slate-400",
-                          )}>
-                            {pool.status === "open" ? (
-                              <TrendingUp className="w-3 h-3" />
-                            ) : (
-                              <CheckCircle2 className="w-3 h-3" />
-                            )}
-                            {pool.status}
-                          </span>
+                  {myPools.map((pool) => {
+                    const fillPct = Math.round(((pool.filledQuantity || 0) / pool.targetQuantity) * 100);
+                    const myContrib = pool.members?.find((m: any) => m.farmerId === farmerId)?.quantity || 0;
+                    return (
+                      <div key={pool.id} className={cn("rounded-[24px] p-5", GLASS)}>
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <h3 className="font-bold text-slate-800 dark:text-white capitalize text-lg">{pool.commodity}</h3>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className={cn(
+                                "text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-widest border",
+                                pool.status === "open"
+                                  ? "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
+                                  : "text-slate-500 dark:text-white/40 bg-white/40 dark:bg-white/[0.06] border-white/20 dark:border-white/[0.08]"
+                              )}>
+                                {pool.status}
+                              </span>
+                              {pool.creatorId === farmerId && (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 uppercase tracking-widest">
+                                  Creator
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-xl font-black text-emerald-700 dark:text-emerald-300">₹{pool.pricePerUnit}</span>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-white/35">per {pool.unit}</p>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <span className="text-xl font-black text-emerald-600 dark:text-emerald-300">
-                            ₹{pool.pricePerUnit}
-                          </span>
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                            per {pool.unit}
-                          </p>
+
+                        <div className="mb-3">
+                          <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider mb-1.5">
+                            <span className="text-slate-500 dark:text-white/30">Progress</span>
+                            <span className="text-emerald-600 dark:text-emerald-400">{fillPct}%</span>
+                          </div>
+                          <div className="h-1.5 bg-black/5 dark:bg-white/10 rounded-full overflow-hidden">
+                            <motion.div
+                              initial={{ width: 0 }} animate={{ width: `${fillPct}%` }}
+                              transition={{ duration: 0.8, ease: "easeOut" }}
+                              className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-full"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2 mt-4">
+                          <div className={cn("rounded-xl p-2.5 text-center", GLASS_INNER)}>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/30">My Contribution</p>
+                            <p className="text-sm font-bold text-slate-800 dark:text-white mt-0.5">{myContrib}q</p>
+                          </div>
+                          <div className={cn("rounded-xl p-2.5 text-center", GLASS_INNER)}>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/30">Farmers</p>
+                            <p className="text-sm font-bold text-slate-800 dark:text-white mt-0.5">{pool.members?.length || 0}</p>
+                          </div>
                         </div>
                       </div>
-                      {/* ✅ FIX: was dark:bg-slate-800/40 dark:border-white/10 — invisible */}
-                      <div className="flex items-center gap-4 text-sm font-medium text-slate-600 dark:text-slate-300 bg-white/40 dark:bg-[#1e3524]/50 p-3 rounded-xl border border-white/50 dark:border-white/[0.09]">
-                        <div className="flex items-center gap-1.5">
-                          <Target className="w-4 h-4 text-slate-400" />
-                          <span>{pool.filledQuantity}/{pool.targetQuantity} {pool.unit}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 border-l border-slate-300 dark:border-slate-600/60 pl-4">
-                          <Users className="w-4 h-4 text-slate-400" />
-                          <span>{pool.members?.length || 1} Member(s)</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </motion.div>
           )}
 
-          {/* CREATE TAB */}
+          {/* ── CREATE TAB ── */}
           {tab === "create" && (
-            <motion.div
-              key="create"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-            >
-              <div className={cn("rounded-[32px] p-6 sm:p-8 space-y-6", GLASS_CLASSES)}>
+            <motion.div key="create"
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+              className="space-y-5">
+              <div className={cn("rounded-[32px] p-6 space-y-5", GLASS)}>
                 <div>
-                  <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-50 tracking-tight">
-                    Create Selling Pool
-                  </h2>
-                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
-                    Group your harvest with neighbors to unlock premium enterprise buyer rates.
-                  </p>
+                  <h2 className="text-xl font-bold text-slate-800 dark:text-white">Create a Pool</h2>
+                  <p className="text-sm text-slate-500 dark:text-white/40 mt-0.5">Set your terms and invite farmers to join.</p>
                 </div>
 
-                <div className="space-y-4">
-                  <input
-                    className={GLASS_INPUT}
-                    placeholder="Commodity (e.g. Wheat, Rice)"
-                    value={form.commodity}
-                    onChange={(e) => setForm({ ...form, commodity: e.target.value })}
-                  />
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="relative">
-                      <IndianRupee className="w-4 h-4 text-slate-400 absolute left-4 top-4" />
-                      <input
-                        className={cn(GLASS_INPUT, "pl-10")}
-                        placeholder="Expected Price"
-                        type="number"
-                        value={form.pricePerUnit}
-                        onChange={(e) => setForm({ ...form, pricePerUnit: e.target.value })}
-                      />
-                    </div>
-                    <select
-                      className={GLASS_INPUT}
-                      value={form.unit}
-                      onChange={(e) => setForm({ ...form, unit: e.target.value })}
-                    >
-                      <option value="kg">Per Kg</option>
-                      <option value="quintal">Per Quintal</option>
-                      <option value="ton">Per Ton</option>
-                    </select>
-                  </div>
-
-                  <input
-                    className={GLASS_INPUT}
-                    placeholder="Target Group Quantity (e.g. 500)"
-                    type="number"
-                    value={form.targetQuantity}
-                    onChange={(e) => setForm({ ...form, targetQuantity: e.target.value })}
-                  />
-
-                  <div className="grid grid-cols-2 gap-4">
+                {[
+                  { label: "Commodity", key: "commodity",      placeholder: "e.g. wheat, mustard, rice", type: "text" },
+                  { label: "Price per Unit (₹)", key: "pricePerUnit", placeholder: "e.g. 2200",           type: "number" },
+                  { label: "Target Quantity",    key: "targetQuantity", placeholder: "e.g. 500",          type: "number" },
+                  { label: "Deadline",           key: "deadline",     placeholder: "",                     type: "date" },
+                  { label: "Location (optional)", key: "location",    placeholder: "e.g. Ludhiana Mandi",  type: "text" },
+                  { label: "Description (optional)", key: "description", placeholder: "Any notes for buyers...", type: "text" },
+                ].map(({ label, key, placeholder, type }) => (
+                  <div key={key} className="space-y-1.5">
+                    <label className="text-[11px] font-black text-slate-600 dark:text-white/40 uppercase tracking-widest">{label}</label>
                     <input
+                      type={type}
+                      value={(form as any)[key]}
+                      onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+                      placeholder={placeholder}
                       className={GLASS_INPUT}
-                      placeholder="Hub/Village"
-                      value={form.location}
-                      onChange={(e) => setForm({ ...form, location: e.target.value })}
-                    />
-                    <input
-                      className={GLASS_INPUT}
-                      type="date"
-                      value={form.deadline}
-                      onChange={(e) => setForm({ ...form, deadline: e.target.value })}
                     />
                   </div>
+                ))}
 
-                  <button
-                    onClick={handleCreate}
-                    disabled={actionLoading || !form.commodity || !form.pricePerUnit || !form.targetQuantity}
-                    className="w-full h-14 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-600/50 text-white rounded-2xl font-bold shadow-lg shadow-emerald-900/20 transition-all flex items-center justify-center gap-2"
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-black text-slate-600 dark:text-white/40 uppercase tracking-widest">Unit</label>
+                  <select
+                    value={form.unit}
+                    onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))}
+                    className={GLASS_INPUT}
                   >
-                    {actionLoading ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      "Broadcast Pool to Neighbors"
-                    )}
-                  </button>
+                    <option value="quintal">Quintal</option>
+                    <option value="kg">Kilogram</option>
+                    <option value="tonne">Tonne</option>
+                  </select>
                 </div>
+
+                <button
+                  onClick={handleCreate}
+                  disabled={actionLoading || !form.commodity || !form.pricePerUnit || !form.targetQuantity}
+                  className="w-full py-4 rounded-2xl font-bold text-sm uppercase tracking-widest flex items-center justify-center gap-2
+                    bg-emerald-600 hover:bg-emerald-500 text-white transition-all disabled:opacity-50"
+                  style={{ boxShadow: "0 4px 16px rgba(22,163,74,0.3)" }}
+                >
+                  {actionLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <PlusCircle className="w-5 h-5" />}
+                  {actionLoading ? "Creating..." : "Create Pool"}
+                </button>
               </div>
             </motion.div>
           )}
+
         </AnimatePresence>
       </main>
 
-      {/* JOIN MODAL */}
+      {/* ── JOIN MODAL ── */}
       <AnimatePresence>
         {joining.pool && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            // ✅ FIX: was dark:bg-slate-950/80 — pure black overlay
-            className="fixed inset-0 bg-slate-900/40 dark:bg-[#0a1409]/75 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-4"
-          >
+          <>
             <motion.div
-              initial={{ y: 100, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 100, opacity: 0 }}
-              className={cn(
-                "w-full max-w-md rounded-[32px] p-6 sm:p-8",
-                GLASS_CLASSES,
-                // ✅ FIX: was dark:bg-slate-900/90 — cold blue-black
-                "bg-white/90 dark:bg-[#1a2e1e]/95",
-              )}
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setJoining({ pool: null, qty: "" })}
+              className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 60, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 60, scale: 0.97 }}
+              transition={{ type: "spring", damping: 26, stiffness: 300 }}
+              className="fixed bottom-0 left-0 right-0 z-50 sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:max-w-sm w-full"
             >
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-800/40 flex items-center justify-center mx-auto mb-4 shadow-inner">
-                  <Sprout className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
-                </div>
-                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">
-                  Join {joining.pool.commodity} Pool
-                </h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                  Target: {joining.pool.targetQuantity} {joining.pool.unit} • Current:{" "}
-                  {joining.pool.filledQuantity || 0}
+              <div className="bg-white dark:bg-[#0d1f10]/95 dark:backdrop-blur-xl rounded-t-[32px] sm:rounded-[32px] shadow-2xl p-6 space-y-4 border-0 dark:border dark:border-white/[0.08]">
+                <h3 className="text-lg font-black text-slate-800 dark:text-white">Join Pool</h3>
+                <p className="text-sm text-slate-500 dark:text-white/40">
+                  <span className="font-bold capitalize text-emerald-600 dark:text-emerald-400">{joining.pool.commodity}</span>
+                  {" "}at ₹{joining.pool.pricePerUnit}/{joining.pool.unit}
                 </p>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest ml-1 mb-2 block">
-                    Your Contribution
-                  </label>
-                  <div className="relative">
-                    <input
-                      className={cn(GLASS_INPUT, "text-center text-2xl font-black py-4")}
-                      type="number"
-                      placeholder="0"
-                      value={joining.qty}
-                      onChange={(e) => setJoining({ ...joining, qty: e.target.value })}
-                      autoFocus
-                    />
-                    <span className="absolute right-6 top-1/2 -translate-y-1/2 font-bold text-slate-400">
-                      {joining.pool.unit}
-                    </span>
-                  </div>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-black text-slate-500 dark:text-white/35 uppercase tracking-widest">Your Quantity (quintals)</label>
+                  <input
+                    type="number"
+                    value={joining.qty}
+                    onChange={(e) => setJoining((j) => ({ ...j, qty: e.target.value }))}
+                    placeholder="e.g. 50"
+                    className={GLASS_INPUT}
+                    autoFocus
+                  />
                 </div>
-
-                <div className="flex gap-3 pt-2">
+                <div className="flex gap-3">
                   <button
                     onClick={() => setJoining({ pool: null, qty: "" })}
-                    className="flex-1 py-4 rounded-2xl text-sm font-bold bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/15 transition-colors"
+                    className="flex-1 py-3.5 rounded-2xl font-bold text-sm bg-white/60 dark:bg-white/[0.07] border border-white/60 dark:border-white/[0.08] text-slate-700 dark:text-white/70 hover:bg-white/80 dark:hover:bg-white/[0.12] transition-all"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleJoin}
                     disabled={actionLoading || !joining.qty}
-                    className="flex-1 py-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-600/50 text-white rounded-2xl text-sm font-bold shadow-lg shadow-emerald-900/20 transition-all flex justify-center items-center gap-2"
+                    className="flex-1 py-3.5 rounded-2xl font-bold text-sm bg-emerald-600 hover:bg-emerald-500 text-white transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    style={{ boxShadow: "0 4px 16px rgba(22,163,74,0.3)" }}
                   >
-                    {actionLoading ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      "Confirm Join"
-                    )}
+                    {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Join Pool"}
                   </button>
                 </div>
               </div>
             </motion.div>
-          </motion.div>
+          </>
         )}
       </AnimatePresence>
 
-      <div className="lg:hidden">
-        <BottomNav />
-      </div>
+      <div className="lg:hidden"><BottomNav /></div>
     </div>
   );
 }
