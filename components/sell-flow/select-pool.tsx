@@ -1,7 +1,7 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { Users, Check } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Users, Check, MapPin, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Crop } from "@/lib/store";
 
@@ -16,26 +16,27 @@ export function SelectPool({
   getCropName: (crop: Crop) => string;
 }) {
   return (
-    <div className="space-y-5">
-      <div>
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-          Choose a Buyer Pool
+    <div className="space-y-6 p-1">
+      <div className="px-1">
+        <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+          Choose <span className="text-emerald-500">Buyer Pool</span>
         </h2>
-        <p className="text-sm text-slate-500 dark:text-white/40 mt-1">
-          These buyers are looking for {getCropName(crop)}. Pick the best deal.
+        <p className="text-sm font-bold text-slate-500 dark:text-white/40 mt-1 uppercase tracking-widest">
+          {getCropName(crop)} Market Deals
         </p>
       </div>
 
       {pools.length === 0 ? (
-        <div className="bg-white/40 dark:bg-white/[0.06] backdrop-blur-xl border border-white/50 dark:border-white/[0.09] rounded-3xl p-8 text-center space-y-3 shadow-md dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)]">
-          <Users className="w-10 h-10 text-slate-400 dark:text-white/30 mx-auto" />
-          <p className="font-semibold text-slate-800 dark:text-white">No buyer requests right now</p>
-          <p className="text-sm text-slate-500 dark:text-white/40">
-            We'll create a new pool and notify buyers automatically.
-          </p>
+        <div className="relative rounded-[2.5rem] p-10 text-center space-y-4 border-[1.5px] border-white/60 dark:border-white/10 bg-white/30 dark:bg-white/5 backdrop-blur-3xl overflow-hidden shadow-2xl">
+           <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-white/80 to-transparent" />
+           <Users className="w-12 h-12 text-emerald-500/50 mx-auto" />
+           <p className="text-lg font-black text-slate-800 dark:text-white">Seeking Buyers...</p>
+           <p className="text-xs font-bold text-slate-500 dark:text-white/40 leading-relaxed uppercase tracking-tighter">
+             New pools are formed automatically based on your location.
+           </p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-5">
           {pools.map((pool) => {
             const remaining  = pool.targetQuantity - (pool.filledQuantity || 0);
             const fillPct    = Math.round(((pool.filledQuantity || 0) / pool.targetQuantity) * 100);
@@ -46,105 +47,90 @@ export function SelectPool({
               <motion.button
                 key={pool.id}
                 onClick={() => onSelect(pool.id)}
-                whileHover={{ scale: 1.01 }}
+                whileHover={{ scale: 1.01, y: -4 }}
                 whileTap={{ scale: 0.98 }}
                 className={cn(
-                  "w-full text-left rounded-3xl p-5 border-2 transition-all duration-300 backdrop-blur-xl",
+                  "relative w-full text-left rounded-[2.5rem] p-6 border-[1.5px] transition-all duration-500 overflow-hidden",
+                  "backdrop-blur-[45px] shadow-2xl",
                   isSelected
-                    ? "border-emerald-500 dark:border-emerald-400 bg-emerald-500/10 dark:bg-emerald-500/15 shadow-lg shadow-emerald-500/10"
-                    : "border-white/50 dark:border-white/[0.09] bg-white/40 dark:bg-white/[0.06] hover:border-emerald-400/40 dark:hover:border-white/20 shadow-md dark:shadow-[0_4px_20px_rgba(0,0,0,0.3)]",
+                    ? "border-emerald-400/50 bg-emerald-500/20 dark:bg-emerald-500/10"
+                    : "border-white/80 dark:border-white/10 bg-gradient-to-br from-emerald-50/40 to-blue-50/40 dark:from-emerald-900/5 dark:to-blue-900/5"
                 )}
+                style={{
+                  boxShadow: isSelected 
+                    ? 'inset 0 2px 6px rgba(255,255,255,0.8), 0 20px 40px rgba(16,185,129,0.15)' 
+                    : 'inset 0 2px 4px rgba(255,255,255,0.9), 0 10px 30px rgba(0,0,0,0.04)'
+                }}
               >
-                {/* Header */}
-                <div className="flex items-start justify-between gap-3 mb-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <h3 className="font-bold text-lg text-slate-800 dark:text-white">{pool.creatorName}</h3>
-                      <span className={cn(
-                        "text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest border backdrop-blur-md",
-                        pool.creatorRole === "buyer"
-                          ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20"
-                          : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
-                      )}>
-                        {pool.creatorRole === "buyer" ? "Verified Buyer" : "Farmer Pool"}
-                      </span>
+                {/* Glossy Top Edge */}
+                <div className="absolute top-0 left-0 w-full h-[1.5px] bg-gradient-to-r from-transparent via-white/90 to-transparent z-20" />
+                
+                {/* Pool Header */}
+                <div className="flex items-start justify-between gap-3 mb-5 relative z-10">
+                  <div className="flex gap-4">
+                    <div className="w-14 h-14 rounded-2xl bg-white dark:bg-emerald-500 flex items-center justify-center shadow-inner border border-white/50">
+                       <Users className={cn("w-7 h-7", isSelected ? "text-emerald-600 dark:text-white" : "text-emerald-500")} />
                     </div>
-                    {pool.location && (
-                      <p className="text-xs text-slate-500 dark:text-white/40 flex items-center gap-1">
-                        📍 {pool.location}
-                      </p>
-                    )}
+                    <div>
+                      <h3 className="font-black text-xl text-slate-900 dark:text-white leading-tight">{pool.creatorName}</h3>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[9px] px-2 py-0.5 rounded-md font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                           {pool.creatorRole === "buyer" ? "Verified Buyer" : "Farmer Pool"}
+                        </span>
+                        {pool.location && (
+                          <span className="text-[10px] text-slate-500 font-bold flex items-center gap-1">
+                            <MapPin size={10} className="text-emerald-500" /> {pool.location}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-xs text-slate-500 dark:text-white/35 uppercase font-bold tracking-wider">
-                      {pool.creatorRole === "buyer" ? "Offering" : "Asking"}
-                    </p>
-                    <p className="text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400">
-                      ₹{pool.pricePerUnit}
-                      <span className="text-sm font-medium text-slate-500 dark:text-white/35">/{pool.unit}</span>
+                  <div className="text-right">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Rate</p>
+                    <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tighter">
+                      ₹{pool.pricePerUnit}<span className="text-xs font-bold text-slate-400 italic">/{pool.unit}</span>
                     </p>
                   </div>
                 </div>
 
-                {/* Stats grid */}
-                <div className="grid grid-cols-3 gap-2 mb-4">
-                  {[
-                    { label: "Needs",     value: `${pool.targetQuantity} ${pool.unit}` },
-                    { label: "Remaining", value: `${remaining} ${pool.unit}`           },
-                    { label: "Farmers",   value: pool.members?.length || 0              },
-                  ].map((stat) => (
-                    <div key={stat.label}
-                      className="bg-white/50 dark:bg-white/[0.07] rounded-xl p-2.5 text-center border border-white/20 dark:border-white/[0.07]">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-white/30">{stat.label}</p>
-                      <p className="text-sm font-bold text-slate-800 dark:text-white mt-0.5">{stat.value}</p>
+                {/* Pool Progress Section */}
+                <div className="bg-white/40 dark:bg-black/20 rounded-3xl p-4 border border-white/50 dark:border-white/10 mb-5 relative z-10 shadow-inner">
+                  <div className="flex justify-between items-center mb-3">
+                    <div className="space-y-0.5">
+                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Remaining Capacity</p>
+                       <p className="text-lg font-black text-slate-800 dark:text-white">{remaining} {pool.unit}</p>
                     </div>
-                  ))}
-                </div>
-
-                {/* Progress */}
-                <div className="mb-3">
-                  <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider mb-1.5">
-                    <span className="text-slate-500 dark:text-white/30">Pool Filled</span>
-                    <span className="text-emerald-600 dark:text-emerald-400">{fillPct}%</span>
+                    <div className="text-right">
+                      <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">{fillPct}% Filled</p>
+                      <p className="text-xs font-bold text-slate-400">Target: {pool.targetQuantity}q</p>
+                    </div>
                   </div>
-                  <div className="h-1.5 bg-black/5 dark:bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-2 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden p-[1px]">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${fillPct}%` }}
-                      transition={{ duration: 0.8, ease: "easeOut" }}
-                      className="h-full bg-gradient-to-r from-emerald-600/70 to-emerald-500 rounded-full"
+                      className="h-full bg-gradient-to-r from-emerald-400 to-blue-500 rounded-full shadow-[0_0_10px_rgba(52,211,153,0.5)]"
                     />
                   </div>
                 </div>
 
-                {/* Fit indicator */}
+                {/* Fit Match Badge */}
                 <div className={cn(
-                  "rounded-xl p-3 flex items-center justify-between backdrop-blur-md",
+                  "rounded-2xl p-3.5 flex items-center justify-between border-[1.5px] relative z-10 transition-colors duration-500",
                   canFulfill
-                    ? "bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 dark:border-emerald-400/20"
-                    : "bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/20 dark:border-amber-400/20",
+                    ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-300"
+                    : "bg-amber-500/10 border-amber-500/20 text-amber-700 dark:text-amber-300",
                 )}>
-                  <span className="text-xs font-semibold text-slate-600 dark:text-white/50">
-                    {canFulfill ? `Your ${quantity}q fits perfectly` : `Pool needs ${remaining}q — you have ${quantity}q`}
-                  </span>
-                  <span className={cn(
-                    "text-xs font-bold",
-                    canFulfill ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400",
-                  )}>
-                    {canFulfill ? "✓ Full match" : `Partial: ${Math.min(quantity, remaining)}q`}
-                  </span>
+                  <div className="flex items-center gap-2 font-black text-xs uppercase tracking-tight">
+                    <Info size={14} />
+                    {canFulfill ? `Perfect Match for your ${quantity}q` : `Pool almost full: ${remaining}q left`}
+                  </div>
+                  {isSelected && <Check className="w-5 h-5 animate-pulse" strokeWidth={4} />}
                 </div>
 
-                {pool.description && (
-                  <p className="text-xs text-slate-500 dark:text-white/35 mt-3 leading-relaxed">
-                    📋 {pool.description}
-                  </p>
-                )}
-
+                {/* Liquid Glow Overlay */}
                 {isSelected && (
-                  <div className="mt-3 flex items-center justify-center gap-2 text-emerald-600 dark:text-emerald-400 text-sm font-bold">
-                    <Check className="w-4 h-4" strokeWidth={3} /> Selected
-                  </div>
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(52,211,153,0.2),transparent_70%)] pointer-events-none" />
                 )}
               </motion.button>
             );

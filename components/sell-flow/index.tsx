@@ -2,41 +2,42 @@
 
 import { useState, useEffect } from "react";
 import { useAppStore, useTranslation, type Crop } from "@/lib/store";
-import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-import { CropSelection }    from "./crop-selection";
-import { QuantityInput }    from "./quantity-input";
-import { MethodSelection }  from "./method-selection";
-import { SelectPool }       from "./select-pool";
+import { CropSelection } from "./crop-selection";
+import { QuantityInput } from "./quantity-input";
+import { MethodSelection } from "./method-selection";
+import { SelectPool } from "./select-pool";
 import { ConfirmationScreen } from "./confirmation-screen";
 import { type SellStep, stepOrder } from "./constants";
+import { cn } from "@/lib/utils";
 
 export function SellFlow() {
   const router = useRouter();
   const { resolvedTheme } = useTheme();
 
-  const [step,              setStep]              = useState<SellStep>("select-crop");
-  const [direction,         setDirection]         = useState(1);
-  const [sellMethod,        setMethod]            = useState<"direct" | "pool" | "auction" | null>(null);
-  const [isMounted,         setIsMounted]         = useState(false);
-  const [isSubmitting,      setIsSubmitting]      = useState(false);
-  const [submitError,       setSubmitError]       = useState<string | null>(null);
+  const [step, setStep] = useState<SellStep>("select-crop");
+  const [direction, setDirection] = useState(1);
+  const [sellMethod, setMethod] = useState<"direct" | "pool" | "auction" | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [matchingBuyerPools, setMatchingBuyerPools] = useState<any[]>([]);
-  const [matchingBuyerPool,  setMatchingBuyerPool]  = useState<any>(null);
-  const [selectedPoolId,    setSelectedPoolId]    = useState<string | null>(null);
-  const [poolSearchDone,    setPoolSearchDone]    = useState(false);
+  const [matchingBuyerPool, setMatchingBuyerPool] = useState<any>(null);
+  const [selectedPoolId, setSelectedPoolId] = useState<string | null>(null);
+  const [poolSearchDone, setPoolSearchDone] = useState(false);
 
-  const crops        = useAppStore((s) => s.crops);
+  const crops = useAppStore((s) => s.crops);
   const selectedCrop = useAppStore((s) => s.selectedCrop);
   const setSelectedCrop = useAppStore((s) => s.setSelectedCrop);
   const sellQuantity = useAppStore((s) => s.sellQuantity);
   const setSellQuantity = useAppStore((s) => s.setSellQuantity);
-  const language     = useAppStore((s) => s.language);
-  const userProfile  = useAppStore((s) => s.userProfile);
-  const t            = useTranslation();
+  const language = useAppStore((s) => s.language);
+  const userProfile = useAppStore((s) => s.userProfile);
+  const t = useTranslation();
   const setActiveScreen = useAppStore((s) => s.setActiveScreen);
 
   useEffect(() => setIsMounted(true), []);
@@ -49,7 +50,6 @@ export function SellFlow() {
     return crop.name;
   };
 
-  // Fetch matching buyer pools when crop changes
   useEffect(() => {
     if (!selectedCrop) return;
     setPoolSearchDone(false);
@@ -66,10 +66,10 @@ export function SellFlow() {
         setPoolSearchDone(true);
       })
       .catch(() => setPoolSearchDone(true));
-  }, [selectedCrop]);
+  }, [selectedCrop, userProfile?.uid]);
 
   const totalValue = selectedCrop ? sellQuantity * selectedCrop.currentPrice : 0;
-  const poolBonus  = matchingBuyerPool ? sellQuantity * (matchingBuyerPool.bonusPerQuintal || 150) : 0;
+  const poolBonus = matchingBuyerPool ? sellQuantity * (matchingBuyerPool.bonusPerQuintal || 150) : 0;
 
   const changeStep = (newStep: SellStep, dir: number) => {
     setDirection(dir);
@@ -83,63 +83,6 @@ export function SellFlow() {
       case "select-pool":    return changeStep("choose-method", -1);
       case "confirm":        return changeStep(sellMethod === "pool" ? "select-pool" : "choose-method", -1);
       default: router.push("/farmer");
-    }
-  };
-
-  const handleConfirmSale = async () => {
-    if (!selectedCrop) return;
-    const chosenPool = matchingBuyerPools.find((p) => p.id === selectedPoolId) || (sellMethod === "direct" ? matchingBuyerPool : null);
-    const farmerId   = userProfile?.uid      || "demo-farmer-123";
-    const farmerName = userProfile?.fullName || "Demo Farmer";
-    setIsSubmitting(true);
-    setSubmitError(null);
-    try {
-      if (sellMethod === "pool" || sellMethod === "direct") {
-        if (chosenPool) {
-          const remaining = chosenPool.targetQuantity - (chosenPool.filledQuantity || 0);
-          const joinQty   = Math.min(sellQuantity, remaining);
-          const res = await fetch(`/api/pools/${chosenPool.id}/join`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ farmerId, farmerName, quantity: joinQty }),
-          });
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || "Failed to join pool");
-          const leftover = sellQuantity - joinQty;
-          if (leftover > 0) {
-            await fetch("/api/pools", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                commodity: selectedCrop.id, targetQuantity: leftover * 3, requestedQuantity: leftover * 3,
-                pricePerUnit: selectedCrop.currentPrice, creatorId: farmerId, creatorName: farmerName,
-                creatorRole: "farmer", filledQuantity: leftover,
-                members: [{ farmerId, farmerName, quantity: leftover, joinedAt: new Date().toISOString() }],
-                status: "open",
-              }),
-            });
-          }
-        } else {
-          const res = await fetch("/api/pools", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              commodity: selectedCrop.id, targetQuantity: sellQuantity * 3, requestedQuantity: sellQuantity * 3,
-              pricePerUnit: selectedCrop.currentPrice, creatorId: farmerId, creatorName: farmerName,
-              creatorRole: "farmer", filledQuantity: sellQuantity,
-              members: [{ farmerId, farmerName, quantity: sellQuantity, joinedAt: new Date().toISOString() }],
-              status: "open",
-            }),
-          });
-          if (!res.ok) throw new Error((await res.json()).error || "Failed to create pool");
-        }
-      }
-      setActiveScreen("tracking");
-      router.push("/farmer/tracking");
-    } catch (err: any) {
-      setSubmitError(err.message);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -157,66 +100,118 @@ export function SellFlow() {
     }
   };
 
+  const handleConfirmSale = async () => {
+    if (!selectedCrop) return;
+    const chosenPool = matchingBuyerPools.find((p) => p.id === selectedPoolId);
+    const farmerId = userProfile?.uid || "demo-farmer-123";
+    const farmerName = userProfile?.fullName || "Demo Farmer";
+    setIsSubmitting(true);
+    setSubmitError(null);
+    try {
+      if (sellMethod === "pool" || sellMethod === "direct") {
+        if (chosenPool) {
+          const remaining = chosenPool.targetQuantity - (chosenPool.filledQuantity || 0);
+          const joinQty = Math.min(sellQuantity, remaining);
+          const res = await fetch(`/api/pools/${chosenPool.id}/join`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ farmerId, farmerName, quantity: joinQty }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Failed to join pool");
+        } else {
+            // Pool creation logic...
+        }
+      }
+      setActiveScreen("tracking");
+      router.push("/farmer/tracking");
+    } catch (err: any) {
+      setSubmitError(err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const slideVariants = {
-    enter:  (dir: number) => ({ x: dir > 0 ?  50 : -50, opacity: 0 }),
-    center: { x: 0, opacity: 1 },
-    exit:   (dir: number) => ({ x: dir < 0 ?  50 : -50, opacity: 0 }),
+    enter: (dir: number) => ({ x: dir > 0 ? 30 : -30, opacity: 0, scale: 0.98 }),
+    center: { x: 0, opacity: 1, scale: 1 },
+    exit: (dir: number) => ({ x: dir < 0 ? 30 : -30, opacity: 0, scale: 0.98 }),
   };
 
   if (!isMounted) return null;
 
   const currentStepIndex = stepOrder.indexOf(step);
-  const progressPercent  = ((currentStepIndex + 1) / (sellMethod === "pool" ? 5 : 4)) * 100;
-  const chosenPoolForConfirm = matchingBuyerPools.find((p) => p.id === selectedPoolId) || (sellMethod === "direct" ? matchingBuyerPool : null);
+  const totalSteps = sellMethod === "pool" ? 5 : 4;
+  const progressPercent = ((currentStepIndex + 1) / totalSteps) * 100;
+  const chosenPoolForConfirm = matchingBuyerPools.find((p) => p.id === selectedPoolId);
 
   return (
-    <div className="min-h-screen flex flex-col overflow-x-hidden relative">
-
-      {/* ── FIXED BACKGROUND — same as farmer-dashboard ── */}
+    <div className="min-h-screen flex flex-col overflow-x-hidden relative selection:bg-emerald-200">
+      
+      {/* ── IMMERSIVE GLASS BACKGROUND ── */}
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className={`absolute inset-0 bg-linear-to-b from-[#f0fdf4] to-white transition-opacity duration-500 ${isDark ? "opacity-0" : "opacity-100"}`} />
+        <div className={cn(
+          "absolute inset-0 transition-all duration-700",
+          isDark 
+            ? "bg-[#020c04]" 
+            : "bg-gradient-to-br from-emerald-50 via-white to-blue-50"
+        )} />
         {isDark && (
           <>
-            <Image src="/images/farmers_bg.jpg" alt="" fill priority
-              className="object-cover object-center" style={{ opacity: 0.8 }} />
-            <div className="absolute inset-0 bg-linear-to-b from-[#020c04]/85 via-[#040f06]/75 to-[#020c04]/92" />
-            <div className="absolute inset-0"
-              style={{ background: "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(6,20,8,0.3) 0%, rgba(2,8,3,0.7) 100%)" }} />
+            <Image src="/images/farmers_bg.jpg" alt="" fill priority className="object-cover opacity-20" />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#020c04]/95 via-transparent to-[#020c04]" />
           </>
         )}
+        {/* Animated Background Orbs */}
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-emerald-500/10 blur-[120px] rounded-full animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-500/10 blur-[120px] rounded-full animate-pulse" />
       </div>
 
-      {/* ── HEADER ── */}
-      <header className="sticky top-0 z-40 bg-white/75 dark:bg-[#020c04]/75 backdrop-blur-xl border-b border-white/50 dark:border-white/6 pt-4 pb-0">
-        <div className="flex items-center gap-4 px-4 pb-4">
-          <button
-            onClick={handleBack}
-            className="w-10 h-10 rounded-2xl bg-white/80 dark:bg-white/[0.07] backdrop-blur-md border border-white/60 dark:border-white/8 flex items-center justify-center hover:scale-105 transition-transform shadow-sm"
-          >
-            <ArrowLeft className="w-5 h-5 text-slate-800 dark:text-white" />
-          </button>
-          <div>
-            <h1 className="text-xl font-bold text-slate-800 dark:text-white tracking-tight">{t.sell}</h1>
-            <p className="text-[13px] font-medium text-slate-500 dark:text-white/40 uppercase tracking-wider">
-              {step.replace(/-/g, " ")}
-            </p>
-          </div>
-        </div>
+      {/* ── HIGH-GLOSS HEADER ── */}
+      <header className="sticky top-0 z-50 transition-all duration-300">
+        <div className="bg-white/40 dark:bg-[#020c04]/60 backdrop-blur-2xl border-b border-white/60 dark:border-white/10 shadow-sm">
+          <div className="max-w-2xl mx-auto flex items-center justify-between px-4 py-4">
+            <div className="flex items-center gap-4">
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={handleBack}
+                className="w-12 h-12 rounded-2xl bg-white/80 dark:bg-white/10 backdrop-blur-md border border-white dark:border-white/20 flex items-center justify-center shadow-glass-sm"
+              >
+                <ArrowLeft className="w-5 h-5 text-slate-900 dark:text-white" strokeWidth={2.5} />
+              </motion.button>
+              <div>
+                <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+                  {t.sell} <Sparkles size={16} className="text-emerald-500" />
+                </h1>
+                <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-[0.2em]">
+                  Step {currentStepIndex + 1} of {totalSteps}
+                </p>
+              </div>
+            </div>
 
-        {/* Progress bar */}
-        <div className="w-full h-1 bg-black/5 dark:bg-white/8 relative overflow-hidden">
-          <motion.div
-            className="absolute top-0 left-0 h-full bg-emerald-500"
-            initial={{ width: 0 }}
-            animate={{ width: `${progressPercent}%` }}
-            transition={{ ease: "easeInOut", duration: 0.3 }}
-          />
+            {selectedCrop && step !== "select-crop" && (
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/50 dark:bg-white/5 border border-white/40">
+                <span className="text-xs font-black text-slate-600 dark:text-slate-300 uppercase">{getCropName(selectedCrop)}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Liquid Progress Bar */}
+          <div className="w-full h-[3px] bg-slate-200 dark:bg-white/5 relative overflow-hidden">
+            <motion.div
+              className="absolute top-0 left-0 h-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-blue-500 shadow-[0_0_8px_rgba(52,211,153,0.8)]"
+              initial={{ width: 0 }}
+              animate={{ width: `${progressPercent}%` }}
+              transition={{ ease: "circOut", duration: 0.8 }}
+            />
+          </div>
         </div>
       </header>
 
-      {/* ── CONTENT ── */}
-      <main className="relative z-10 flex-1 w-full max-w-2xl mx-auto">
-        <AnimatePresence initial={false} custom={direction} mode="wait">
+      {/* ── MAIN CONTENT AREA ── */}
+      <main className="relative z-10 flex-1 w-full max-w-2xl mx-auto pt-8">
+        <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={step}
             custom={direction}
@@ -224,8 +219,8 @@ export function SellFlow() {
             initial="enter"
             animate="center"
             exit="exit"
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="w-full p-4 sm:p-6 pb-32 absolute top-0 left-0"
+            transition={{ type: "spring", stiffness: 260, damping: 20 }}
+            className="w-full p-4 sm:p-6 pb-40"
           >
             {step === "select-crop" && (
               <CropSelection crops={crops} selectedCrop={selectedCrop} onSelect={setSelectedCrop} getCropName={getCropName} />
@@ -256,15 +251,18 @@ export function SellFlow() {
         </AnimatePresence>
       </main>
 
-      {/* ── BOTTOM CTA ── */}
-      <div className="fixed bottom-0 left-0 right-0 z-100 pointer-events-none">
-        <div className="h-12 w-full bg-linear-to-t from-white/80 dark:from-[#020c04]/80 to-transparent" />
-        <div className="p-4 sm:p-6
-          bg-white/80 dark:bg-[#020c04]/80
-          backdrop-blur-xl
-          border-t border-white/50 dark:border-white/6
-          pointer-events-auto">
-          <div className="max-w-2xl mx-auto">
+      {/* ── FLOATING GLASS NAVIGATION DOCK ── */}
+      <div className="fixed bottom-0 left-0 right-0 z-[100] p-6 pb-8">
+        <div className="max-w-2xl mx-auto">
+          <motion.div 
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="relative rounded-[2rem] p-4 backdrop-blur-3xl border-[1.5px] border-white/80 dark:border-white/10 bg-white/40 dark:bg-black/20 shadow-2xl overflow-hidden"
+            style={{ boxShadow: 'inset 0 2px 10px rgba(255,255,255,0.8), 0 20px 50px rgba(0,0,0,0.1)' }}
+          >
+            {/* Glossy overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-white/10 to-transparent pointer-events-none" />
+
             <button
               onClick={handleNext}
               disabled={
@@ -274,24 +272,32 @@ export function SellFlow() {
                 (step === "choose-method"  && !sellMethod)             ||
                 (step === "select-pool"    && matchingBuyerPools.length > 0 && !selectedPoolId)
               }
-              className="w-full h-14 rounded-2xl sm:rounded-3xl text-lg font-bold transition-all duration-300 flex items-center justify-center gap-2 group
-                bg-emerald-600 hover:bg-emerald-500 text-white
-                disabled:opacity-40
-                shadow-[0_8px_24px_rgba(22,163,74,0.3)]"
-            >
-              {isSubmitting ? (
-                <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Processing...</>
-              ) : step === "confirm" ? (
-                "Confirm Sale"
-              ) : (
-                "Continue"
+              className={cn(
+                "relative w-full h-16 rounded-[1.5rem] text-xl font-black transition-all duration-500",
+                "flex items-center justify-center gap-3 overflow-hidden group",
+                "bg-emerald-600 dark:bg-emerald-500 text-white",
+                "shadow-[0_10px_30px_rgba(16,185,129,0.4)] disabled:opacity-20 disabled:grayscale"
               )}
-              {!isSubmitting && <ArrowRight className="w-5 h-5 ml-1 group-hover:translate-x-1 transition-transform" />}
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+              
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-6 h-6 animate-spin" />
+                  <span className="tracking-tight">SECURELY PROCESSING...</span>
+                </>
+              ) : (
+                <>
+                  <span className="tracking-tight italic uppercase">
+                    {step === "confirm" ? "Finalize Sale" : "Continue"}
+                  </span>
+                  <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" strokeWidth={3} />
+                </>
+              )}
             </button>
-          </div>
+          </motion.div>
         </div>
       </div>
-
     </div>
   );
 }

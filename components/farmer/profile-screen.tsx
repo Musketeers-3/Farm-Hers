@@ -14,36 +14,21 @@ import { motion, AnimatePresence } from "framer-motion";
 import { logout } from "@/lib/auth";
 
 function LightBg() {
-  const arcs = [
-    "M -100 900  Q 300 500  700 300  T 1200 100",
-    "M -100 950  Q 280 540  680 340  T 1200 140",
-    "M -100 1000 Q 320 560  720 360  T 1200 180",
-    "M -100 1050 Q 300 600  700 400  T 1200 220",
-    "M -100 1100 Q 260 640  660 440  T 1200 260",
-    "M -100 1150 Q 340 580  740 380  T 1200 200",
-    "M -100 850  Q 320 460  720 260  T 1200 60",
-    "M -100 800  Q 300 420  700 220  T 1200 20",
-  ];
   return (
     <div className="fixed inset-0 w-full h-full pointer-events-none" style={{ zIndex: 0 }}>
+      {/* Base gradient */}
       <div className="absolute inset-0" style={{
         background: "linear-gradient(130deg, #d6f5e3 0%, #e8faf2 22%, #f0fdf8 40%, #e8f5fb 62%, #daeef8 80%, #d0eaf6 100%)"
       }} />
+
+      {/* Soft radial glows */}
       <div className="absolute inset-0" style={{
         background: "radial-gradient(ellipse 55% 50% at 0% 15%, rgba(167,243,208,0.65) 0%, transparent 60%)"
       }} />
+
       <div className="absolute inset-0" style={{
         background: "radial-gradient(ellipse 50% 55% at 100% 60%, rgba(186,230,253,0.55) 0%, transparent 60%)"
       }} />
-      <svg className="absolute inset-0 w-full h-full"
-        viewBox="0 0 1000 900" preserveAspectRatio="xMidYMid slice"
-        xmlns="http://www.w3.org/2000/svg">
-        {arcs.map((d, i) => (
-          <path key={i} d={d} fill="none"
-            stroke={i < 5 ? "rgba(100,200,170,0.28)" : "rgba(100,180,220,0.22)"}
-            strokeWidth={i % 3 === 0 ? "1.2" : "0.7"} />
-        ))}
-      </svg>
     </div>
   );
 }
