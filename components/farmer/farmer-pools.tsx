@@ -125,7 +125,7 @@ export default function FarmerPools() {
         {isDark && (
           <>
             <Image src="/images/farmers_bg.jpg" alt="" fill priority
-              className="object-cover object-center" style={{ opacity: 0.28 }} />
+              className="object-cover object-center" style={{ opacity: 0.8 }} />
             <div className="absolute inset-0 bg-gradient-to-b from-[#020c04]/85 via-[#040f06]/75 to-[#020c04]/92" />
             <div className="absolute inset-0"
               style={{ background: "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(6,20,8,0.3) 0%, rgba(2,8,3,0.7) 100%)" }} />

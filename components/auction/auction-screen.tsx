@@ -189,7 +189,7 @@ export function AuctionScreen() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
           <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-32">
             <div
-              className={cn("rounded-[32px] overflow-hidden", GLASS_CLASSES)}
+              className={cn("rounded-4xl overflow-hidden", GLASS_CLASSES)}
             >
               <div className="relative h-56 sm:h-64 w-full">
                 <Image
@@ -199,7 +199,7 @@ export function AuctionScreen() {
                   priority
                   className="object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent" />
+                <div className="absolute inset-0 bg-linear-to-t from-slate-950 via-slate-900/40 to-transparent" />
                 <div className="absolute top-4 left-4 flex gap-2">
                   <Badge className="bg-emerald-500 text-white text-xs font-bold px-3 py-1 shadow-md border-0">
                     Grade A
@@ -272,7 +272,7 @@ export function AuctionScreen() {
                 animate={isUrgent ? { scale: [1, 1.02, 1] } : {}}
                 transition={{ repeat: isUrgent ? Infinity : 0, duration: 2 }}
                 className={cn(
-                  "rounded-[32px] p-5 sm:p-6 border-2 transition-all duration-300",
+                  "rounded-4xl p-5 sm:p-6 border-2 transition-all duration-300",
                   isUrgent ? "border-red-500/50 bg-red-500/5" : GLASS_CLASSES,
                 )}
               >
@@ -325,7 +325,7 @@ export function AuctionScreen() {
             ) : (
               <div
                 className={cn(
-                  "rounded-[32px] p-6 sm:p-8 border-2 border-emerald-500/30 bg-emerald-500/5 shadow-lg flex flex-col items-center justify-center text-center gap-4",
+                  "rounded-4xl p-6 sm:p-8 border-2 border-emerald-500/30 bg-emerald-500/5 shadow-lg flex flex-col items-center justify-center text-center gap-4",
                   GLASS_CLASSES,
                 )}
               >
@@ -353,7 +353,7 @@ export function AuctionScreen() {
           <div className="lg:col-span-7">
             <div
               className={cn(
-                "rounded-[32px] flex flex-col overflow-hidden h-[600px] lg:h-[750px]",
+                "rounded-4xl flex flex-col overflow-hiddenh-150 lg:h-187.5]",
                 GLASS_CLASSES,
               )}
             >
@@ -384,7 +384,7 @@ export function AuctionScreen() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.95 }}
                       className={cn(
-                        "flex items-center justify-between p-4 sm:p-5 rounded-[24px] transition-all duration-300 border",
+                        "flex items-center justify-between p-4 sm:p-5 rounded-3xl transition-all duration-300 border",
                         bid.isLeading
                           ? "bg-white/80 dark:bg-slate-800 border-emerald-500/50 shadow-md ring-1 ring-emerald-500/20"
                           : "bg-white/40 dark:bg-slate-900/40 border-white/50 dark:border-white/10 hover:border-emerald-500/30",

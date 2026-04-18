@@ -174,12 +174,12 @@ export function SellFlow() {
 
       {/* ── FIXED BACKGROUND — same as farmer-dashboard ── */}
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className={`absolute inset-0 bg-gradient-to-b from-[#f0fdf4] to-white transition-opacity duration-500 ${isDark ? "opacity-0" : "opacity-100"}`} />
+        <div className={`absolute inset-0 bg-linear-to-b from-[#f0fdf4] to-white transition-opacity duration-500 ${isDark ? "opacity-0" : "opacity-100"}`} />
         {isDark && (
           <>
             <Image src="/images/farmers_bg.jpg" alt="" fill priority
-              className="object-cover object-center" style={{ opacity: 0.28 }} />
-            <div className="absolute inset-0 bg-gradient-to-b from-[#020c04]/85 via-[#040f06]/75 to-[#020c04]/92" />
+              className="object-cover object-center" style={{ opacity: 0.8 }} />
+            <div className="absolute inset-0 bg-linear-to-b from-[#020c04]/85 via-[#040f06]/75 to-[#020c04]/92" />
             <div className="absolute inset-0"
               style={{ background: "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(6,20,8,0.3) 0%, rgba(2,8,3,0.7) 100%)" }} />
           </>
@@ -187,11 +187,11 @@ export function SellFlow() {
       </div>
 
       {/* ── HEADER ── */}
-      <header className="sticky top-0 z-40 bg-white/75 dark:bg-[#020c04]/75 backdrop-blur-xl border-b border-white/50 dark:border-white/[0.06] pt-4 pb-0">
+      <header className="sticky top-0 z-40 bg-white/75 dark:bg-[#020c04]/75 backdrop-blur-xl border-b border-white/50 dark:border-white/6 pt-4 pb-0">
         <div className="flex items-center gap-4 px-4 pb-4">
           <button
             onClick={handleBack}
-            className="w-10 h-10 rounded-2xl bg-white/80 dark:bg-white/[0.07] backdrop-blur-md border border-white/60 dark:border-white/[0.08] flex items-center justify-center hover:scale-105 transition-transform shadow-sm"
+            className="w-10 h-10 rounded-2xl bg-white/80 dark:bg-white/[0.07] backdrop-blur-md border border-white/60 dark:border-white/8 flex items-center justify-center hover:scale-105 transition-transform shadow-sm"
           >
             <ArrowLeft className="w-5 h-5 text-slate-800 dark:text-white" />
           </button>
@@ -204,7 +204,7 @@ export function SellFlow() {
         </div>
 
         {/* Progress bar */}
-        <div className="w-full h-1 bg-black/5 dark:bg-white/[0.08] relative overflow-hidden">
+        <div className="w-full h-1 bg-black/5 dark:bg-white/8 relative overflow-hidden">
           <motion.div
             className="absolute top-0 left-0 h-full bg-emerald-500"
             initial={{ width: 0 }}
@@ -257,12 +257,12 @@ export function SellFlow() {
       </main>
 
       {/* ── BOTTOM CTA ── */}
-      <div className="fixed bottom-0 left-0 right-0 z-[100] pointer-events-none">
-        <div className="h-12 w-full bg-gradient-to-t from-white/80 dark:from-[#020c04]/80 to-transparent" />
+      <div className="fixed bottom-0 left-0 right-0 z-100 pointer-events-none">
+        <div className="h-12 w-full bg-linear-to-t from-white/80 dark:from-[#020c04]/80 to-transparent" />
         <div className="p-4 sm:p-6
           bg-white/80 dark:bg-[#020c04]/80
           backdrop-blur-xl
-          border-t border-white/50 dark:border-white/[0.06]
+          border-t border-white/50 dark:border-white/6
           pointer-events-auto">
           <div className="max-w-2xl mx-auto">
             <button

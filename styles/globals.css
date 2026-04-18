@@ -1,77 +1,90 @@
-@import 'tailwindcss';
-@import 'tw-animate-css';
+@import "tailwindcss";
+@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
+/* ========================================
+  FARMHERS OS - PREMIUM DESIGN SYSTEM
+  All variables kept intact to prevent team merge conflicts!
+  ========================================
+*/
+
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  /* LIGHT MODE: Crisp, fresh minty cream based on #f0fdf4 */
+  --background: oklch(0.985 0.01 145);
+  --foreground: oklch(0.25 0.04 145); /* Deep forest text based on #14532d */
+
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.25 0.04 145);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.25 0.04 145);
+
+  /* AgriLink Emerald */
+  --primary: oklch(0.6 0.16 145);
+  --primary-foreground: oklch(0.985 0.01 145);
+
+  --secondary: oklch(0.95 0.02 145);
+  --secondary-foreground: oklch(0.25 0.04 145);
+  --muted: oklch(0.95 0.02 145);
+  --muted-foreground: oklch(0.5 0.04 145);
+  --accent: oklch(0.95 0.02 145);
+  --accent-foreground: oklch(0.25 0.04 145);
+
   --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --destructive-foreground: oklch(0.985 0 0);
+
+  --border: oklch(0.92 0.02 145);
+  --input: oklch(0.92 0.02 145);
+  --ring: oklch(0.6 0.16 145);
+
+  /* Kept all chart variables intact */
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+
+  --radius: 1.5rem; /* Smoothed out for Apple-style cards */
+
+  /* Kept all sidebar variables intact */
+  --sidebar: oklch(0.985 0.01 145);
+  --sidebar-foreground: oklch(0.25 0.04 145);
+  --sidebar-primary: oklch(0.6 0.16 145);
+  --sidebar-primary-foreground: oklch(0.985 0.01 145);
+  --sidebar-accent: oklch(0.95 0.02 145);
+  --sidebar-accent-foreground: oklch(0.25 0.04 145);
+  --sidebar-border: oklch(0.92 0.02 145);
+  --sidebar-ring: oklch(0.6 0.16 145);
 }
 
 .dark {
-  /* Background: dark blue-grey, NOT pure black */
-  --background: oklch(0.13 0.008 250);
+  /* DARK MODE: Cinematic slate & forest based on #020c04 */
+  --background: oklch(0.15 0.02 145);
+  --foreground: oklch(0.95 0.01 145);
 
-  --foreground: oklch(0.93 0 0);
+  --card: oklch(0.18 0.02 145);
+  --card-foreground: oklch(0.95 0.01 145);
+  --popover: oklch(0.18 0.02 145);
+  --popover-foreground: oklch(0.95 0.01 145);
 
-  /* Cards: slightly lighter than background so they're visible */
-  --card: oklch(0.17 0.008 250);
-  --card-foreground: oklch(0.93 0 0);
+  /* Bright emerald for high contrast */
+  --primary: oklch(0.7 0.15 145);
+  --primary-foreground: oklch(0.15 0.02 145);
 
-  --popover: oklch(0.17 0.008 250);
-  --popover-foreground: oklch(0.93 0 0);
-
-  --primary: oklch(0.72 0.17 145);
-  --primary-foreground: oklch(0.13 0.008 250);
-
-  /* Secondary & muted: clearly distinct from background */
-  --secondary: oklch(0.22 0.008 250);
-  --secondary-foreground: oklch(0.93 0 0);
-
-  --muted: oklch(0.22 0.008 250);
-  --muted-foreground: oklch(0.65 0 0);
-
-  --accent: oklch(0.22 0.008 250);
-  --accent-foreground: oklch(0.93 0 0);
+  --secondary: oklch(0.22 0.02 145);
+  --secondary-foreground: oklch(0.95 0.01 145);
+  --muted: oklch(0.22 0.02 145);
+  --muted-foreground: oklch(0.7 0.02 145);
+  --accent: oklch(0.22 0.02 145);
+  --accent-foreground: oklch(0.95 0.01 145);
 
   --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
+  --destructive-foreground: oklch(0.95 0.01 145);
 
-  /* Border: visible but subtle — this fixes the invisible card borders */
-  --border: oklch(0.28 0.008 250);
-  --input: oklch(0.28 0.008 250);
-  --ring: oklch(0.5 0 0);
+  /* Visible but subtle borders for glassmorphism */
+  --border: oklch(0.25 0.02 145);
+  --input: oklch(0.25 0.02 145);
+  --ring: oklch(0.7 0.15 145);
 
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
@@ -79,19 +92,21 @@
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
 
-  --sidebar: oklch(0.17 0.008 250);
-  --sidebar-foreground: oklch(0.93 0 0);
-  --sidebar-primary: oklch(0.72 0.17 145);
-  --sidebar-primary-foreground: oklch(0.13 0.008 250);
-  --sidebar-accent: oklch(0.22 0.008 250);
-  --sidebar-accent-foreground: oklch(0.93 0 0);
-  --sidebar-border: oklch(0.28 0.008 250);
-  --sidebar-ring: oklch(0.5 0 0);
+  --sidebar: oklch(0.15 0.02 145);
+  --sidebar-foreground: oklch(0.95 0.01 145);
+  --sidebar-primary: oklch(0.7 0.15 145);
+  --sidebar-primary-foreground: oklch(0.15 0.02 145);
+  --sidebar-accent: oklch(0.22 0.02 145);
+  --sidebar-accent-foreground: oklch(0.95 0.01 145);
+  --sidebar-border: oklch(0.25 0.02 145);
+  --sidebar-ring: oklch(0.7 0.15 145);
 }
 
 @theme inline {
-  --font-sans: 'Geist', 'Geist Fallback';
-  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+  --font-sans: "Geist", "Geist Fallback", sans-serif;
+  --font-mono: "Geist Mono", "Geist Mono Fallback", monospace;
+
+  /* Perfectly maps all variables into Tailwind v4 without dropping any */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -116,10 +131,12 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -135,29 +152,44 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
   }
 }
 
-/* ─── Dark mode green overrides ───────────────────────────────────────────── */
-/* Tones down the eye-burning greens in pools/buttons without touching light mode */
-.dark .bg-green-500 {
-  background-color: oklch(0.42 0.13 145) !important;
+/* ========================================
+  GLOBAL UTILITIES & ANIMATIONS
+  ========================================
+*/
+
+@layer utilities {
+  /* Hides default browser scrollbars for horizontal lists */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Cinematic overlay blend mode used in the onboarding cards */
+  .blend-overlay {
+    mix-blend-mode: overlay;
+  }
 }
-.dark .hover\:bg-green-400:hover,
-.dark .hover\:bg-green-500:hover {
-  background-color: oklch(0.48 0.14 145) !important;
+
+/* Custom Floating Animation for IoT Widgets */
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
 }
-.dark .bg-green-400 {
-  background-color: oklch(0.46 0.13 145) !important;
-}
-.dark .text-green-400 {
-  color: oklch(0.72 0.15 145) !important;
-}
-.dark .text-green-500 {
-  color: oklch(0.68 0.15 145) !important;
-}
-.dark .border-green-500,
-.dark .border-green-400 {
-  border-color: oklch(0.52 0.14 145) !important;
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
 }

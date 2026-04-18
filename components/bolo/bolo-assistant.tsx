@@ -412,12 +412,12 @@ export function BoloAssistant() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[90] bg-slate-900/40 dark:bg-slate-950/60 backdrop-blur-sm pointer-events-none"
+            className="fixed inset-0 z-90 bg-slate-900/40 dark:bg-slate-950/60 backdrop-blur-sm pointer-events-none"
           />
         )}
       </AnimatePresence>
 
-      <div className="fixed bottom-24 right-6 sm:bottom-6 sm:right-6 z-[100] flex flex-col items-end gap-4">
+      <div className="fixed bottom-24 right-6 sm:bottom-6 sm:right-6 z-100 flex flex-col items-end gap-4">
         <AnimatePresence>
           {isVisible && (
             <motion.div
@@ -425,7 +425,7 @@ export function BoloAssistant() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               className={cn(
-                "w-[340px] rounded-[32px] p-6 pointer-events-auto flex flex-col shadow-2xl",
+                "w-85 rounded-4xl p-6 pointer-events-auto flex flex-col shadow-2xl",
                 GLASS_CLASSES,
               )}
             >
@@ -449,7 +449,7 @@ export function BoloAssistant() {
                 </button>
               </div>
 
-              <div className="min-h-[100px] flex flex-col justify-center text-center mb-6">
+              <div className="min-h-25 flex flex-col justify-center text-center mb-6">
                 <AnimatePresence mode="wait">
                   {isBoloListening && !isProcessing && (
                     <motion.div

@@ -311,8 +311,8 @@ export function FarmerDashboard() {
               alt=""
               fill
               priority
-              className="object-cover object-center"
-              style={{ opacity: 0.28 }}
+              className="object-fill object-center"
+              style={{ opacity: 0.8 }}
             />
             {/* Primary dark gradient scrim */}
             <div className="absolute inset-0 bg-gradient-to-b from-[#020c04]/85 via-[#040f06]/75 to-[#020c04]/92" />
