@@ -7,24 +7,171 @@ import { useTheme } from "next-themes";
 import {
   ArrowLeft, User, MapPin, Moon, Sun, Bell,
   ChevronRight, Shield, CreditCard, LogOut,
-  Smartphone, Mail, CheckCircle, BadgeCheck,
-  Star, Wallet,
+  Smartphone, Mail, CheckCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { logout } from "@/lib/auth";
-import Image from "next/image";
+
+function LightBg() {
+  const arcs = [
+    "M -100 900  Q 300 500  700 300  T 1200 100",
+    "M -100 950  Q 280 540  680 340  T 1200 140",
+    "M -100 1000 Q 320 560  720 360  T 1200 180",
+    "M -100 1050 Q 300 600  700 400  T 1200 220",
+    "M -100 1100 Q 260 640  660 440  T 1200 260",
+    "M -100 1150 Q 340 580  740 380  T 1200 200",
+    "M -100 850  Q 320 460  720 260  T 1200 60",
+    "M -100 800  Q 300 420  700 220  T 1200 20",
+  ];
+  return (
+    <div className="fixed inset-0 w-full h-full pointer-events-none" style={{ zIndex: 0 }}>
+      <div className="absolute inset-0" style={{
+        background: "linear-gradient(130deg, #d6f5e3 0%, #e8faf2 22%, #f0fdf8 40%, #e8f5fb 62%, #daeef8 80%, #d0eaf6 100%)"
+      }} />
+      <div className="absolute inset-0" style={{
+        background: "radial-gradient(ellipse 55% 50% at 0% 15%, rgba(167,243,208,0.65) 0%, transparent 60%)"
+      }} />
+      <div className="absolute inset-0" style={{
+        background: "radial-gradient(ellipse 50% 55% at 100% 60%, rgba(186,230,253,0.55) 0%, transparent 60%)"
+      }} />
+      <svg className="absolute inset-0 w-full h-full"
+        viewBox="0 0 1000 900" preserveAspectRatio="xMidYMid slice"
+        xmlns="http://www.w3.org/2000/svg">
+        {arcs.map((d, i) => (
+          <path key={i} d={d} fill="none"
+            stroke={i < 5 ? "rgba(100,200,170,0.28)" : "rgba(100,180,220,0.22)"}
+            strokeWidth={i % 3 === 0 ? "1.2" : "0.7"} />
+        ))}
+      </svg>
+    </div>
+  );
+}
+
+function DarkBg() {
+  return (
+    <div className="fixed inset-0 w-full h-full pointer-events-none" style={{ zIndex: 0 }}>
+      <div className="absolute inset-0" style={{
+        background: "linear-gradient(145deg, #071c14 0%, #040f0a 40%, #06151f 70%, #040d14 100%)"
+      }} />
+      <div className="absolute inset-0" style={{
+        background: "radial-gradient(ellipse 50% 60% at -5% 50%, rgba(22,163,74,0.30) 0%, transparent 65%)"
+      }} />
+      <div className="absolute inset-0" style={{
+        background: "radial-gradient(ellipse 45% 55% at 105% 50%, rgba(16,185,129,0.20) 0%, transparent 65%)"
+      }} />
+      <div className="absolute inset-0" style={{
+        background: "radial-gradient(ellipse 55% 35% at 50% 15%, rgba(74,222,128,0.08) 0%, transparent 55%)"
+      }} />
+    </div>
+  );
+}
+
+function useTokens(isDark: boolean) {
+  return isDark ? {
+    outerCard:        "linear-gradient(145deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.04) 100%)",
+    outerShadow:      "0 0 60px rgba(74,222,128,0.18), 0 24px 80px rgba(0,0,0,0.55)",
+    outerBlur:        "blur(32px)",
+    cornerGlowTL:     "radial-gradient(ellipse at 0% 0%, rgba(134,239,172,0.12) 0%, transparent 60%)",
+    cornerGlowBR:     "radial-gradient(ellipse at 100% 100%, rgba(16,185,129,0.10) 0%, transparent 60%)",
+    rowBg:            "rgba(255,255,255,0.055)",
+    rowShadow:        "0 1px 0 rgba(134,239,172,0.10) inset",
+    dividerColor:     "rgba(134,239,172,0.10)",
+    statBg:           "rgba(255,255,255,0.05)",
+    statShadow:       "none",
+    statValue:        "#ffffff",
+    statLabel:        "rgba(134,239,172,0.45)",
+    iconBg:           "rgba(74,222,128,0.10)",
+    iconShadow:       "0 0 12px rgba(74,222,128,0.20)",
+    iconColor:        "#4ade80",
+    navBg:            "rgba(255,255,255,0.07)",
+    navShadow:        "0 0 16px rgba(74,222,128,0.12)",
+    navIcon:          "#4ade80",
+    titleText:        "#ffffff",
+    subText:          "rgba(134,239,172,0.50)",
+    nameText:         "#ffffff",
+    locationText:     "rgba(134,239,172,0.70)",
+    labelText:        "rgba(134,239,172,0.45)",
+    menuText:         "#ffffff",
+    badge:            "rgba(74,222,128,0.12)",
+    badgeText:        "#4ade80",
+    langBarBg:        "rgba(255,255,255,0.05)",
+    langActiveBg:     "rgba(22,163,74,0.30)",
+    langActiveColor:  "#4ade80",
+    langActiveShadow: "0 0 16px rgba(74,222,128,0.25)",
+    langIdleColor:    "rgba(134,239,172,0.45)",
+    notifRowBg:       "transparent",
+    notifDivider:     "rgba(134,239,172,0.10)",
+    yesNoBg:          "rgba(74,222,128,0.08)",
+    idleOptColor:     "rgba(134,239,172,0.45)",
+    signOutBg:        "rgba(239,68,68,0.08)",
+    signOutText:      "#f87171",
+    signOutShadow:    "0 0 20px rgba(239,68,68,0.10)",
+    avatarBorder:     "rgba(134,239,172,0.70)",
+    avatarGlow:       "0 0 30px rgba(74,222,128,0.45)",
+    avatarInner:      "linear-gradient(135deg, rgba(74,222,128,0.25), rgba(16,185,129,0.35))",
+    avatarIcon:       "#4ade80",
+    avatarDotBg:      "#16a34a",
+    avatarDotBorder:  "#071c14",
+  } : {
+    outerCard:        "rgba(255,255,255,0.65)",
+    outerShadow:      "0 8px 48px rgba(134,239,172,0.20), 0 2px 60px rgba(186,230,253,0.18)",
+    outerBlur:        "blur(24px)",
+    cornerGlowTL:     "radial-gradient(ellipse at 0% 0%, rgba(167,243,208,0.30) 0%, transparent 55%)",
+    cornerGlowBR:     "radial-gradient(ellipse at 100% 100%, rgba(186,230,253,0.25) 0%, transparent 55%)",
+    rowBg:            "rgba(255,255,255,0.60)",
+    rowShadow:        "none",
+    dividerColor:     "rgba(134,239,172,0.25)",
+    statBg:           "rgba(255,255,255,0.70)",
+    statShadow:       "none",
+    statValue:        "#14532d",
+    statLabel:        "rgba(22,101,52,0.45)",
+    iconBg:           "rgba(220,252,231,0.85)",
+    iconShadow:       "none",
+    iconColor:        "#16a34a",
+    navBg:            "rgba(255,255,255,0.70)",
+    navShadow:        "0 2px 14px rgba(134,239,172,0.14)",
+    navIcon:          "#16a34a",
+    titleText:        "#14532d",
+    subText:          "rgba(22,101,52,0.50)",
+    nameText:         "#14532d",
+    locationText:     "#16a34a",
+    labelText:        "rgba(22,101,52,0.45)",
+    menuText:         "#14532d",
+    badge:            "rgba(187,247,208,0.80)",
+    badgeText:        "#15803d",
+    langBarBg:        "rgba(220,252,231,0.45)",
+    langActiveBg:     "#16a34a",
+    langActiveColor:  "#ffffff",
+    langActiveShadow: "0 2px 12px rgba(22,163,74,0.30)",
+    langIdleColor:    "rgba(22,101,52,0.50)",
+    notifRowBg:       "transparent",
+    notifDivider:     "rgba(134,239,172,0.25)",
+    yesNoBg:          "rgba(220,252,231,0.55)",
+    idleOptColor:     "rgba(22,101,52,0.45)",
+    signOutBg:        "rgba(255,255,255,0.55)",
+    signOutText:      "#dc2626",
+    signOutShadow:    "none",
+    avatarBorder:     "rgba(134,239,172,0.75)",
+    avatarGlow:       "0 0 24px rgba(74,222,128,0.30)",
+    avatarInner:      "linear-gradient(135deg, #86efac, #16a34a)",
+    avatarIcon:       "#ffffff",
+    avatarDotBg:      "#16a34a",
+    avatarDotBorder:  "#ffffff",
+  };
+}
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { userProfile, setIsLoggedIn, setHasOnboarded, language, setLanguage } = useAppStore();
-  const t = useTranslation();
   const { setTheme, resolvedTheme } = useTheme();
 
   const [mounted, setMounted] = useState(false);
+  const [showNotif, setShowNotif] = useState(false);
   useEffect(() => { setMounted(true); }, []);
 
   const isDark = resolvedTheme === "dark";
+  const T = useTokens(isDark);
   const toggleDarkMode = () => setTheme(isDark ? "light" : "dark");
 
   const handleSignOut = async () => {
@@ -36,198 +183,251 @@ export default function ProfileScreen() {
 
   const languageLabels = { en: "English", hi: "हिंदी", pa: "ਪੰਜਾਬੀ" };
 
-  return (
-    <div className="min-h-screen pb-32 relative overflow-x-hidden selection:bg-emerald-500/30">
+  if (!mounted) return null;
 
-      {/* ── FIXED BACKGROUND — same as farmer-dashboard ── */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        {/* Light mode */}
-        <div className={`absolute inset-0 bg-gradient-to-b from-[#f0fdf4] to-white transition-opacity duration-500 ${mounted && isDark ? "opacity-0" : "opacity-100"}`} />
-        {/* Dark mode: farmers_bg.jpg */}
-        {mounted && isDark && (
-          <>
-            <Image
-              src="/images/farmers_bg.jpg"
-              alt=""
-              fill
-              priority
-              className="object-cover object-center"
-              style={{ opacity: 0.28 }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-[#020c04]/85 via-[#040f06]/75 to-[#020c04]/92" />
-            <div className="absolute inset-0"
-              style={{ background: "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(6,20,8,0.3) 0%, rgba(2,8,3,0.7) 100%)" }}
-            />
-          </>
-        )}
+  const menuItems = [
+    { label: "Notification Pulse", sub: "Market updates", Ico: Bell,       isNotif: true },
+    { label: "Wallet & Payouts",   sub: null,             Ico: CreditCard,  isNotif: false },
+    { label: "Security Vault",     sub: null,             Ico: Shield,      isNotif: false },
+    { label: "Device Link",        sub: null,             Ico: Smartphone,  isNotif: false },
+    { label: "AgriLink Helpdesk",  sub: null,             Ico: Mail,        isNotif: false },
+  ];
+
+  return (
+    <div className="min-h-screen relative overflow-x-hidden"
+      style={{ fontFamily: "'DM Sans', sans-serif" }}>
+
+      {isDark ? <DarkBg /> : <LightBg />}
+
+      {/* NAV */}
+      <div className="relative z-20 max-w-sm mx-auto px-5 pt-10 pb-4 flex items-center justify-between">
+        <NavBtn T={T} onClick={() => router.back()}>
+          <ArrowLeft size={18} style={{ color: T.navIcon }} />
+        </NavBtn>
+        <div className="text-center">
+          <p className="font-extrabold text-sm tracking-wide" style={{ color: T.titleText }}>AgriLink Profile</p>
+          <p className="text-[10px] font-semibold" style={{ color: T.subText }}>Account Settings</p>
+        </div>
+        <NavBtn T={T} onClick={toggleDarkMode}>
+          {isDark ? <Sun size={18} style={{ color: T.navIcon }} /> : <Moon size={18} style={{ color: T.navIcon }} />}
+        </NavBtn>
       </div>
 
-      {mounted && (
-        <>
-          {/* ── HEADER ── */}
-          <header className="sticky top-0 z-40 bg-white/75 dark:bg-[#020c04]/75 backdrop-blur-2xl border-b border-white/50 dark:border-white/[0.06] transition-colors duration-300">
-            <div className="max-w-2xl mx-auto px-6 py-4 flex items-center justify-between relative z-10">
+      {/* SINGLE OUTER GLASS CARD — narrower max-w-sm */}
+      <div className="relative z-10 max-w-sm mx-auto px-3 pb-12">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45 }}
+          className="relative rounded-[2.4rem] overflow-hidden"
+          style={{
+            background: T.outerCard,
+            backdropFilter: T.outerBlur,
+            WebkitBackdropFilter: T.outerBlur,
+            boxShadow: T.outerShadow,
+          }}
+        >
+          {/* Corner glows — no border */}
+          <div className="absolute top-0 left-0 w-64 h-44 pointer-events-none"
+            style={{ background: T.cornerGlowTL }} />
+          <div className="absolute bottom-0 right-0 w-48 h-36 pointer-events-none"
+            style={{ background: T.cornerGlowBR }} />
+
+          <div className="relative z-10 p-5 space-y-3">
+
+            {/* PROFILE ROW */}
+            <Glass T={T}>
               <div className="flex items-center gap-4">
-                <button
-                  onClick={() => router.back()}
-                  className="w-10 h-10 rounded-2xl bg-white/80 dark:bg-white/[0.07] backdrop-blur-md border border-white/60 dark:border-white/[0.08] flex items-center justify-center hover:scale-105 transition-transform shadow-sm"
-                >
-                  <ArrowLeft className="w-5 h-5 text-slate-800 dark:text-white" />
-                </button>
-                <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
-                  Account Settings
-                </h1>
-              </div>
-              <button
-                onClick={toggleDarkMode}
-                className="w-10 h-10 rounded-2xl bg-white/80 dark:bg-white/[0.07] backdrop-blur-md border border-white/60 dark:border-white/[0.08] flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-sm hover:scale-105 transition-transform"
-              >
-                {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-              </button>
-            </div>
-          </header>
-
-          {/* ── MAIN ── */}
-          <main className="relative z-10 max-w-2xl mx-auto px-6 py-8 space-y-6">
-
-            {/* PROFILE CARD */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="relative overflow-hidden rounded-[2.5rem]
-                bg-white/50 dark:bg-white/[0.06]
-                backdrop-blur-2xl
-                border border-white/60 dark:border-white/[0.09]
-                p-8
-                shadow-[0_8px_32px_rgba(0,0,0,0.05)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.5)]"
-            >
-              {/* Subtle top-right glow */}
-              <div className="absolute top-0 right-0 w-48 h-48 pointer-events-none
-                bg-[radial-gradient(circle,rgba(52,211,153,0.08)_0%,transparent_70%)]
-                translate-x-12 -translate-y-12 dark:opacity-100 opacity-0" />
-
-              <div className="absolute top-0 right-0 p-6">
-                <BadgeCheck className="w-8 h-8 text-emerald-600/20 dark:text-emerald-400/15" />
-              </div>
-
-              <div className="flex flex-col md:flex-row items-center gap-6 relative z-10">
-                <div className="relative">
-                  <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center shadow-lg shadow-emerald-900/30">
-                    <User className="w-12 h-12 text-white" strokeWidth={1.5} />
+                {/* Avatar */}
+                <div className="relative shrink-0">
+                  <div className="absolute inset-[-8px] rounded-full" style={{
+                    background: "radial-gradient(circle, rgba(74,222,128,0.30) 0%, transparent 70%)",
+                    filter: "blur(5px)",
+                  }} />
+                  <div className="relative w-16 h-16 rounded-full overflow-hidden"
+                    style={{ border: `2px solid ${T.avatarBorder}`, boxShadow: T.avatarGlow }}>
+                    <div className="w-full h-full flex items-center justify-center"
+                      style={{ background: T.avatarInner }}>
+                      <User size={28} style={{ color: T.avatarIcon }} strokeWidth={1.5} />
+                    </div>
                   </div>
-                  <div className="absolute -bottom-2 -right-2 bg-white dark:bg-[#0d1f10] border-2 border-emerald-500 w-8 h-8 rounded-full flex items-center justify-center">
-                    <CheckCircle className="w-4 h-4 text-emerald-500 fill-emerald-50 dark:fill-transparent" />
+                  <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center"
+                    style={{ background: T.avatarDotBg, borderColor: T.avatarDotBorder }}>
+                    <CheckCircle size={8} className="text-white" />
                   </div>
                 </div>
 
-                <div className="text-center md:text-left space-y-1">
-                  <div className="flex items-center gap-2 justify-center md:justify-start">
-                    <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                {/* Name */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <h2 className="text-base font-extrabold tracking-tight" style={{ color: T.nameText }}>
                       {userProfile?.fullName || "AgriLink User"}
                     </h2>
-                    <span className="px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-[10px] font-black uppercase tracking-widest border border-emerald-200 dark:border-emerald-500/25">
+                    <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest"
+                      style={{ background: T.badge, color: T.badgeText }}>
                       {userProfile?.role || "Member"}
                     </span>
                   </div>
-                  <p className="text-slate-600 dark:text-white/50 flex items-center gap-1.5 justify-center md:justify-start font-medium">
-                    <MapPin className="w-4 h-4" /> {userProfile?.location || "India"}
+                  <p className="flex items-center gap-1 mt-0.5 text-xs font-medium"
+                    style={{ color: T.locationText }}>
+                    <MapPin size={10} /> {userProfile?.location || "India"}
                   </p>
                 </div>
               </div>
 
-              {/* Stats row */}
-              <div className="grid grid-cols-3 gap-4 mt-8">
+              {/* Stats */}
+              <div className="grid grid-cols-3 gap-2 mt-4">
                 {[
-                  { label: "Auctions", value: "12",   icon: Star      },
-                  { label: "Earnings", value: "₹2.4L", icon: Wallet    },
-                  { label: "Rating",   value: "4.9",   icon: BadgeCheck },
-                ].map((stat) => (
-                  <div
-                    key={stat.label}
-                    className="bg-white/60 dark:bg-white/[0.06] backdrop-blur-md border border-white/60 dark:border-white/[0.08] rounded-2xl p-4 text-center shadow-sm dark:shadow-none"
-                  >
-                    <p className="text-lg font-black text-slate-900 dark:text-white">{stat.value}</p>
-                    <p className="text-[10px] uppercase font-bold text-slate-500 dark:text-white/35 tracking-tighter mt-0.5">
-                      {stat.label}
-                    </p>
+                  { label: "Auctions", value: "12"    },
+                  { label: "Earnings", value: "₹2.4L" },
+                  { label: "Rating",   value: "4.9 ⭐" },
+                ].map((s) => (
+                  <div key={s.label} className="rounded-xl py-2.5 flex flex-col items-center gap-0.5"
+                    style={{ background: T.statBg }}>
+                    <p className="font-extrabold text-xs" style={{ color: T.statValue }}>{s.value}</p>
+                    <p className="text-[8px] uppercase font-bold tracking-widest" style={{ color: T.statLabel }}>{s.label}</p>
                   </div>
                 ))}
               </div>
-            </motion.div>
+            </Glass>
 
-            {/* LANGUAGE SELECTOR */}
-            <div className="space-y-3">
-              <h3 className="px-2 text-xs font-bold uppercase tracking-[0.2em] text-slate-600 dark:text-emerald-400/80">
-                App Language
-              </h3>
-              <div className="grid grid-cols-3 gap-2
-                bg-white/40 dark:bg-white/[0.05]
-                backdrop-blur-xl p-1.5 rounded-2xl
-                border border-white/60 dark:border-white/[0.08]
-                shadow-sm dark:shadow-none">
+            {/* LANGUAGE ROW */}
+            <Glass T={T}>
+              <p className="text-[9px] uppercase font-bold tracking-widest mb-2" style={{ color: T.labelText }}>App Language</p>
+              <div className="flex p-1 rounded-xl" style={{ background: T.langBarBg }}>
                 {(["en", "hi", "pa"] as const).map((lang) => (
-                  <button
-                    key={lang}
-                    onClick={() => setLanguage(lang)}
-                    className={cn(
-                      "py-3 rounded-xl text-sm font-bold transition-all backdrop-blur-md",
-                      language === lang
-                        ? "bg-white dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 shadow-md border border-emerald-100 dark:border-emerald-500/30"
-                        : "text-slate-600 dark:text-white/50 hover:bg-white/50 dark:hover:bg-white/[0.07]",
-                    )}
-                  >
+                  <button key={lang} onClick={() => setLanguage(lang)}
+                    className="flex-1 py-2 rounded-lg text-[11px] font-bold transition-all duration-300"
+                    style={language === lang
+                      ? { background: T.langActiveBg, color: T.langActiveColor, boxShadow: T.langActiveShadow }
+                      : { color: T.langIdleColor }}>
                     {languageLabels[lang]}
                   </button>
                 ))}
               </div>
-            </div>
+            </Glass>
 
-            {/* SETTINGS GRID */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-              <SettingsBox icon={CreditCard}  label="Wallet & Payouts"  />
-              <SettingsBox icon={Shield}       label="Security Vault"    />
-              <SettingsBox icon={Smartphone}   label="Device Link"       />
-              <SettingsBox icon={Mail}          label="AgriLink Helpdesk" />
-            </div>
+            {/* ALL 5 MENU ITEMS IN ONE GLASS CARD */}
+            <Glass T={T} noPad>
+              {menuItems.map((item, idx) => (
+                <div key={item.label}>
+                  {/* Item row */}
+                  <button
+                    onClick={item.isNotif ? () => setShowNotif(!showNotif) : undefined}
+                    className="w-full flex items-center justify-between px-4 py-3.5 transition-all hover:bg-white/10 active:bg-white/5"
+                  >
+                    <div className="flex items-center gap-3">
+                      <GlowIcon T={T}><item.Ico size={15} /></GlowIcon>
+                      <div className="text-left">
+                        <span className="block font-bold text-[13px]" style={{ color: T.menuText }}>{item.label}</span>
+                        {item.sub && (
+                          <span className="text-[10px] font-semibold" style={{ color: T.labelText }}>{item.sub}</span>
+                        )}
+                      </div>
+                    </div>
+                    <ChevronRight size={14} style={{
+                      color: T.iconColor,
+                      transform: item.isNotif && showNotif ? "rotate(90deg)" : "rotate(0)",
+                      transition: "transform 0.3s",
+                    }} />
+                  </button>
 
-            {/* LOGOUT */}
-            <button
-              onClick={handleSignOut}
-              className="w-full mt-4 py-5 rounded-[2rem]
-                bg-red-500/10 dark:bg-red-500/[0.08]
-                border-2 border-red-500/20 dark:border-red-500/20
-                text-red-600 dark:text-red-400 font-bold
-                hover:bg-red-500 dark:hover:bg-red-500/20 hover:text-white
-                transition-all flex items-center justify-center gap-3 group
-                backdrop-blur-md shadow-sm"
-            >
-              <LogOut className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                  {/* Notification sub-panel */}
+                  {item.isNotif && (
+                    <AnimatePresence>
+                      {showNotif && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.22 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="mx-4 mb-3 rounded-xl overflow-hidden"
+                            style={{ background: T.yesNoBg }}>
+                            {["Market Price Alerts", "Smart Pool Invites", "Payment Updates"].map((lbl, i, arr) => (
+                              <YesNoRow key={lbl} label={lbl} T={T} divider={i < arr.length - 1} />
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  )}
+
+                  {/* Divider between items (not after last) */}
+                  {idx < menuItems.length - 1 && (
+                    <div className="mx-4" style={{ height: "1px", background: T.dividerColor }} />
+                  )}
+                </div>
+              ))}
+            </Glass>
+
+            {/* SIGN OUT */}
+            <button onClick={handleSignOut}
+              className="w-full py-3.5 rounded-2xl flex items-center justify-center gap-2 font-bold text-sm transition-all hover:scale-[1.01] active:scale-[0.98] group"
+              style={{ background: T.signOutBg, backdropFilter: "blur(8px)", color: T.signOutText, boxShadow: T.signOutShadow }}>
+              <LogOut size={15} className="group-hover:-translate-x-1 transition-transform" />
               Sign Out of AgriLink
             </button>
 
-          </main>
-        </>
-      )}
+          </div>
+        </motion.div>
+      </div>
     </div>
   );
 }
 
-function SettingsBox({ icon: Icon, label }: { icon: any; label: string }) {
+/* ── Sub-components ── */
+type Tok = ReturnType<typeof useTokens>;
+
+function Glass({ children, T, className, noPad }: { children: React.ReactNode; T: Tok; className?: string; noPad?: boolean }) {
   return (
-    <button className="flex items-center justify-between p-5 rounded-3xl
-      bg-white/40 dark:bg-white/[0.06]
-      backdrop-blur-xl
-      border border-white/60 dark:border-white/[0.08]
-      hover:border-emerald-400/60 dark:hover:border-emerald-500/30
-      shadow-sm dark:shadow-[0_4px_20px_rgba(0,0,0,0.25)]
-      transition-all group">
-      <div className="flex items-center gap-4">
-        <div className="p-2 rounded-xl bg-white/60 dark:bg-white/[0.07] border border-white/60 dark:border-white/[0.08] shadow-inner">
-          <Icon className="w-5 h-5 text-slate-600 dark:text-white/60 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors" />
-        </div>
-        <span className="font-bold text-sm text-slate-800 dark:text-white">{label}</span>
-      </div>
-      <ChevronRight className="w-4 h-4 text-slate-400 dark:text-white/20 opacity-0 group-hover:opacity-100 group-hover:text-emerald-500 transition-all group-hover:translate-x-1" />
+    <div className={cn(!noPad && "p-4", "rounded-2xl overflow-hidden", className)}
+      style={{ background: T.rowBg, boxShadow: T.rowShadow }}>
+      {children}
+    </div>
+  );
+}
+
+function GlowIcon({ children, T }: { children: React.ReactNode; T: Tok }) {
+  return (
+    <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+      style={{ background: T.iconBg, boxShadow: T.iconShadow, color: T.iconColor }}>
+      {children}
+    </div>
+  );
+}
+
+function NavBtn({ children, T, onClick }: { children: React.ReactNode; T: Tok; onClick?: () => void }) {
+  return (
+    <button onClick={onClick}
+      className="w-10 h-10 rounded-2xl flex items-center justify-center transition-transform hover:scale-110 active:scale-95"
+      style={{ background: T.navBg, backdropFilter: "blur(12px)", boxShadow: T.navShadow }}>
+      {children}
     </button>
+  );
+}
+
+function YesNoRow({ label, T, divider }: { label: string; T: Tok; divider: boolean }) {
+  const [val, setVal] = useState<"yes" | "no">("yes");
+  return (
+    <div>
+      <div className="flex items-center justify-between px-3 py-2.5">
+        <span className="text-[12px] font-semibold" style={{ color: T.menuText }}>{label}</span>
+        <div className="flex rounded-full p-0.5" style={{ background: T.langBarBg }}>
+          {(["yes", "no"] as const).map((opt) => (
+            <button key={opt} onClick={() => setVal(opt)}
+              className="px-2.5 py-0.5 rounded-full text-[11px] font-bold capitalize transition-all duration-200"
+              style={val === opt
+                ? { background: opt === "yes" ? "#16a34a" : "#dc2626", color: "#fff",
+                    boxShadow: opt === "yes" ? "0 0 8px rgba(22,163,74,0.45)" : "0 0 8px rgba(220,38,38,0.40)" }
+                : { color: T.idleOptColor }}>
+              {opt === "yes" ? "Yes" : "No"}
+            </button>
+          ))}
+        </div>
+      </div>
+      {divider && <div className="mx-3" style={{ height: "1px", background: T.notifDivider }} />}
+    </div>
   );
 }
