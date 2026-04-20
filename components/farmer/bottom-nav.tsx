@@ -14,7 +14,7 @@ const navItems: { id: NavId; icon: React.ElementType; path: string }[] = [
   { id: "sell",    icon: ShoppingBag, path: "/farmer/sell"    },
   { id: "market",  icon: BarChart2,   path: "/farmer/market"  },
   { id: "pools",   icon: Layers,      path: "/farmer/pools"   },
-  { id: "profile", icon: User,        path: "/farmer/profile" },
+  
 ];
 
 const GLASS_CLASSES =
