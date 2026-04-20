@@ -29,6 +29,7 @@ import {
   Leaf,
   WifiOff,
   Play,
+  type LucideIcon,
 } from "lucide-react";
 
 // 🔥 R3F & DREI - THE HEAVY ARTILLERY
@@ -131,121 +132,6 @@ function Grain() {
 }
 
 // ─────────────────────────────────────────────────────
-//  🔥 HARDWARE-AWARE MAGNETIC CURSOR
-// ─────────────────────────────────────────────────────
-function MagneticCursor() {
-  const [isFinePointer, setIsFinePointer] = useState(false);
-  const cursorX = useMotionValue(-100);
-  const cursorY = useMotionValue(-100);
-  const trailX = useMotionValue(-100);
-  const trailY = useMotionValue(-100);
-  const [label, setLabel] = useState("");
-  const [isHover, setIsHover] = useState(false);
-
-  const sx = useSpring(cursorX, { stiffness: 350, damping: 28, mass: 0.5 });
-  const sy = useSpring(cursorY, { stiffness: 350, damping: 28, mass: 0.5 });
-  const tx = useSpring(trailX, { stiffness: 120, damping: 22, mass: 1 });
-  const ty = useSpring(trailY, { stiffness: 120, damping: 22, mass: 1 });
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(pointer: fine)");
-    setIsFinePointer(mediaQuery.matches);
-    if (!mediaQuery.matches) return;
-
-    const move = (e: globalThis.MouseEvent) => {
-      cursorX.set(e.clientX - 6);
-      cursorY.set(e.clientY - 6);
-      trailX.set(e.clientX - 18);
-      trailY.set(e.clientY - 18);
-    };
-    const over = (e: globalThis.MouseEvent) => {
-      const el = (e.target as HTMLElement).closest(
-        "[data-cursor]",
-      ) as HTMLElement | null;
-      if (el) {
-        setLabel(el.dataset.cursor ?? "");
-        setIsHover(true);
-      } else {
-        setLabel("");
-        setIsHover(false);
-      }
-    };
-    window.addEventListener("mousemove", move);
-    window.addEventListener("mouseover", over);
-    return () => {
-      window.removeEventListener("mousemove", move);
-      window.removeEventListener("mouseover", over);
-    };
-  }, [cursorX, cursorY, trailX, trailY]);
-
-  if (!isFinePointer) return null;
-
-  return (
-    <>
-      <motion.div
-        style={{
-          position: "fixed",
-          zIndex: 9999,
-          pointerEvents: "none",
-          x: tx,
-          y: ty,
-          width: 36,
-          height: 36,
-          borderRadius: "50%",
-          border: "1px solid rgba(34,197,94,0.5)",
-          scale: isHover ? 2.5 : 1,
-          transition: "scale 0.3s ease",
-        }}
-      />
-      <motion.div
-        style={{
-          position: "fixed",
-          zIndex: 9999,
-          pointerEvents: "none",
-          x: sx,
-          y: sy,
-          width: 12,
-          height: 12,
-          borderRadius: "50%",
-          background: "#22c55e",
-          boxShadow: "0 0 12px #22c55e",
-          scale: isHover ? 0 : 1,
-          transition: "scale 0.2s ease",
-        }}
-      />
-      <AnimatePresence>
-        {isHover && label && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            style={{
-              position: "fixed",
-              zIndex: 9999,
-              pointerEvents: "none",
-              left: tx.get() + 50,
-              top: ty.get(),
-              background: "rgba(34,197,94,0.15)",
-              border: "1px solid rgba(34,197,94,0.3)",
-              backdropFilter: "blur(12px)",
-              padding: "6px 14px",
-              borderRadius: 999,
-              fontSize: 11,
-              color: "#4ade80",
-              fontFamily: "'Space Mono', monospace",
-              letterSpacing: "0.1em",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {label}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
-  );
-}
-
-// ─────────────────────────────────────────────────────
 //  MAGNETIC BUTTON
 // ─────────────────────────────────────────────────────
 interface MagBtnProps {
@@ -260,31 +146,13 @@ function MagBtn({
   onClick,
   dataCursor = "",
 }: MagBtnProps) {
-  const ref = useRef<HTMLButtonElement>(null);
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-  const sx = useSpring(x, { stiffness: 300, damping: 20 });
-  const sy = useSpring(y, { stiffness: 300, damping: 20 });
-
-  const handleMove = (e: MouseEvent<HTMLButtonElement>) => {
-    if (!ref.current || window.matchMedia("(pointer: coarse)").matches) return;
-    const r = ref.current.getBoundingClientRect();
-    x.set((e.clientX - (r.left + r.width / 2)) * 0.35);
-    y.set((e.clientY - (r.top + r.height / 2)) * 0.35);
-  };
-  const handleLeave = () => {
-    x.set(0);
-    y.set(0);
-  };
-
   return (
     <motion.button
-      ref={ref}
+      whileHover={{ scale: 1.03, y: -2 }}
+      whileTap={{ scale: 0.98 }}
       data-cursor={dataCursor}
-      onMouseMove={handleMove}
-      onMouseLeave={handleLeave}
       onClick={onClick}
-      style={{ ...style, x: sx, y: sy, cursor: "none" } as CSSProperties}
+      style={{ ...style, cursor: "pointer" } as CSSProperties}
     >
       {children}
     </motion.button>
@@ -739,16 +607,12 @@ function CinematicBreak() {
 
   useEffect(() => {
     if (!inView) return;
-    document.body.style.overflow = "hidden";
     const timers = [
       setTimeout(() => setPhase(1), 300),
       setTimeout(() => setPhase(2), 900),
       setTimeout(() => setPhase(3), 1600),
       setTimeout(() => setPhase(4), 2400),
-      setTimeout(() => {
-        setPhase(5);
-        document.body.style.overflow = "";
-      }, 3200),
+      setTimeout(() => setPhase(5), 3200),
     ];
     return () => timers.forEach(clearTimeout);
   }, [inView]);
@@ -799,7 +663,13 @@ function CinematicBreak() {
         />
       </div>
 
-      <div
+      <motion.div
+        initial={{ y: 40, opacity: 0 }}
+        animate={{
+          y: phase >= 5 ? -140 : 0,
+          opacity: phase >= 5 ? 0 : 1,
+        }}
+        transition={{ duration: 0.9, ease: EXPO }}
         style={{
           position: "relative",
           zIndex: 10,
@@ -907,7 +777,7 @@ function CinematicBreak() {
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+      </motion.div>
 
       <AnimatePresence>
         {phase >= 1 && phase < 5 && (
@@ -1121,7 +991,7 @@ interface Feature {
   title: string;
   subtitle: string;
   body: string;
-  icon: React.ElementType;
+  icon: LucideIcon;
   accent: string;
   image: string;
 }
@@ -1168,7 +1038,7 @@ const FEATURES: Feature[] = [
   },
 ];
 
-function FeatureCard({ feat }: { feat: Feature }) {
+function FeatureCard({ feat, compact }: { feat: Feature; compact: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-10%" });
   const Icon = feat.icon;
@@ -1180,9 +1050,9 @@ function FeatureCard({ feat }: { feat: Feature }) {
       transition={{ duration: 1.1, ease: SILK }}
       style={{
         position: "sticky",
-        top: `${60 + feat.index * 20}px`,
+        top: compact ? `${20 + feat.index * 12}px` : `${60 + feat.index * 20}px`,
         zIndex: feat.index * 10,
-        borderRadius: 32,
+        borderRadius: compact ? 22 : 32,
         overflow: "hidden",
         border: "1px solid rgba(255,255,255,0.06)",
         background: "rgba(3,15,6,0.8)",
@@ -1194,13 +1064,13 @@ function FeatureCard({ feat }: { feat: Feature }) {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          minHeight: 500,
+          gridTemplateColumns: compact ? "1fr" : "1fr 1fr",
+          minHeight: compact ? 0 : 440,
         }}
       >
         <div
           style={{
-            padding: "64px 56px",
+            padding: compact ? "34px 24px" : "52px 44px",
             display: "flex",
             flexDirection: "column",
             justifyContent: "space-between",
@@ -1270,7 +1140,7 @@ function FeatureCard({ feat }: { feat: Feature }) {
             <h3
               style={{
                 margin: "0 0 24px",
-                fontSize: "clamp(36px,4vw,56px)",
+                fontSize: compact ? "clamp(28px,8vw,38px)" : "clamp(32px,3.6vw,50px)",
                 fontWeight: 700,
                 fontFamily: "'Cormorant Garamond',serif",
                 color: "#f0fdf4",
@@ -1283,7 +1153,7 @@ function FeatureCard({ feat }: { feat: Feature }) {
             <p
               style={{
                 margin: 0,
-                fontSize: 17,
+                fontSize: compact ? 15 : 16,
                 color: "rgba(148,163,184,0.75)",
                 lineHeight: 1.75,
                 fontFamily: "'Barlow',sans-serif",
@@ -1295,14 +1165,14 @@ function FeatureCard({ feat }: { feat: Feature }) {
           </div>
           <div
             style={{
-              fontSize: 120,
+              fontSize: compact ? 82 : 104,
               fontWeight: 700,
               color: `${feat.accent}06`,
               fontFamily: "'Cormorant Garamond',serif",
               lineHeight: 1,
               position: "absolute",
-              bottom: -20,
-              left: 40,
+              bottom: compact ? -10 : -14,
+              left: compact ? 18 : 32,
               letterSpacing: "-0.05em",
               pointerEvents: "none",
             }}
@@ -1310,7 +1180,13 @@ function FeatureCard({ feat }: { feat: Feature }) {
             0{feat.index}
           </div>
         </div>
-        <div style={{ position: "relative", overflow: "hidden" }}>
+        <div
+          style={{
+            position: "relative",
+            overflow: "hidden",
+            minHeight: compact ? 260 : undefined,
+          }}
+        >
           <ParallaxImg
             src={feat.image}
             alt={feat.title}
@@ -1338,6 +1214,15 @@ function FeatureCard({ feat }: { feat: Feature }) {
 }
 
 function FeaturesSection() {
+  const [compact, setCompact] = useState(false);
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 1024px)");
+    const sync = () => setCompact(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
+
   return (
     <section
       style={{
@@ -1396,7 +1281,7 @@ function FeaturesSection() {
           </LineReveal>
         </div>
         {FEATURES.map((feat) => (
-          <FeatureCard key={feat.index} feat={feat} />
+          <FeatureCard key={feat.index} feat={feat} compact={compact} />
         ))}
       </div>
     </section>
@@ -1993,7 +1878,15 @@ const CROPS: Crop[] = [
   },
 ];
 
-function AuctionCard({ crop, index }: { crop: Crop; index: number }) {
+function AuctionCard({
+  crop,
+  index,
+  compact,
+}: {
+  crop: Crop;
+  index: number;
+  compact: boolean;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-10%" });
   const [hovered, setHovered] = useState(false);
@@ -2023,18 +1916,18 @@ function AuctionCard({ crop, index }: { crop: Crop; index: number }) {
       onMouseLeave={() => setHovered(false)}
       data-cursor="BID NOW"
       style={{
-        flex: "0 0 280px",
+        flex: compact ? "0 0 220px" : "0 0 252px",
         background: "linear-gradient(135deg,rgba(3,15,6,0.9),rgba(2,10,4,0.9))",
         border: `1px solid ${hovered ? crop.color + "66" : "rgba(255,255,255,0.06)"}`,
-        borderRadius: 24,
-        padding: 32,
+        borderRadius: compact ? 20 : 24,
+        padding: compact ? 20 : 26,
         boxShadow: hovered
           ? `0 30px 80px rgba(0,0,0,0.8),0 0 40px ${crop.color}22`
           : "0 20px 60px rgba(0,0,0,0.6)",
         transition: "border-color 0.3s,box-shadow 0.3s",
         position: "relative",
         overflow: "hidden",
-        cursor: "none",
+        cursor: "pointer",
       }}
     >
       <div
@@ -2103,8 +1996,8 @@ function AuctionCard({ crop, index }: { crop: Crop; index: number }) {
       </div>
       <h3
         style={{
-          margin: "0 0 4px",
-          fontSize: 28,
+            margin: "0 0 4px",
+            fontSize: compact ? 24 : 28,
           fontWeight: 700,
           fontFamily: "'Cormorant Garamond',serif",
           color: "#f0fdf4",
@@ -2118,7 +2011,7 @@ function AuctionCard({ crop, index }: { crop: Crop; index: number }) {
       </h3>
       <p
         style={{
-          margin: "0 0 28px",
+            margin: compact ? "0 0 20px" : "0 0 28px",
           fontSize: 12,
           color: "#475569",
           fontFamily: "'Barlow',sans-serif",
@@ -2140,7 +2033,7 @@ function AuctionCard({ crop, index }: { crop: Crop; index: number }) {
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.3 }}
           style={{
-            fontSize: 38,
+            fontSize: compact ? 32 : 38,
             fontWeight: 800,
             letterSpacing: "-0.03em",
             fontFamily: "'Cormorant Garamond',serif",
@@ -2220,6 +2113,15 @@ function AuctionCard({ crop, index }: { crop: Crop; index: number }) {
 
 function AuctionScene() {
   const ref = useRef<HTMLElement>(null);
+  const [compact, setCompact] = useState(false);
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 1024px)");
+    const sync = () => setCompact(media.matches);
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
+  }, []);
+
   return (
     <section
       ref={ref}
@@ -2303,7 +2205,7 @@ function AuctionScene() {
           }}
         >
           {CROPS.map((crop, i) => (
-            <AuctionCard key={i} crop={crop} index={i} />
+            <AuctionCard key={i} crop={crop} index={i} compact={compact} />
           ))}
         </div>
       </div>
@@ -2882,13 +2784,11 @@ export default function AgriLinkGodTier() {
         background: "#020a04",
         color: "#e2e8f0",
         overflowX: "hidden",
-        cursor: "none",
       }}
     >
       <FontLoader />
       <GlobalAtmosphere />
       <Grain />
-      <MagneticCursor />
 
       <Nav />
       <Hero />
