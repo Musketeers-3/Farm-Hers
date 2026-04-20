@@ -11,6 +11,7 @@ import { MyFieldsCard } from "./my-fields-card";
 import { SearchBar } from "./search-bar";
 import { AIRecommendationCard } from "./ai-recommendation-card";
 
+
 import {
   Bell,
   MapPin,
@@ -22,6 +23,7 @@ import {
   Loader2,
   Building2,
   ArrowRight,
+  User,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useState, useEffect, useRef } from "react";
@@ -355,6 +357,14 @@ export function FarmerDashboard() {
               >
                 <Bell className="w-5.5 h-5.5 text-[#14532d] dark:text-emerald-300" strokeWidth={2} />
                 <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-[#f2f8f5] dark:border-transparent" />
+              </button>
+
+              <button
+                onClick={() => router.push("/farmer/profile")}
+                className="w-10.5 h-10.5 rounded-2xl bg-[#f2f8f5] dark:bg-white/[0.07] flex items-center justify-center hover:bg-emerald-100 dark:hover:bg-white/[0.12] transition-all duration-200 shadow-sm border-0 dark:border dark:border-white/[0.08]"
+                aria-label="Profile"
+              >
+                <User className="w-5.5 h-5.5 text-[#14532d] dark:text-emerald-300" strokeWidth={2} />
               </button>
             </div>
           </div>
