@@ -18,11 +18,13 @@ import {
   Plus,
   Users,
   Wheat,
+  CreditCard,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/lib/store";
 import type { Pool } from "@/types/pool";
+import { TokenPaymentScreen } from "@/components/payment/token-payment-screen";
 
 // ─── AUTH HOOK (swap with your real auth) ──────────────────────────────────────
 
@@ -132,6 +134,15 @@ export function BuyerPools({ isDark = true }: { isDark?: boolean }) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [contractSigned, setContractSigned] = useState<string | null>(null);
 
+  // Token payment flow
+  const [showTokenPayment, setShowTokenPayment] = useState(false);
+  const [pendingPoolDetails, setPendingPoolDetails] = useState<{
+    pool: Pool;
+    quantity: number;
+  } | null>(null);
+
+  const addPaymentOrder = useAppStore((s) => s.addPaymentOrder);
+
   const [form, setForm] = useState({
     commodity: "",
     pricePerUnit: "",
@@ -170,31 +181,77 @@ export function BuyerPools({ isDark = true }: { isDark?: boolean }) {
     setSelectedQty(Math.max(1, Math.floor(maxQty * 0.25)));
   };
 
-  // Buyer commits to purchase from a farmer-created pool
+  // Buyer commits to purchase from a farmer-created pool - triggers token payment
   const handleJoinAsBuyer = async (pool: Pool, qty: number) => {
+    // Store pool details and show token payment screen
+    const cropDetails = crops.find((c) => c.id === pool.commodity) || crops[0];
+    setPendingPoolDetails({
+      pool,
+      quantity: qty,
+    });
+    setShowTokenPayment(true);
+  };
+
+  // After successful token payment, actually join the pool
+  const handleTokenPaymentSuccess = async (paymentData: any) => {
+    if (!pendingPoolDetails) return;
+    const { pool, quantity } = pendingPoolDetails;
+
     setIsProcessing(true);
     try {
+      // Join the pool
       const res = await fetch(`/api/pools/${pool.id}/join`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          farmerId: buyer.id,
-          farmerName: buyer.name,
-          quantity: qty,
+          buyerId: buyer.id,
+          buyerName: buyer.name,
+          quantity: quantity,
         }),
       });
       const data = await res.json();
+
       if (res.ok) {
+        // Create payment order
+        const cropDetails = crops.find((c) => c.id === pool.commodity) || crops[0];
+        addPaymentOrder({
+          id: `PAY-${Date.now()}`,
+          cropId: pool.commodity || "",
+          cropName: cropDetails?.name || pool.commodity || "Unknown",
+          quantity: quantity,
+          pricePerQuintal: pool.pricePerUnit || cropDetails?.currentPrice || 0,
+          totalAmount: quantity * (pool.pricePerUnit || cropDetails?.currentPrice || 0),
+          tokenAmount: paymentData.amount,
+          buyerId: buyer.id,
+          buyerName: buyer.name,
+          buyerPhone: "",
+          farmerId: pool.creatorId || "",
+          farmerName: pool.creatorName || "Unknown Farmer",
+          poolId: pool.id,
+          status: "token-paid",
+          razorpayOrderId: paymentData.razorpayOrderId,
+          razorpayPaymentId: paymentData.razorpayPaymentId,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+
         setContractSigned(pool.id!);
+        setShowTokenPayment(false);
+        setPendingPoolDetails(null);
         fetchPools();
       } else {
-        alert(data.error);
+        alert(data.error || "Failed to join pool");
       }
     } catch (err: any) {
       alert(err.message);
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handleTokenPaymentBack = () => {
+    setShowTokenPayment(false);
+    setPendingPoolDetails(null);
   };
 
   // Buyer initiates contract on another buyer's open pool (legacy flow)
@@ -608,6 +665,31 @@ export function BuyerPools({ isDark = true }: { isDark?: boolean }) {
   };
 
   // ── RENDER ─────────────────────────────────────────────────────────────────
+
+  // Show token payment screen when buyer commits
+  if (showTokenPayment && pendingPoolDetails) {
+    const pool = pendingPoolDetails.pool;
+    const quantity = pendingPoolDetails.quantity;
+    const cropDetails = crops.find((c) => c.id === pool.commodity) || crops[0];
+
+    return (
+      <TokenPaymentScreen
+        poolDetails={{
+          poolId: pool.id || "",
+          cropId: pool.commodity || "",
+          cropName: cropDetails?.name || pool.commodity || "Unknown",
+          quantity: quantity,
+          pricePerQuintal: pool.pricePerUnit || cropDetails?.currentPrice || 0,
+          totalAmount: quantity * (pool.pricePerUnit || cropDetails?.currentPrice || 0),
+          farmerId: pool.creatorId || "",
+          farmerName: pool.creatorName || "Unknown",
+        }}
+        onSuccess={handleTokenPaymentSuccess}
+        onBack={handleTokenPaymentBack}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6 sm:space-y-8">
       {/* TABS */}

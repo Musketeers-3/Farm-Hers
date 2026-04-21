@@ -93,6 +93,41 @@ export interface Order {
   buyerId: string;
   farmerId: string;
   createdAt: string;
+  // Payment token fields
+  tokenPaid?: boolean;
+  tokenAmount?: number;
+  tokenPaymentId?: string;
+  offlinePaymentMode?: "cheque" | "neft" | "upi";
+  offlinePaymentRef?: string;
+  offlinePaymentSubmitted?: boolean;
+  farmerConfirmedPayment?: boolean;
+}
+
+// Payment order for token payment system
+export interface PaymentOrder {
+  id: string;
+  cropId: string;
+  cropName: string;
+  quantity: number;
+  pricePerQuintal: number;
+  totalAmount: number;
+  tokenAmount: number;
+  buyerId: string;
+  buyerName: string;
+  buyerPhone?: string;
+  farmerId: string;
+  farmerName: string;
+  poolId?: string;
+  status: "pending" | "token-paid" | "awaiting-offline" | "payment-received" | "completed";
+  tokenPaymentId?: string;
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
+  offlineMode?: "cheque" | "neft" | "upi";
+  offlineReference?: string;
+  offlineSubmittedAt?: string;
+  farmerConfirmedAt?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface WeatherData {
@@ -158,6 +193,11 @@ interface AppState {
   orders: Order[];
   addOrder: (order: Order) => void;
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
+
+  // Payment Orders (Token Payment System)
+  paymentOrders: PaymentOrder[];
+  addPaymentOrder: (order: PaymentOrder) => void;
+  updatePaymentOrder: (orderId: string, updates: Partial<PaymentOrder>) => void;
 
   // Weather
   weather: WeatherData | null;
@@ -380,6 +420,17 @@ export const useAppStore = create<AppState>()(
           ),
         })),
 
+      // Payment Orders
+      paymentOrders: [],
+      addPaymentOrder: (order) =>
+        set((state) => ({ paymentOrders: [...state.paymentOrders, order] })),
+      updatePaymentOrder: (orderId, updates) =>
+        set((state) => ({
+          paymentOrders: state.paymentOrders.map((o) =>
+            o.id === orderId ? { ...o, ...updates, updatedAt: new Date().toISOString() } : o,
+          ),
+        })),
+
       weather: {
         temperature: 32,
         humidity: 45,
@@ -420,8 +471,9 @@ export const useAppStore = create<AppState>()(
         hasOnboarded: state.hasOnboarded,
         isLoggedIn: state.isLoggedIn,
         userProfile: state.userProfile,
-        selectedCrop: state.selectedCrop, 
-        sellQuantity: state.sellQuantity, 
+        selectedCrop: state.selectedCrop,
+        sellQuantity: state.sellQuantity,
+        paymentOrders: state.paymentOrders,
       }),
     },
   ),
