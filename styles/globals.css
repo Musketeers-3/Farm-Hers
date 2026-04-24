@@ -4,9 +4,9 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ========================================
-  FARMHERS OS - PREMIUM DESIGN SYSTEM
-  All variables kept intact to prevent team merge conflicts!
-  ========================================
+   FARMHERS OS - PREMIUM DESIGN SYSTEM
+   All variables kept intact to prevent team merge conflicts!
+   ========================================
 */
 
 :root {
@@ -55,6 +55,18 @@
   --sidebar-accent-foreground: oklch(0.25 0.04 145);
   --sidebar-border: oklch(0.92 0.02 145);
   --sidebar-ring: oklch(0.6 0.16 145);
+
+  /* ========================================
+     WEBGL CINEMATIC GLOW TOKENS
+     ======================================== */
+  --glow-green: 142 71% 45%;
+  --glow-gold: 45 93% 47%;
+  --gradient-hero: linear-gradient(
+    135deg,
+    hsl(var(--glow-green)) 0%,
+    hsl(var(--glow-gold)) 100%
+  );
+  --shadow-glow-green: 0 0 40px hsl(var(--glow-green) / 0.45);
 }
 
 .dark {
@@ -145,6 +157,11 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* WebGL Overlay Animations */
+  --animate-fade-in: fade-in 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  --animate-slide-up: slide-up 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  --animate-glow-pulse: glow-pulse 3s infinite alternate;
 }
 
 @layer base {
@@ -157,8 +174,8 @@
 }
 
 /* ========================================
-  GLOBAL UTILITIES & ANIMATIONS
-  ========================================
+   GLOBAL UTILITIES & ANIMATIONS
+   ========================================
 */
 
 @layer utilities {
@@ -174,6 +191,23 @@
   /* Cinematic overlay blend mode used in the onboarding cards */
   .blend-overlay {
     mix-blend-mode: overlay;
+  }
+
+  /* WebGL Typography & Glow Classes */
+  .font-display {
+    font-family: "Cormorant Garamond", ui-serif, Georgia, serif;
+    letter-spacing: -0.02em;
+  }
+
+  .text-gradient-hero {
+    background-image: var(--gradient-hero);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .glow-green {
+    box-shadow: var(--shadow-glow-green);
   }
 }
 
@@ -192,4 +226,36 @@
 
 .animate-float {
   animation: float 4s ease-in-out infinite;
+}
+
+/* WebGL Overlay Keyframes */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes glow-pulse {
+  0% {
+    opacity: 0.5;
+    filter: drop-shadow(0 0 10px rgba(34, 197, 94, 0.2));
+  }
+  100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 25px rgba(34, 197, 94, 0.6));
+  }
 }

@@ -64,7 +64,7 @@ export async function login(
     throw new Error("User profile not found");
   }
 
-  return userDoc.data() as UserProfile;
+  return { ...userDoc.data(), uid } as UserProfile;
 }
 
 // Logout
@@ -81,5 +81,5 @@ export function onAuthChange(callback: (user: User | null) => void) {
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
   const userDoc = await getDoc(doc(db, "users", uid));
   if (!userDoc.exists()) return null;
-  return userDoc.data() as UserProfile;
+  return { ...userDoc.data(), uid } as UserProfile;
 }

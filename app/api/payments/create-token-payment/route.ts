@@ -68,12 +68,11 @@ export async function POST(request: NextRequest) {
 
     // Send notification to farmer
     await adminDb.collection("notifications").add({
-      recipientId: farmerId,
+      userId: farmerId,
       type: "payment",
       title: "New Order Confirmed",
       message: `New order confirmed — buyer ${buyerName || "A buyer"} has paid ₹${tokenAmount} token for ${quantity || "some"} quintals of ${cropName || "crop"} at ₹${pricePerQuintal || 0}/quintal. Check your orders.`,
-      poolId: poolId,
-      orderId: orderId,
+      relatedId: orderId,
       read: false,
       createdAt: now,
     });

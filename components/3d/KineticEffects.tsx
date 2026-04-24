@@ -1,65 +1,34 @@
 "use client";
 import { useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
+import { useScroll } from "@react-three/drei";
 import { EffectComposer, Bloom, ChromaticAberration } from "@react-three/postprocessing";
 import * as THREE from "three";
 
 export default function KineticEffects() {
   const { gl } = useThree();
+  const scroll = useScroll();
 
-  // 🛑 HARD GUARD: Prevent crash if WebGL context is invalid
-  if (!gl || !gl.getContext()) {
-    console.warn("Skipping postprocessing: WebGL not available");
-    return null;
-  }
+  // WebGL2 guard — postprocessing is unstable on WebGL1
+  const ctx = gl?.getContext?.();
+  const isWebGL2 = typeof WebGL2RenderingContext !== "undefined" && ctx instanceof WebGL2RenderingContext;
+  if (!ctx || !isWebGL2) return null;
 
-  // Optional: detect WebGL2 (postprocessing works best here)
-  const isWebGL2 = typeof WebGL2RenderingContext !== "undefined" && gl instanceof WebGL2RenderingContext;
-
-  // If not WebGL2 → disable heavy effects
-  if (!isWebGL2) {
-    return null; // safest fallback
-  }
-
-  const chromaOffset = useRef(new THREE.Vector2(0.002, 0.002));
-
-  const state = useRef({
-    lastScrollY: typeof window !== "undefined" ? window.scrollY : 0,
-    velocity: 0,
-  });
+  const chromaOffset = useRef(new THREE.Vector2(0.0015, 0.0015));
+  const lastOffset = useRef(0);
 
   useFrame(() => {
-    const currentScrollY = window.scrollY;
-    const scrollDelta = currentScrollY - state.current.lastScrollY;
-    state.current.lastScrollY = currentScrollY;
-
-    state.current.velocity = THREE.MathUtils.lerp(
-      state.current.velocity,
-      scrollDelta,
-      0.1
-    );
-
-    const kineticMultiplier = state.current.velocity * 0.0003;
-    const finalOffset = 0.002 + Math.abs(kineticMultiplier);
-
-    chromaOffset.current.set(finalOffset, finalOffset);
+    const delta = scroll.offset - lastOffset.current;
+    lastOffset.current = scroll.offset;
+    const velocity = Math.min(Math.abs(delta) * 6, 0.012);
+    const final = 0.0015 + velocity;
+    chromaOffset.current.set(final, final);
   });
 
   return (
-    <EffectComposer multisampling={0} disableNormalPass>
-      <Bloom
-        luminanceThreshold={1.2}
-        luminanceSmoothing={0.1}
-        intensity={2.0}
-        mipmapBlur
-      />
-
-      {/* @ts-expect-error known lib typing issue */}
-      <ChromaticAberration
-        offset={chromaOffset.current}
-        radialModulation
-        modulationOffset={0.5}
-      />
+    <EffectComposer multisampling={0}>
+      <Bloom luminanceThreshold={0.7} luminanceSmoothing={0.2} intensity={1.4} mipmapBlur />
+      <ChromaticAberration offset={chromaOffset.current} radialModulation modulationOffset={0.5} />
     </EffectComposer>
   );
 }

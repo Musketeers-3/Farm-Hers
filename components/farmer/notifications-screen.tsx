@@ -11,10 +11,10 @@ import {
   Layers,
   Truck,
   CreditCard,
-  CloudRain,
   CheckCircle2,
   Trash2,
   BellRing,
+  type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -23,44 +23,40 @@ import {
   collection,
   query,
   where,
-  orderBy,
   onSnapshot,
   updateDoc,
   doc,
   getDocs,
 } from "firebase/firestore";
+import type { NotificationType } from "@/types/notifications";
 
 interface Notification {
   id: string;
-  type: "price" | "auction" | "pool" | "order" | "payment" | "weather";
+  type: NotificationType;
   title: string;
   message: string;
   time: string;
   read: boolean;
-  poolId?: string;
-  orderId?: string;
+  relatedId?: string;
   createdAt?: string;
 }
 
-type NotificationType = "price" | "auction" | "pool" | "order" | "payment" | "weather";
-
-const iconMap: Record<NotificationType, React.ElementType> = {
-  price: TrendingUp,
-  auction: Gavel,
-  pool: Layers,
-  order: Truck,
+const iconMap: Record<NotificationType, LucideIcon> = {
+  pool_join: Layers,
+  demand_join: Truck,
+  order_update: Truck,
   payment: CreditCard,
-  weather: CloudRain,
+  auction_bid: Gavel,
+  price_alert: TrendingUp,
 };
 
 const colorMap: Record<NotificationType, string> = {
-  price: "bg-emerald-500 text-white shadow-emerald-500/30",
-  auction: "bg-amber-500 text-white shadow-amber-500/30",
-  pool: "bg-violet-500 text-white shadow-violet-500/30",
-  order: "bg-blue-500 text-white shadow-blue-500/30",
-  payment:
-    "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400",
-  weather: "bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-400",
+  pool_join: "bg-violet-500 text-white shadow-violet-500/30",
+  demand_join: "bg-blue-500 text-white shadow-blue-500/30",
+  order_update: "bg-blue-500 text-white shadow-blue-500/30",
+  payment: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400",
+  auction_bid: "bg-amber-500 text-white shadow-amber-500/30",
+  price_alert: "bg-emerald-500 text-white shadow-emerald-500/30",
 };
 
 const GLASS_CLASSES =
@@ -98,27 +94,32 @@ export function NotificationsScreen() {
     setLoading(true);
     const notifQuery = query(
       collection(db, "notifications"),
-      where("recipientId", "==", userProfile.uid),
-      orderBy("createdAt", "desc"),
+      where("userId", "==", userProfile.uid),
     );
 
     const unsubscribe = onSnapshot(
       notifQuery,
       (snapshot) => {
-        const firestoreNotifs = snapshot.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            type: (data.type || "order") as Notification["type"],
-            title: data.title || "",
-            message: data.message || "",
-            time: data.createdAt ? timeAgo(data.createdAt) : "Just now",
-            read: data.read ?? false,
-            poolId: data.poolId,
-            orderId: data.orderId,
-            createdAt: data.createdAt,
-          };
-        });
+        const firestoreNotifs = snapshot.docs
+          .map((doc) => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              type: (data.type || "order") as Notification["type"],
+              title: data.title || "",
+              message: data.message || "",
+              time: data.createdAt ? timeAgo(data.createdAt) : "Just now",
+              read: data.read ?? false,
+              poolId: data.poolId,
+              orderId: data.orderId,
+              createdAt: data.createdAt,
+            };
+          })
+          .sort((a, b) => {
+            if (!a.createdAt) return 1;
+            if (!b.createdAt) return -1;
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          });
 
         setNotifications(firestoreNotifs);
         setLoading(false);
@@ -130,14 +131,14 @@ export function NotificationsScreen() {
     );
 
     return () => unsubscribe();
-  }, [userProfile?.uid]);
+  }, [userProfile]);
 
   const markAllRead = async () => {
     if (!userProfile?.uid) return;
     try {
       const notifQuery = query(
         collection(db, "notifications"),
-        where("recipientId", "==", userProfile.uid),
+        where("userId", "==", userProfile.uid),
         where("read", "==", false),
       );
       const snapshot = await getDocs(notifQuery);
@@ -173,22 +174,22 @@ export function NotificationsScreen() {
 
   const handleNotificationNavigation = (notif: Notification) => {
     switch (notif.type) {
-      case "auction":
-      case "pool":
-        if (notif.poolId) {
-          router.push(`/farmer/market?pool=${notif.poolId}`);
+      case "auction_bid":
+      case "pool_join":
+        if (notif.relatedId) {
+          router.push(`/farmer/market?pool=${notif.relatedId}`);
         }
         break;
-      case "order":
-        if (notif.orderId) {
-          router.push(`/farmer/orders?order=${notif.orderId}`);
+      case "demand_join":
+      case "order_update":
+        if (notif.relatedId) {
+          router.push(`/farmer/orders?order=${notif.relatedId}`);
         }
         break;
       case "payment":
         router.push("/farmer/orders");
         break;
-      case "price":
-      case "weather":
+      case "price_alert":
         // No navigation for these types
         break;
     }
@@ -279,9 +280,9 @@ export function NotificationsScreen() {
           <div className="flex p-1 rounded-2xl bg-white/40 dark:bg-slate-800/40 backdrop-blur-md border border-white/50 dark:border-white/10 overflow-x-auto scrollbar-hide">
             {[
               { id: "all", label: "All" },
-              { id: "price", label: "Prices" },
-              { id: "auction", label: "Auctions" },
-              { id: "order", label: "Orders" },
+              { id: "price_alert", label: "Prices" },
+              { id: "auction_bid", label: "Auctions" },
+              { id: "order_update", label: "Orders" },
             ].map((f) => {
               const isActive = filter === f.id;
               return (
@@ -390,10 +391,7 @@ export function NotificationsScreen() {
                             colorMap[notif.type as NotificationType] ?? "bg-slate-500 text-white",
                           )}
                         >
-                          <Icon
-                            className="w-6 h-6"
-                            {...({ strokeWidth: 2.5 } as object)}
-                          />
+                          <Icon className="w-6 h-6" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2 mb-1">

@@ -3,12 +3,8 @@ import { useRef, useState, useEffect, useCallback, MouseEvent } from "react";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import { Mic, WifiOff } from "lucide-react";
 import { IMG, SILK } from "@/components/ui/constants";
-import dynamic from "next/dynamic";
 
-// 🔥 THE FIX: Dynamically import the 3D scene to bypass Next.js SSR circular JSON errors
-const BoloCanvas = dynamic(() => import("@/components/3d/BoloCanvas"), { 
-  ssr: false 
-});
+// 🔥 THE FIX: Removed the BoloCanvas dynamic import completely to prevent WebGL context crashes.
 
 export default function BoloSpotlight() {
   const ref = useRef<HTMLElement>(null);
@@ -78,21 +74,24 @@ export default function BoloSpotlight() {
       }}
     >
       <div style={{ position: "absolute", inset: 0, zIndex: 0 }}>
+        {/* 🔥 Lowered image opacity to let the Master WebGL scene shine through */}
         <img
           src={IMG.village}
           alt=""
-          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.15 }}
         />
         <div
           style={{
             position: "absolute",
             inset: 0,
-            background: "#000",
-            opacity: phase >= 1 ? 0.88 : 0,
+            background: "linear-gradient(to bottom, #020a04, transparent, #020a04)",
+            opacity: phase >= 1 ? 0.6 : 0,
             transition: "opacity 1.2s ease",
+            pointerEvents: "none"
           }}
         />
       </div>
+
       <motion.div
         initial={{ opacity: 0, scale: 0 }}
         animate={phase >= 1 ? { opacity: 1, scale: 1 } : {}}
@@ -105,12 +104,12 @@ export default function BoloSpotlight() {
           width: 600,
           height: 600,
           borderRadius: "50%",
-          background:
-            "radial-gradient(circle,rgba(34,197,94,0.08) 0%,transparent 65%)",
+          background: "radial-gradient(circle,rgba(34,197,94,0.08) 0%,transparent 65%)",
           pointerEvents: "none",
           zIndex: 1,
         }}
       />
+
       <div
         style={{
           position: "relative",
@@ -144,6 +143,7 @@ export default function BoloSpotlight() {
                   display: "flex",
                   alignItems: "center",
                   gap: 12,
+                  textShadow: "0 2px 10px rgba(0,0,0,0.8)"
                 }}
               >
                 <div style={{ width: 32, height: 1, background: "#22c55e" }} />{" "}
@@ -158,6 +158,7 @@ export default function BoloSpotlight() {
                   color: "#94a3b8",
                   lineHeight: 1.0,
                   letterSpacing: "-0.02em",
+                  textShadow: "0 4px 20px rgba(0,0,0,0.8)"
                 }}
               >
                 Speak.
@@ -172,6 +173,7 @@ export default function BoloSpotlight() {
                   color: "#f0fdf4",
                   lineHeight: 1.0,
                   letterSpacing: "-0.02em",
+                  textShadow: "0 4px 20px rgba(0,0,0,0.8)"
                 }}
               >
                 Sell. Earn.
@@ -180,11 +182,12 @@ export default function BoloSpotlight() {
                 style={{
                   margin: "0 0 40px",
                   fontSize: 18,
-                  color: "rgba(148,163,184,0.7)",
+                  color: "rgba(240,253,244,0.8)",
                   lineHeight: 1.75,
                   fontFamily: "'Barlow',sans-serif",
                   fontWeight: 300,
                   maxWidth: 420,
+                  textShadow: "0 2px 10px rgba(0,0,0,0.8)"
                 }}
               >
                 Bolo understands Hindi, Punjabi, and Hinglish natively. No
@@ -201,8 +204,9 @@ export default function BoloSpotlight() {
                       gap: 6,
                       padding: "7px 16px",
                       borderRadius: 999,
-                      border: "1px solid rgba(34,197,94,0.2)",
-                      background: "rgba(34,197,94,0.05)",
+                      border: "1px solid rgba(34,197,94,0.4)",
+                      background: "rgba(2,10,4,0.4)",
+                      backdropFilter: "blur(8px)",
                       fontSize: 12,
                       color: "#4ade80",
                       fontFamily: "'Barlow',sans-serif",
@@ -215,6 +219,7 @@ export default function BoloSpotlight() {
             </motion.div>
           )}
         </AnimatePresence>
+
         <AnimatePresence>
           {phase >= 1 && (
             <motion.div
@@ -224,29 +229,18 @@ export default function BoloSpotlight() {
               transition={{ duration: 1.3, ease: SILK, delay: 0.2 }}
               style={{ position: "relative" }}
             >
-              <div
-                style={{
-                  position: "absolute",
-                  inset: "-30%",
-                  zIndex: 0,
-                  pointerEvents: "none",
-                }}
-              >
-                {/* 🎯 THE REPLACEMENT: Our isolated dynamic Canvas */}
-                <BoloCanvas />
-              </div>
+              {/* 🔥 REMOVED THE BOLOCANVAS WRAPPER COMPLETELY */}
+              
               <div
                 style={{
                   position: "relative",
                   zIndex: 10,
-                  background:
-                    "linear-gradient(135deg,rgba(10,31,14,0.6),rgba(2,10,4,0.7))",
+                  background: "linear-gradient(135deg,rgba(10,31,14,0.3),rgba(2,10,4,0.4))", /* 🔥 Upgraded Glassmorphism */
                   border: "1px solid rgba(34,197,94,0.2)",
                   borderRadius: 28,
                   padding: 48,
                   backdropFilter: "blur(16px)",
-                  boxShadow:
-                    "0 40px 120px rgba(0,0,0,0.8),0 0 80px rgba(34,197,94,0.06)",
+                  boxShadow: "0 40px 120px rgba(0,0,0,0.5),0 0 80px rgba(34,197,94,0.06)",
                 }}
               >
                 <div
@@ -353,7 +347,7 @@ export default function BoloSpotlight() {
                 </div>
                 <div
                   style={{
-                    background: "rgba(5,46,22,0.5)",
+                    background: "rgba(5,46,22,0.3)", /* 🔥 Enhanced Glass */
                     border: "1px solid rgba(34,197,94,0.15)",
                     borderRadius: 16,
                     padding: "20px 24px",
@@ -392,7 +386,7 @@ export default function BoloSpotlight() {
                   <span
                     style={{
                       fontSize: 10,
-                      color: "rgba(74,222,128,0.5)",
+                      color: "rgba(74,222,128,0.7)",
                       letterSpacing: "0.2em",
                       textTransform: "uppercase",
                       fontFamily: "'Space Mono',monospace",
@@ -439,7 +433,7 @@ export default function BoloSpotlight() {
                       alignItems: "center",
                       gap: 6,
                       fontSize: 11,
-                      color: "#334155",
+                      color: "#94a3b8",
                       fontFamily: "'Space Mono',monospace",
                     }}
                   >
