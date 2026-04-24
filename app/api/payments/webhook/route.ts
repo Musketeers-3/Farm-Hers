@@ -1,9 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { db } from "@/lib/firebase";
-import { doc, updateDoc, getDoc, collection, addDoc } from "firebase/firestore";
+import { adminDb } from "@/lib/firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 
 const RAZORPAY_WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || "";
+
+async function sendPaymentNotification(orderData: any) {
+  // Send notification to farmer about the token payment
+  // orderData contains: poolId, cropName, quantity, pricePerQuintal, farmerId, buyerName, amount
+  const notificationRef = await adminDb.collection("notifications").add({
+    recipientId: orderData.farmerId,
+    type: "payment",
+    title: "Token Payment Received",
+    message: `New order confirmed — buyer ${orderData.buyerName || "A buyer"} has paid ₹${orderData.tokenAmount} token for ${orderData.quantity} quintals of ${orderData.cropName} at ₹${orderData.pricePerQuintal}/quintal. Check your orders.`,
+    poolId: orderData.poolId,
+    orderId: orderData.orderId,
+    read: false,
+    createdAt: new Date().toISOString(),
+  });
+  return notificationRef.id;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,17 +44,53 @@ export async function POST(request: NextRequest) {
       case "payment.captured": {
         const payment = event.payload.payment.entity;
         const orderId = payment.notes?.orderId;
+        const poolId = payment.notes?.poolId;
 
         if (orderId) {
-          const paymentsRef = collection(db, "tokenPayments");
-          const paymentDoc = await getDoc(doc(paymentsRef, orderId));
+          // Store token payment in Firestore
+          const paymentRef = adminDb.collection("tokenPayments").doc(orderId);
+          await adminDb.runTransaction(async (tx) => {
+            const doc = await tx.get(paymentRef);
+            if (doc.exists) {
+              tx.update(paymentRef, {
+                status: "token-paid",
+                razorpayPaymentId: payment.id,
+                paidAt: new Date().toISOString(),
+              });
+            } else {
+              // Create new payment record if doesn't exist
+              tx.set(paymentRef, {
+                orderId: orderId,
+                poolId: poolId || orderId,
+                razorpayOrderId: payment.notes?.razorpay_order_id || "",
+                razorpayPaymentId: payment.id,
+                status: "token-paid",
+                paidAt: new Date().toISOString(),
+                createdAt: new Date().toISOString(),
+              });
+            }
+          });
 
-          if (paymentDoc.exists()) {
-            await updateDoc(doc(paymentsRef, orderId), {
-              status: "token-paid",
-              razorpayPaymentId: payment.id,
-              paidAt: new Date().toISOString(),
-            });
+          // Find the pool to get farmer details
+          if (poolId) {
+            try {
+              const poolSnap = await adminDb.collection("pools").doc(poolId).get();
+              if (poolSnap.exists) {
+                const poolData = poolSnap.data();
+                await sendPaymentNotification({
+                  farmerId: poolData?.creatorId,
+                  buyerName: poolData?.buyerName || "A buyer",
+                  cropName: poolData?.commodity || "Unknown",
+                  quantity: poolData?.filledQuantity || 1,
+                  pricePerQuintal: poolData?.pricePerUnit || 0,
+                  tokenAmount: payment.amount / 100,
+                  poolId: poolId,
+                  orderId: orderId,
+                });
+              }
+            } catch (err) {
+              console.error("Failed to send payment notification:", err);
+            }
           }
         }
         break;
@@ -49,10 +101,10 @@ export async function POST(request: NextRequest) {
         const orderId = payment.notes?.orderId;
 
         if (orderId) {
-          const paymentsRef = collection(db, "tokenPayments");
-          await updateDoc(doc(paymentsRef, orderId), {
+          await adminDb.collection("tokenPayments").doc(orderId).update({
             status: "failed",
-            error: payment.error_description,
+            error: payment.error_description || "Payment failed",
+            updatedAt: new Date().toISOString(),
           });
         }
         break;

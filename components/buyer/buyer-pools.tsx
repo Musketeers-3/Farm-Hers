@@ -212,7 +212,32 @@ export function BuyerPools({ isDark = true }: { isDark?: boolean }) {
       const data = await res.json();
 
       if (res.ok) {
-        // Create payment order
+        // Create payment order via backend API to trigger notification
+        try {
+          await fetch("/api/payments/create-token-payment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              poolId: pool.id,
+              buyerId: buyer.id,
+              buyerName: buyer.name,
+              farmerId: pool.creatorId || "",
+              farmerName: pool.creatorName || "Unknown Farmer",
+              cropName: cropDetails?.name || pool.commodity || "Unknown",
+              quantity: quantity,
+              pricePerQuintal: pool.pricePerUnit || cropDetails?.currentPrice || 0,
+              tokenAmount: paymentData.amount,
+              totalAmount: quantity * (pool.pricePerUnit || cropDetails?.currentPrice || 0),
+              razorpayOrderId: paymentData.razorpayOrderId,
+              razorpayPaymentId: paymentData.razorpayPaymentId,
+              paymentMode: paymentData.razorpayPaymentId?.startsWith("pay_mock") ? "smart_escrow" : "razorpay",
+            }),
+          });
+        } catch (notifyErr) {
+          console.error("Failed to notify farmer:", notifyErr);
+        }
+
+        // Create local payment order
         const cropDetails = crops.find((c) => c.id === pool.commodity) || crops[0];
         addPaymentOrder({
           id: `PAY-${Date.now()}`,

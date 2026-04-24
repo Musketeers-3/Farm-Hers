@@ -28,6 +28,7 @@ export async function POST(request: NextRequest) {
       notes: {
         platform: "AgriLink",
         type: "token_payment",
+        orderId: receipt,
       },
     });
 

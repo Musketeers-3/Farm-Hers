@@ -96,7 +96,7 @@ export function SmartEscrowModal({
     };
   }, []);
 
-  const handleSuccess = () => {
+  const handleSuccess = async () => {
     const paymentData = {
       orderId: poolDetails.poolId,
       escrowId: `ESC_${Date.now()}`,
@@ -110,6 +110,34 @@ export function SmartEscrowModal({
       escrowStatus: "secured",
       escrowLockedAt: new Date().toISOString(),
     };
+
+    // Notify farmer about the token payment via backend API
+    try {
+      // Access store state directly using getState() - works outside React hooks
+      const storeState = useAppStore.getState();
+      const buyerId = storeState.userProfile?.uid || "demo-buyer";
+      const buyerName = storeState.userProfile?.fullName || storeState.userName || "Demo Buyer";
+      await fetch("/api/payments/create-token-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          poolId: poolDetails.poolId,
+          buyerId: buyerId,
+          buyerName: buyerName,
+          farmerId: poolDetails.farmerId,
+          farmerName: poolDetails.farmerName,
+          cropName: poolDetails.cropName,
+          quantity: poolDetails.quantity,
+          pricePerQuintal: poolDetails.pricePerQuintal,
+          tokenAmount: amount,
+          totalAmount: poolDetails.totalAmount,
+          paymentMode: "smart_escrow",
+        }),
+      });
+    } catch (err) {
+      console.error("Failed to notify farmer:", err);
+    }
+
     onSuccess(paymentData);
   };
 

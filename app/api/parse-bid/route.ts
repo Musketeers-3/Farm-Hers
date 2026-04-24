@@ -129,28 +129,102 @@ STRICT OUTPUT: Return ONLY valid JSON matching this schema exactly.
         price: null,
         reply:
           language === "hi"
-            ? "मैं अभी ऑफ़लाइन मोड में हूँ, पर काम कर रहा हूँ।"
-            : "Operating in offline mode.",
+            ? "ऑफलाइन मोड में हूं, फिर भी मदद करता हूं।"
+            : "Operating offline, but still here to help.",
       };
 
       const numbers = input.match(/\d+/g)?.map(Number) || [];
-      if (input.match(/wheat|kanak|gehu|गेहूं|ਕਣਕ/i)) safeData.crop = "wheat";
-      if (input.match(/rice|chawal|chaul|चावल|ਚੌਲ/i)) safeData.crop = "rice";
 
-      if (input.match(/sell|bechna|vechni|बेचना|ਵੇਚਣਾ/i)) {
+      // Crop detection - expanded patterns
+      if (
+        input.match(/wheat|kanak|gehu|gehu|गेहू|गेहूं|ਕਣਕ|कनक/i)
+      ) {
+        safeData.crop = "wheat";
+      } else if (input.match(/rice|chawal|chaul|चावल|ਚੌਲ/i)) {
+        safeData.crop = "rice";
+      } else if (
+        input.match(/corn|makka|makki|मक्का|ਮੱਕੀ|maize/i)
+      ) {
+        safeData.crop = "corn";
+      } else if (
+        input.match(/mustard|sarson|sarso|सरसों|ਸਰ੍ਹੋਂ/i)
+      ) {
+        safeData.crop = "mustard";
+      } else if (input.match(/potato|aloo|आलू|ਆਲੂ/i)) {
+        safeData.crop = "potato";
+      } else if (input.match(/onion|pyaaz|piaj|प्याज|ਪਿਆਜ਼/i)) {
+        safeData.crop = "onion";
+      }
+
+      // Intent detection - expanded patterns
+      if (
+        input.match(
+          /sell|bechna|vechni|बेच|vech|bej|list|add|create|नीलाम/i,
+        )
+      ) {
         safeData.intent = "sell";
-        safeData.amount = numbers[0] || null;
-        safeData.price = numbers[1] || null;
-        safeData.reply = `Offline Mode: Processing ${safeData.crop || "crop"} listing.`;
-      } else if (input.match(/bid|bol|बोली|ਬੋਲੀ/i)) {
+        safeData.amount = numbers[0] || 10; // Default to 10 if not specified
+        safeData.price = numbers[1] || 2000; // Default price
+        safeData.reply = safeData.crop
+          ? language === "hi"
+            ? `${safeData.crop} बेचने की तैयारी।`
+            : `Preparing to sell ${safeData.crop}.`
+          : "Preparing to list your crop.";
+      } else if (
+        input.match(/bid|bol|boli|buy|purchase|खरीद|khareed|बोली|lagao/i)
+      ) {
         safeData.intent = "bid";
-        safeData.amount = numbers[0] || null;
-        safeData.reply = `Offline Mode: Bid placed for ${numbers[0] || ""}.`;
-      } else if (input.match(/mandi|data|analytics|chart|bhav/i)) {
+        safeData.amount = numbers[0] || 10;
+        safeData.reply = safeData.crop
+          ? language === "hi"
+            ? `${safeData.crop} के लिए बोली लगाओ।`
+            : `Place bid for ${safeData.crop}.`
+          : "Place your bid.";
+      } else if (
+        input.match(
+          /mandi|bhav|rate|price|market|daam|भाव|analytics|chart|daak|मंडी/i,
+        )
+      ) {
         safeData.intent = "navigation";
-        // ⚡ PATCHED: Syncs perfectly with frontend to prevent 404 loops
         safeData.target = "market";
-        safeData.reply = "Opening offline market view.";
+        safeData.reply = language === "hi"
+          ? "मंडी भाव दिखा रहा हूं।"
+          : "Showing market rates.";
+      } else if (
+        input.match(/auction|nilam|नीलाम|leelam|bidding|लिस्ट/i)
+      ) {
+        safeData.intent = "navigation";
+        safeData.target = "auction";
+        safeData.reply = language === "hi"
+          ? "नीलामी खोल रहा हूं।"
+          : "Opening auctions.";
+      } else if (
+        input.match(
+          /track|order|status|delivery|order|hawi|लेन|लेनदेन/i,
+        )
+      ) {
+        safeData.intent = "navigation";
+        safeData.target = "tracking";
+        safeData.reply = language === "hi"
+          ? "ऑर्डर स्टेटस दिखा रहा हूं।"
+          : "Showing order status.";
+      } else if (input.match(/hello|hi|hey|namaste|नमस्ते/i)) {
+        safeData.intent = "social";
+        safeData.reply = language === "hi"
+          ? "नमस्ते! कैसे मदद कर सकता हूं?"
+          : "Namaste! How can I help?";
+      } else if (input.match(/pool|pool|joint|जोड़/i)) {
+        safeData.intent = "navigation";
+        safeData.target = "pools";
+        safeData.reply = language === "hi"
+          ? "पूल खोल रहा हूं।"
+          : "Opening pools.";
+      } else if (input.match(/profile|account|मेरा/i)) {
+        safeData.intent = "navigation";
+        safeData.target = "profile";
+        safeData.reply = language === "hi"
+          ? "प्रोफाइल खोल रहा हूं।"
+          : "Opening profile.";
       }
 
       return NextResponse.json({

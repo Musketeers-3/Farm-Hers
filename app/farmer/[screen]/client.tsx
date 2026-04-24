@@ -12,6 +12,7 @@ import { NotificationsScreen } from "@/components/farmer/notifications-screen";
 import { EarningsScreen } from "@/components/farmer/earnings-screen";
 import { FarmerDemands } from "@/components/farmer/farmer-demands";
 import FarmerPools from "@/components/farmer/farmer-pools";
+import { FarmerOrdersScreen } from "@/components/farmer/farmer-orders-screen";
 import { Sprout } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +34,7 @@ export function FarmerScreenClient({ screen }: { screen: string }) {
     "earnings",
     "pools",
     "demands",
+    "orders",
   ];
 
   useEffect(() => {
@@ -86,6 +88,8 @@ export function FarmerScreenClient({ screen }: { screen: string }) {
         return <FarmerDemands />;
       case "pools":
         return <FarmerPools />;
+      case "orders":
+        return <FarmerOrdersScreen />;
       default:
         return (
           <div className="min-h-screen bg-[linear-gradient(135deg,#dcfce7_0%,#dcfce7_20%,#bfdbfe_100%)] dark:bg-slate-950 flex items-center justify-center">

@@ -8,6 +8,7 @@ import {
   ArrowLeft,
   TrendingUp,
   Gavel,
+  Layers,
   Truck,
   CreditCard,
   CloudRain,
@@ -17,69 +18,45 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { db } from "@/lib/firebase";
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  onSnapshot,
+  updateDoc,
+  doc,
+  getDocs,
+} from "firebase/firestore";
 
 interface Notification {
   id: string;
-  type: "price" | "auction" | "order" | "payment" | "weather";
+  type: "price" | "auction" | "pool" | "order" | "payment" | "weather";
   title: string;
   message: string;
   time: string;
   read: boolean;
+  poolId?: string;
+  orderId?: string;
+  createdAt?: string;
 }
 
-const sampleNotifications: Notification[] = [
-  {
-    id: "1",
-    type: "price",
-    title: "Wheat price rising",
-    message: "Wheat prices up 3.5% at Ludhiana Mandi. Consider selling now.",
-    time: "2m ago",
-    read: false,
-  },
-  {
-    id: "2",
-    type: "auction",
-    title: "Auction ending soon",
-    message: "Your wheat auction ends in 15 minutes. Current bid: ₹2,450/q",
-    time: "15m ago",
-    read: false,
-  },
-  {
-    id: "3",
-    type: "order",
-    title: "Order shipped",
-    message: "Your 50q wheat order has been picked up and is in transit.",
-    time: "1h ago",
-    read: false,
-  },
-  {
-    id: "4",
-    type: "payment",
-    title: "Payment received",
-    message: "₹1,12,500 credited to your account for Order #AG-1247",
-    time: "3h ago",
-    read: true,
-  },
-  {
-    id: "5",
-    type: "weather",
-    title: "Rain expected",
-    message: "Heavy rainfall predicted tomorrow. Plan harvest accordingly.",
-    time: "5h ago",
-    read: true,
-  },
-];
+type NotificationType = "price" | "auction" | "pool" | "order" | "payment" | "weather";
 
-const iconMap = {
+const iconMap: Record<NotificationType, React.ElementType> = {
   price: TrendingUp,
   auction: Gavel,
+  pool: Layers,
   order: Truck,
   payment: CreditCard,
   weather: CloudRain,
 };
-const colorMap = {
+
+const colorMap: Record<NotificationType, string> = {
   price: "bg-emerald-500 text-white shadow-emerald-500/30",
   auction: "bg-amber-500 text-white shadow-amber-500/30",
+  pool: "bg-violet-500 text-white shadow-violet-500/30",
   order: "bg-blue-500 text-white shadow-blue-500/30",
   payment:
     "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400",
@@ -89,27 +66,142 @@ const colorMap = {
 const GLASS_CLASSES =
   "bg-white/[0.55] dark:bg-slate-900/[0.55] backdrop-blur-[24px] border border-white/40 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)]";
 
+function timeAgo(dateString: string): string {
+  const now = new Date();
+  const date = new Date(dateString);
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString("en-IN");
+}
+
 export function NotificationsScreen() {
   const router = useRouter();
-  const [notifications, setNotifications] = useState(sampleNotifications);
+  const userProfile = useAppStore((state) => state.userProfile);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [filter, setFilter] = useState<string>("all");
   const [isMounted, setIsMounted] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => setIsMounted(true), []);
-  const unreadCount = notifications.filter((n) => !n.read).length;
 
-  const markAllRead = () =>
+  // Fetch real notifications from Firestore
+  useEffect(() => {
+    if (!userProfile?.uid) return;
+
+    setLoading(true);
+    const notifQuery = query(
+      collection(db, "notifications"),
+      where("recipientId", "==", userProfile.uid),
+      orderBy("createdAt", "desc"),
+    );
+
+    const unsubscribe = onSnapshot(
+      notifQuery,
+      (snapshot) => {
+        const firestoreNotifs = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            type: (data.type || "order") as Notification["type"],
+            title: data.title || "",
+            message: data.message || "",
+            time: data.createdAt ? timeAgo(data.createdAt) : "Just now",
+            read: data.read ?? false,
+            poolId: data.poolId,
+            orderId: data.orderId,
+            createdAt: data.createdAt,
+          };
+        });
+
+        setNotifications(firestoreNotifs);
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Error fetching notifications:", error);
+        setLoading(false);
+      },
+    );
+
+    return () => unsubscribe();
+  }, [userProfile?.uid]);
+
+  const markAllRead = async () => {
+    if (!userProfile?.uid) return;
+    try {
+      const notifQuery = query(
+        collection(db, "notifications"),
+        where("recipientId", "==", userProfile.uid),
+        where("read", "==", false),
+      );
+      const snapshot = await getDocs(notifQuery);
+      const updatePromises = snapshot.docs.map((docSnap) =>
+        updateDoc(doc(db, "notifications", docSnap.id), { read: true }),
+      );
+      await Promise.all(updatePromises);
+    } catch (error) {
+      console.error("Error marking all as read:", error);
+    }
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  const markRead = (id: string) =>
+  };
+
+  const markRead = async (id: string) => {
+    const notif = notifications.find((n) => n.id === id);
+    if (!notif) return;
+
+    // Mark as read locally first
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
     );
+
+    // Update in Firestore only for real documents
+    try {
+      await updateDoc(doc(db, "notifications", id), { read: true });
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+    }
+
+    // Navigate based on notification type (after marking read)
+    handleNotificationNavigation(notif);
+  };
+
+  const handleNotificationNavigation = (notif: Notification) => {
+    switch (notif.type) {
+      case "auction":
+      case "pool":
+        if (notif.poolId) {
+          router.push(`/farmer/market?pool=${notif.poolId}`);
+        }
+        break;
+      case "order":
+        if (notif.orderId) {
+          router.push(`/farmer/orders?order=${notif.orderId}`);
+        }
+        break;
+      case "payment":
+        router.push("/farmer/orders");
+        break;
+      case "price":
+      case "weather":
+        // No navigation for these types
+        break;
+    }
+  };
+
   const clearAll = () => setNotifications([]);
 
   const filtered =
     filter === "all"
       ? notifications
       : notifications.filter((n) => n.type === filter);
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   if (!isMounted) return null;
 
@@ -197,9 +289,9 @@ export function NotificationsScreen() {
                   key={f.id}
                   onClick={() => setFilter(f.id)}
                   className={cn(
-                    "flex-1 py-2 px-4 text-xs font-bold rounded-xl whitespace-nowrap transition-all duration-300",
+                    "flex-1 py-2 px-4 text-xs font-bold rounded-xl whitespace-nowrap transition-all duration-300 relative",
                     isActive
-                      ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/20 relative"
+                      ? "text-white"
                       : "text-slate-600 dark:text-slate-400 hover:bg-white/40 dark:hover:bg-slate-700/50",
                   )}
                 >
@@ -224,98 +316,120 @@ export function NotificationsScreen() {
 
       {/* NOTIFICATION FEED */}
       <main className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 py-6">
-        <AnimatePresence mode="popLayout">
-          {filtered.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="flex flex-col items-center justify-center py-24"
-            >
-              <div className="w-20 h-20 rounded-full bg-white/40 dark:bg-slate-800/40 border border-white/50 dark:border-white/10 flex items-center justify-center mb-4 shadow-xl">
-                <BellRing
-                  className="w-10 h-10 text-slate-400"
-                  strokeWidth={1.5}
-                />
+        {loading ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="p-5 rounded-[24px] bg-white/40 dark:bg-slate-800/40 animate-pulse"
+              >
+                <div className="flex gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-slate-200 dark:bg-slate-700" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-3/4 bg-slate-200 dark:bg-slate-700 rounded" />
+                    <div className="h-3 w-full bg-slate-200 dark:bg-slate-700 rounded" />
+                  </div>
+                </div>
               </div>
-              <p className="text-lg font-bold text-slate-900 dark:text-slate-50">
-                All caught up!
-              </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest mt-1">
-                No new alerts for now
-              </p>
-            </motion.div>
-          ) : (
-            <div className="space-y-4">
-              {filtered.map((notif, index) => {
-                const Icon = iconMap[notif.type];
-                return (
-                  <motion.button
-                    layout
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ delay: index * 0.05 }}
-                    key={notif.id}
-                    onClick={() => markRead(notif.id)}
-                    className={cn(
-                      "w-full text-left p-5 rounded-[24px] transition-all duration-300 relative overflow-hidden group",
-                      GLASS_CLASSES,
-                      notif.read
-                        ? "opacity-70 hover:opacity-100"
-                        : "border-emerald-500/30 dark:border-emerald-500/20",
-                    )}
-                  >
-                    {!notif.read && (
-                      <>
-                        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-emerald-500" />
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-400/10 blur-3xl pointer-events-none" />
-                      </>
-                    )}
+            ))}
+          </div>
+        ) : (
+          <AnimatePresence mode="popLayout">
+            {filtered.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="flex flex-col items-center justify-center py-24"
+              >
+                <div className="w-20 h-20 rounded-full bg-white/40 dark:bg-slate-800/40 border border-white/50 dark:border-white/10 flex items-center justify-center mb-4 shadow-xl">
+                  <BellRing
+                    className="w-10 h-10 text-slate-400"
+                    strokeWidth={1.5}
+                  />
+                </div>
+                <p className="text-lg font-bold text-slate-900 dark:text-slate-50">
+                  All caught up!
+                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest mt-1">
+                  No new alerts for now
+                </p>
+              </motion.div>
+            ) : (
+              <div className="space-y-4">
+                {filtered.map((notif, index) => {
+                  const Icon = iconMap[notif.type as NotificationType] ?? BellRing;
+                  return (
+                    <motion.button
+                      layout
+                      initial={{ opacity: 0, y: 15 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ delay: index * 0.05 }}
+                      key={notif.id}
+                      onClick={() => markRead(notif.id)}
+                      className={cn(
+                        "w-full text-left p-5 rounded-[24px] transition-all duration-300 relative overflow-hidden group",
+                        GLASS_CLASSES,
+                        notif.read
+                          ? "opacity-70 hover:opacity-100"
+                          : "border-emerald-500/30 dark:border-emerald-500/20",
+                      )}
+                    >
+                      {!notif.read && (
+                        <>
+                          <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-emerald-500" />
+                          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-400/10 blur-3xl pointer-events-none" />
+                        </>
+                      )}
 
-                    <div className="flex gap-4 relative z-10 items-start">
-                      <div
-                        className={cn(
-                          "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-md transition-transform group-hover:scale-105",
-                          colorMap[notif.type],
-                        )}
-                      >
-                        <Icon className="w-6 h-6" strokeWidth={2.5} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                          <h3
-                            className={cn(
-                              "text-sm sm:text-base font-bold tracking-tight truncate",
-                              !notif.read
-                                ? "text-slate-900 dark:text-slate-50"
-                                : "text-slate-600 dark:text-slate-300",
-                            )}
-                          >
-                            {notif.title}
-                          </h3>
-                          <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                            {notif.time}
-                          </span>
-                        </div>
-                        <p
+                      <div className="flex gap-4 relative z-10 items-start">
+                        <div
                           className={cn(
-                            "text-xs sm:text-sm font-medium leading-relaxed",
-                            !notif.read
-                              ? "text-slate-700 dark:text-slate-200"
-                              : "text-slate-500 dark:text-slate-400",
+                            "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-md transition-transform group-hover:scale-105",
+                            colorMap[notif.type as NotificationType] ?? "bg-slate-500 text-white",
                           )}
                         >
-                          {notif.message}
-                        </p>
+                          <Icon
+                            className="w-6 h-6"
+                            {...({ strokeWidth: 2.5 } as object)}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <h3
+                              className={cn(
+                                "text-sm sm:text-base font-bold tracking-tight truncate",
+                                !notif.read
+                                  ? "text-slate-900 dark:text-slate-50"
+                                  : "text-slate-600 dark:text-slate-300",
+                              )}
+                            >
+                              {notif.title}
+                            </h3>
+                            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                              {notif.time}
+                            </span>
+                          </div>
+                          <p
+                            className={cn(
+                              "text-xs sm:text-sm font-medium leading-relaxed",
+                              !notif.read
+                                ? "text-slate-700 dark:text-slate-200"
+                                : "text-slate-500 dark:text-slate-400",
+                            )}
+                          >
+                            {notif.message}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  </motion.button>
-                );
-              })}
-            </div>
-          )}
-        </AnimatePresence>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            )}
+          </AnimatePresence>
+        )}
       </main>
 
       <div className="lg:hidden">

@@ -166,8 +166,13 @@ export function BoloAssistant() {
   const [response, setResponse] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [showResponse, setShowResponse] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isSupported, setIsSupported] = useState(true);
+  const [permissionDenied, setPermissionDenied] = useState(false);
 
   const lastCropRef = useRef<string | null>(null);
+  const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const recognitionInitializedRef = useRef(false);
 
   // 🚀 NATIVE OFFLINE SPEECH SYNTHESIS (The Hinglish Hack)
   const speak = useCallback((textToSpeak: string) => {
@@ -206,15 +211,26 @@ export function BoloAssistant() {
       setTranscript(input);
 
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
         const res = await fetch("/api/parse-bid", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json",
+          },
           body: JSON.stringify({
             transcript: input,
             language,
             context: { lastCrop: lastCropRef.current },
           }),
+          signal: controller.signal,
         });
+
+        clearTimeout(timeoutId);
+
+        if (!res.ok) {
+          throw new Error(`API error: ${res.status}`);
+        }
 
         const result = await res.json();
 
@@ -237,7 +253,16 @@ export function BoloAssistant() {
               setResponse(errorMsg);
               speak(errorMsg);
             } else {
-              const targetCrop = crops.find((c) => c.id === ai.crop);
+              // Try to match crop by ID first, then by name
+              const targetCrop =
+                crops.find((c) => c.id === ai.crop) ||
+                crops.find(
+                  (c) =>
+                    c.name.toLowerCase() === ai.crop?.toLowerCase() ||
+                    c.nameHi.includes(ai.crop || "") ||
+                    c.namePa.includes(ai.crop || ""),
+                );
+
               if (targetCrop) {
                 const newAuction = {
                   id: `auction-${Date.now()}`,
@@ -251,7 +276,20 @@ export function BoloAssistant() {
                   status: "live" as const,
                 };
                 addAuction(newAuction);
+                const successMsg =
+                  language === "hi"
+                    ? `${targetCrop.nameHi} की नीलामी शुरू की।`
+                    : `Listing ${targetCrop.name} for auction.`;
+                setResponse(successMsg);
+                speak(successMsg);
                 setTimeout(() => router.push("/farmer"), 3500);
+              } else {
+                const noCropMsg =
+                  language === "hi"
+                    ? "फसल नहीं मिली।"
+                    : "Crop not found.";
+                setResponse(noCropMsg);
+                speak(noCropMsg);
               }
             }
           }
@@ -265,24 +303,54 @@ export function BoloAssistant() {
               setResponse(errorMsg);
               speak(errorMsg);
             } else {
-              const targetCrop = crops.find(
-                (c) => c.name.toLowerCase() === ai.crop,
-              );
+              // Try to match crop by ID first, then by name
+              const targetCrop =
+                crops.find((c) => c.id === ai.crop) ||
+                crops.find(
+                  (c) =>
+                    c.name.toLowerCase() === ai.crop?.toLowerCase() ||
+                    c.nameHi.includes(ai.crop || "") ||
+                    c.namePa.includes(ai.crop || ""),
+                );
+
+              if (!targetCrop) {
+                const noCropMsg =
+                  language === "hi"
+                    ? "फसल नहीं मिली।"
+                    : "Crop not found.";
+                setResponse(noCropMsg);
+                speak(noCropMsg);
+                return;
+              }
+
               const targetAuction = auctions.find(
-                (a) => a.cropId === targetCrop?.id,
+                (a) => a.cropId === targetCrop.id,
               );
 
-              if (targetAuction && ai.amount > targetAuction.currentBid) {
+              if (!targetAuction) {
+                const noAuctionMsg =
+                  language === "hi"
+                    ? `${targetCrop.nameHi} की कोई नीलामी नहीं है।`
+                    : `No active auction for ${targetCrop.name}.`;
+                setResponse(noAuctionMsg);
+                speak(noAuctionMsg);
+              } else if (ai.amount > targetAuction.currentBid) {
                 placeBid(
                   targetAuction.id,
                   ai.amount,
                   userProfile?.uid || "buyer-1",
                 );
+                const bidMsg =
+                  language === "hi"
+                    ? `₹${ai.amount} की बोली लगा दी।`
+                    : `Bid of ₹${ai.amount} placed.`;
+                setResponse(bidMsg);
+                speak(bidMsg);
                 setTimeout(
                   () => router.push(`/buyer/auctions/${targetAuction.id}`),
                   3000,
                 );
-              } else if (targetAuction) {
+              } else {
                 const failMsg =
                   language === "hi"
                     ? `बोली कम है। वर्तमान मूल्य ₹${targetAuction.currentBid} है।`
@@ -294,8 +362,48 @@ export function BoloAssistant() {
           }
           // NAVIGATION INTENT
           else if (ai.intent === "navigation" && ai.target) {
-            const basePath = userRole === "farmer" ? "/farmer" : "/buyer";
-            setTimeout(() => router.push(`${basePath}/${ai.target}`), 2000);
+            // Validate the target screen exists
+            const validScreens = [
+              "sell",
+              "auction",
+              "tracking",
+              "market",
+              "profile",
+              "notifications",
+              "earnings",
+              "demands",
+              "pools",
+            ];
+            if (validScreens.includes(ai.target)) {
+              const basePath = userRole === "farmer" ? "/farmer" : "/buyer";
+              const navMsg =
+                language === "hi"
+                  ? `${ai.target} खोल रहा हूँ।`
+                  : `Opening ${ai.target}.`;
+              setResponse(navMsg);
+              speak(navMsg);
+              setTimeout(() => router.push(`${basePath}/${ai.target}`), 2000);
+            } else {
+              const invalidMsg =
+                language === "hi"
+                  ? "वह स्क्रीन नहीं मिली।"
+                  : "Screen not found.";
+              setResponse(invalidMsg);
+              speak(invalidMsg);
+            }
+          }
+          // SOCIAL/GREETING INTENT
+          else if (ai.intent === "social") {
+            // Already handled by ai.reply above
+          }
+          // UNKNOWN INTENT - suggest text input
+          else if (ai.intent === "unknown" || !ai.intent) {
+            const helpMsg =
+              language === "hi"
+                ? "मदद के लिए टाइप करें। जैसे - गेहूं 100 क्विंटल 2500 में बेचो"
+                : "Type a command. Like - sell 100 quintals wheat at 2500";
+            setResponse(helpMsg);
+            speak(helpMsg);
           }
         } else {
           const errorMsg =
@@ -305,7 +413,9 @@ export function BoloAssistant() {
           setShowResponse(true);
         }
       } catch (error) {
-        console.error("Bolo AI Error:", error);
+        if (process.env.NODE_ENV === "development") {
+          console.log("[Bolo] API Error:", error);
+        }
         const netError =
           language === "hi"
             ? "नेटवर्क एरर। फिर से कोशिश करें।"
@@ -347,32 +457,134 @@ export function BoloAssistant() {
     languageRef.current = language;
   }, [language]);
 
+  // Check browser support on mount
   useEffect(() => {
     const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
-
-    if (!recognitionRef.current) {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = false;
-      recognition.interimResults = true;
-
-      recognition.onresult = (event: any) => {
-        const current = event.results[event.results.length - 1][0].transcript;
-        setTranscript(current);
-
-        if (event.results[event.results.length - 1].isFinal) {
-          setBoloListening(false);
-          handleIntentRef.current(current);
-        }
-      };
-
-      recognition.onerror = () => setBoloListening(false);
-      recognition.onend = () => setBoloListening(false);
-      recognitionRef.current = recognition;
+      typeof window !== "undefined"
+        ? window.SpeechRecognition || window.webkitSpeechRecognition
+        : null;
+    if (!SpeechRecognition) {
+      setIsSupported(false);
+      setError(
+        language === "hi"
+          ? "आपका ब्राउज़र वॉयस सपोर्ट नहीं करता। टाइप करके कमांड दें।"
+          : "Voice not supported in this browser. Use text input instead.",
+      );
     }
+  }, [language]);
+
+  // Initialize Speech Recognition
+  useEffect(() => {
+    const SpeechRecognition =
+      typeof window !== "undefined"
+        ? window.SpeechRecognition || window.webkitSpeechRecognition
+        : null;
+
+    if (!SpeechRecognition || recognitionInitializedRef.current) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    // Clear any existing silence timer
+    const clearSilenceTimer = () => {
+      if (silenceTimerRef.current) {
+        clearTimeout(silenceTimerRef.current);
+        silenceTimerRef.current = null;
+      }
+    };
+
+    // Add onstart to debug
+    recognition.onstart = () => console.log("[Bolo] Recognition onstart");
+
+    // Keep track of listening state in a ref for onend handler
+    const shouldKeepListening = () => {
+      // This will be updated by the effect below
+      return true;
+    };
+
+    recognition.onresult = (event: any) => {
+      clearSilenceTimer();
+      const result = event.results[event.results.length - 1];
+      const current = result[0].transcript;
+      setTranscript(current);
+
+      if (result.isFinal) {
+        setBoloListening(false);
+        if (current.trim()) {
+          handleIntentRef.current(current);
+        } else {
+          const emptyMsg =
+            languageRef.current === "hi"
+              ? "कोई आवाज़ नहीं मिली।"
+              : "No speech detected.";
+          setError(emptyMsg);
+          setTimeout(() => setError(null), 3000);
+        }
+      } else {
+        // Reset silence timer when user is speaking
+        silenceTimerRef.current = setTimeout(() => {
+          // If no final result after 3 seconds of interim results, stop listening
+          setBoloListening(false);
+          const timeoutMsg =
+            languageRef.current === "hi"
+              ? "बहुत देर तक बोला नहीं।"
+              : "You stopped speaking.";
+          setError(timeoutMsg);
+          setTimeout(() => setError(null), 3000);
+        }, 3000);
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      clearSilenceTimer();
+
+      // "aborted" is not an error - it happens when user stops listening manually
+      if (event.error === "aborted") {
+        setBoloListening(false);
+        return;
+      }
+
+      if (event.error === "not-allowed") {
+        setPermissionDenied(true);
+        setError(
+          languageRef.current === "hi"
+            ? "माइक की अनुमति नहीं मिली। कृपया ब्राउज़र सेटिंग में जाएं।"
+            : "Microphone permission denied. Please enable in browser settings.",
+        );
+        setTimeout(() => setError(null), 5000);
+      } else if (event.error === "no-speech") {
+        const noSpeechMsg =
+          languageRef.current === "hi"
+            ? "कोई आवाज़ नहीं सुनाई दी।"
+            : "No speech detected. Try again.";
+        setError(noSpeechMsg);
+        setTimeout(() => setError(null), 3000);
+      } else if (event.error !== "aborted") {
+        // Don't show error for aborted (when we manually stop)
+        setError(
+          languageRef.current === "hi"
+            ? "आवाज़ पहचान में समस्या है।"
+            : "Voice recognition error.",
+        );
+        setTimeout(() => setError(null), 3000);
+      }
+      setBoloListening(false);
+    };
+
+    recognition.onend = () => {
+      console.log("[Bolo] Recognition onend");
+      clearSilenceTimer();
+      setBoloListening(false);
+      recognitionInitializedRef.current = false;
+    };
+
+    recognitionRef.current = recognition;
+    recognitionInitializedRef.current = true;
 
     return () => {
+      clearSilenceTimer();
       if (recognitionRef.current) {
         recognitionRef.current.onresult = null;
         recognitionRef.current.onerror = null;
@@ -381,25 +593,92 @@ export function BoloAssistant() {
           recognitionRef.current.abort();
         } catch (e) {}
       }
+      recognitionInitializedRef.current = false;
     };
-  }, [setBoloListening]);
+    // Only run once on mount - remove setBoloListening from deps to prevent re-init
+  }, []);
 
-  useEffect(() => {
-    if (!recognitionRef.current) return;
-    try {
-      if (isBoloListening) {
-        recognitionRef.current.lang =
-          languageRef.current === "hi"
-            ? "hi-IN"
-            : languageRef.current === "pa"
-              ? "pa-IN"
-              : "en-IN";
-        recognitionRef.current.start();
-      } else {
-        recognitionRef.current.stop();
+  // Track if recognition is active to prevent loops
+  const isRecognizingRef = useRef(false);
+
+  // Simple handler to start listening
+  const startListening = useCallback(() => {
+    if (isRecognizingRef.current) return;
+
+    const SpeechRecognition =
+      typeof window !== "undefined"
+        ? window.SpeechRecognition || window.webkitSpeechRecognition
+        : null;
+
+    if (!SpeechRecognition) {
+      setError("Speech recognition not supported");
+      return;
+    }
+
+    const lang = language === "hi" ? "hi-IN" : language === "pa" ? "pa-IN" : "en-IN";
+
+    isRecognizingRef.current = true;
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = lang;
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => console.log("[Bolo] Recognition onstart - ready to hear");
+    recognition.onend = () => console.log("[Bolo] Recognition onend");
+
+    recognition.onresult = (event: any) => {
+      console.log("[Bolo] onresult fired, results:", event.results.length, "transcript:", event.results[0][0].transcript);
+      const result = event.results[event.results.length - 1];
+      setTranscript(result[0].transcript);
+      if (result.isFinal && result[0].transcript.trim()) {
+        console.log("[Bolo] Final transcript:", result[0].transcript);
+        setBoloListening(false);
+        handleIntent(result[0].transcript);
       }
-    } catch (e) {}
-  }, [isBoloListening]);
+    };
+
+    recognition.onerror = (event: any) => {
+      console.log("[Bolo] Error:", event.error);
+      isRecognizingRef.current = false;
+      // Only handle actual errors, not "aborted" which is normal
+      if (event.error === "not-allowed") {
+        setPermissionDenied(true);
+        setBoloListening(false);
+      } else if (event.error !== "aborted" && event.error !== "no-speech") {
+        // For other errors, show and reset
+        setBoloListening(false);
+      }
+      // For no-speech or aborted, let it naturally end
+    };
+
+    recognition.onend = () => {
+      console.log("[Bolo] Ended");
+      isRecognizingRef.current = false;
+    };
+
+    try {
+      recognition.start();
+      recognitionRef.current = recognition;
+    } catch (e) {
+      console.log("[Bolo] Start failed:", e);
+      isRecognizingRef.current = false;
+    }
+  }, [language, handleIntent]);
+
+  // Handle stopping
+  const stopListening = useCallback(() => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {}
+      recognitionRef.current = null;
+    }
+    isRecognizingRef.current = false;
+  }, []);
+
+  // Removed automatic effect - will start directly from button
 
   const isVisible =
     isBoloListening || isProcessing || showResponse || transcript !== "";
@@ -450,6 +729,22 @@ export function BoloAssistant() {
               </div>
 
               <div className="min-h-25 flex flex-col justify-center text-center mb-6">
+                {/* Error Display */}
+                <AnimatePresence>
+                  {error && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl"
+                    >
+                      <p className="text-red-600 dark:text-red-400 text-sm font-medium">
+                        {error}
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
                 <AnimatePresence mode="wait">
                   {isBoloListening && !isProcessing && (
                     <motion.div
@@ -545,18 +840,39 @@ export function BoloAssistant() {
         {/* 🎙️ THE FLOATING MIC BUTTON */}
         <motion.button
           onClick={() => {
-            setBoloListening(!isBoloListening);
+            if (!isSupported || permissionDenied) {
+              setError(
+                language === "hi"
+                  ? "वॉयस फीचर उपलब्ध नहीं है।"
+                  : "Voice feature not available.",
+              );
+              setTimeout(() => setError(null), 3000);
+              return;
+            }
+            // Directly toggle listening instead of using state
+            if (isBoloListening) {
+              stopListening();
+              setBoloListening(false);
+            } else {
+              setBoloListening(true);
+              startListening();
+            }
             setTranscript("");
           }}
           whileTap={{ scale: 0.9 }}
+          disabled={!isSupported || permissionDenied}
           className={cn(
             "w-16 h-16 rounded-full flex items-center justify-center shadow-2xl border-2 transition-all duration-500 relative",
-            isBoloListening
-              ? "bg-red-500 border-red-400"
-              : "bg-emerald-600 border-emerald-500 hover:bg-emerald-500",
+            !isSupported || permissionDenied
+              ? "bg-slate-400 border-slate-300 cursor-not-allowed"
+              : isBoloListening
+                ? "bg-red-500 border-red-400"
+                : "bg-emerald-600 border-emerald-500 hover:bg-emerald-500",
           )}
         >
-          {isBoloListening ? (
+          {!isSupported || permissionDenied ? (
+            <Mic className="w-7 h-7 text-slate-200" />
+          ) : isBoloListening ? (
             <X className="w-7 h-7 text-white" />
           ) : (
             <Mic className="w-7 h-7 text-white" />
