@@ -28,7 +28,16 @@ function AuctionCard({ crop, index, compact }: { crop: Crop; index: number; comp
   }, [index]);
 
   return (
-    <motion.div ref={ref} initial={{ opacity: 0, y: 100, rotateY: baseRotateY * 2 }} animate={inView ? { opacity: 1, y: 0, rotateY: hovered ? 0 : baseRotateY } : {}} whileHover={{ rotateY: 0, scale: 1.04 }} transition={{ duration: 0.9, ease: SILK, delay: index * 0.1 }} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} data-cursor="BID NOW" style={{ flex: compact ? "0 0 220px" : "0 0 252px", background: "linear-gradient(135deg,rgba(3,15,6,0.9),rgba(2,10,4,0.9))", border: `1px solid ${hovered ? crop.color + "66" : "rgba(255,255,255,0.06)"}`, borderRadius: compact ? 20 : 24, padding: compact ? 20 : 26, boxShadow: hovered ? `0 30px 80px rgba(0,0,0,0.8),0 0 40px ${crop.color}22` : "0 20px 60px rgba(0,0,0,0.6)", transition: "border-color 0.3s,box-shadow 0.3s", position: "relative", overflow: "hidden", cursor: "pointer" }}>
+    <motion.div ref={ref} initial={{ opacity: 0, y: 100, rotateY: baseRotateY * 2 }} animate={inView ? { opacity: 1, y: 0, rotateY: hovered ? 0 : baseRotateY } : {}} whileHover={{ rotateY: 0, scale: 1.04 }} transition={{ duration: 0.9, ease: SILK, delay: index * 0.1 }} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} data-cursor="BID NOW" 
+    style={{ 
+      flex: compact ? "0 0 220px" : "0 0 252px", 
+      background: "linear-gradient(135deg, rgba(3,15,6,0.4), rgba(2,10,4,0.3))", /* 🔥 Transparent smoked glass */
+      backdropFilter: "blur(12px)", /* 🔥 Glassmorphism blur */
+      border: `1px solid ${hovered ? crop.color + "66" : "rgba(255,255,255,0.08)"}`, 
+      borderRadius: compact ? 20 : 24, padding: compact ? 20 : 26, 
+      boxShadow: hovered ? `0 30px 80px rgba(0,0,0,0.8),0 0 40px ${crop.color}22` : "0 20px 60px rgba(0,0,0,0.4)", 
+      transition: "border-color 0.3s,box-shadow 0.3s", position: "relative", overflow: "hidden", cursor: "pointer" 
+    }}>
       <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,transparent,${crop.color},transparent)` }} />
       <div style={{ position: "absolute", top: "-40%", left: "-20%", width: "80%", height: "80%", borderRadius: "50%", background: `radial-gradient(circle,${crop.color}10 0%,transparent 70%)`, pointerEvents: "none" }} />
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
@@ -69,7 +78,7 @@ export default function AuctionScene() {
   }, []);
 
   return (
-    <section ref={ref} style={{ background: "transparent", padding: "140px 0", overflow: "hidden", position: "relative", zIndex: 10 }}>
+    <section ref={ref} style={{ background: "transparent", width: "100%", padding: "140px 0", overflow: "hidden", position: "relative", zIndex: 10 }}>
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 60px", marginBottom: 80 }}>
         <LineReveal><div style={{ fontSize: 11, letterSpacing: "0.35em", color: "#22c55e", textTransform: "uppercase", fontFamily: "'Space Mono',monospace", marginBottom: 20 }}>Live Auction Floor</div></LineReveal>
         <LineReveal delay={0.1}><h2 style={{ margin: 0, fontSize: "clamp(40px,6vw,80px)", fontWeight: 300, fontFamily: "'Cormorant Garamond',serif", color: "#f0fdf4", lineHeight: 1.0, letterSpacing: "-0.03em" }}>Real bids.</h2></LineReveal>
@@ -88,7 +97,7 @@ export default function AuctionScene() {
           </div>
           <motion.div animate={{ x: ["0%", "-50%"] }} transition={{ duration: 16, ease: "linear", repeat: Infinity }} style={{ display: "flex", gap: 48, whiteSpace: "nowrap" }}>
             {[...CROPS, ...CROPS].map((c, i) => (
-              <span key={i} style={{ fontSize: 12, color: "rgba(148,163,184,0.6)", fontFamily: "'Space Mono',monospace" }}>{c.name} <span style={{ color: c.color }}>₹{c.price.toLocaleString()}</span> {c.change}</span>
+              <span key={i} style={{ fontSize: 12, color: "rgba(148,163,184,0.8)", fontFamily: "'Space Mono',monospace", textShadow: "0 2px 4px rgba(0,0,0,0.5)" }}>{c.name} <span style={{ color: c.color }}>₹{c.price.toLocaleString()}</span> {c.change}</span>
             ))}
           </motion.div>
         </div>

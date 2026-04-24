@@ -18,24 +18,30 @@ export default function CinematicBreak() {
   }, [inView]);
 
   return (
-    <div ref={ref} style={{ position: "relative", height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", background: "#020a04", zIndex: 10 }}>
-      <div style={{ position: "absolute", inset: 0, zIndex: 5, background: "#000", opacity: phase >= 1 && phase < 5 ? 0.85 : 0, transition: "opacity 0.9s ease", pointerEvents: "none" }} />
+    // 🔥 Removed the hard #020a04 background so it doesn't break the WebGL canvas
+    <div ref={ref} style={{ position: "relative", height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", background: "transparent", zIndex: 10 }}>
+      
+      {/* Ghostly dark fade to help text legibility, without going fully opaque */}
+      <div style={{ position: "absolute", inset: 0, zIndex: 5, background: "#000", opacity: phase >= 1 && phase < 5 ? 0.6 : 0, transition: "opacity 0.9s ease", pointerEvents: "none" }} />
+      
       <div style={{ position: "absolute", inset: 0 }}>
-        <img src={IMG.harvest} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.3 }} />
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom,#020a04,rgba(2,10,4,0.4),#020a04)" }} />
+        {/* Lowered opacity slightly so the 3D particles show through the image */}
+        <img src={IMG.harvest} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.15 }} />
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, #020a04, transparent, #020a04)" }} />
       </div>
+
       <motion.div initial={{ y: 40, opacity: 0 }} animate={{ y: phase >= 5 ? -140 : 0, opacity: phase >= 5 ? 0 : 1 }} transition={{ duration: 0.9, ease: EXPO }} style={{ position: "relative", zIndex: 10, textAlign: "center", padding: "0 40px" }}>
         <AnimatePresence>
           {phase >= 2 && phase < 5 && (
             <motion.div key="line1" initial={{ opacity: 0, y: 60, filter: "blur(20px)" }} animate={{ opacity: 1, y: 0, filter: "blur(0px)" }} exit={{ opacity: 0, y: -40, filter: "blur(16px)" }} transition={{ duration: 0.9, ease: SILK }} style={{ marginBottom: 16 }}>
-              <p style={{ margin: 0, fontSize: "clamp(14px,1.5vw,18px)", color: "rgba(34,197,94,0.6)", letterSpacing: "0.4em", textTransform: "uppercase", fontFamily: "'Space Mono',monospace" }}>The problem has always been</p>
+              <p style={{ margin: 0, fontSize: "clamp(14px,1.5vw,18px)", color: "rgba(34,197,94,0.8)", letterSpacing: "0.4em", textTransform: "uppercase", fontFamily: "'Space Mono',monospace", textShadow: "0 0 20px rgba(34,197,94,0.4)" }}>The problem has always been</p>
             </motion.div>
           )}
         </AnimatePresence>
         <AnimatePresence>
           {phase >= 3 && phase < 5 && (
             <motion.div key="headline" initial={{ opacity: 0, scale: 0.6, filter: "blur(30px)" }} animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }} exit={{ opacity: 0, scale: 1.3, filter: "blur(20px)" }} transition={{ duration: 1.0, ease: SILK }}>
-              <h2 style={{ margin: 0, fontSize: "clamp(52px,9vw,130px)", fontWeight: 700, fontStyle: "italic", fontFamily: "'Cormorant Garamond',serif", color: "#f0fdf4", lineHeight: 0.95, letterSpacing: "-0.04em" }}>Middlemen.</h2>
+              <h2 style={{ margin: 0, fontSize: "clamp(52px,9vw,130px)", fontWeight: 700, fontStyle: "italic", fontFamily: "'Cormorant Garamond',serif", color: "#f0fdf4", lineHeight: 0.95, letterSpacing: "-0.04em", textShadow: "0 10px 40px rgba(0,0,0,0.8)" }}>Middlemen.</h2>
             </motion.div>
           )}
         </AnimatePresence>

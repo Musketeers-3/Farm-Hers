@@ -34,11 +34,12 @@ export default function ImpactSection() {
   return (
     <section ref={ref} style={{ background: "transparent", padding: "0 0 160px", position: "relative", zIndex: 10 }}>
       <div style={{ position: "relative", height: 400, overflow: "hidden", marginBottom: 100 }}>
-        <ParallaxImg src={IMG.harvest} alt="Harvest" style={{ position: "absolute", inset: 0, height: "100%" }} />
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom,rgba(2,10,4,0.9) 0%,transparent 30%,transparent 70%,rgba(2,10,4,0.9) 100%)" }} />
+        {/* 🔥 Lowered image opacity heavily so 3D scene shines through */}
+        <ParallaxImg src={IMG.harvest} alt="Harvest" style={{ position: "absolute", inset: 0, height: "100%", opacity: 0.15 }} />
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom,rgba(2,10,4,0.6) 0%,transparent 30%,transparent 70%,rgba(2,10,4,0.6) 100%)" }} />
         <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <motion.div initial={{ opacity: 0, y: 30 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 1, ease: SILK }} style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 11, letterSpacing: "0.35em", color: "#22c55e", textTransform: "uppercase", fontFamily: "'Space Mono',monospace", marginBottom: 16 }}>The Numbers</div>
+            <div style={{ fontSize: 11, letterSpacing: "0.35em", color: "#22c55e", textTransform: "uppercase", fontFamily: "'Space Mono',monospace", marginBottom: 16, textShadow: "0 2px 10px rgba(0,0,0,0.8)" }}>The Numbers</div>
             <h2 style={{ margin: 0, fontSize: "clamp(40px,7vw,88px)", fontWeight: 700, fontFamily: "'Cormorant Garamond',serif", color: "#f0fdf4", letterSpacing: "-0.03em", lineHeight: 1, textShadow: "0 4px 40px rgba(0,0,0,0.8)" }}>Impact at scale.</h2>
           </motion.div>
         </div>
@@ -46,10 +47,17 @@ export default function ImpactSection() {
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 60px" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 1 }}>
           {stats.map((s, i) => (
-            <motion.div key={i} initial={{ opacity: 0, y: 40 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.9, delay: i * 0.12, ease: SILK }} style={{ padding: "48px 36px", borderTop: "1px solid rgba(34,197,94,0.12)", borderRight: i < 3 ? "1px solid rgba(34,197,94,0.08)" : "none", background: "rgba(2,10,4,0.6)", backdropFilter: "blur(10px)" }}>
-              <div style={{ fontSize: "clamp(40px,4.5vw,64px)", fontWeight: 700, fontFamily: "'Cormorant Garamond',serif", color: "#f0fdf4", lineHeight: 1, marginBottom: 12, letterSpacing: "-0.03em" }}><Counter to={s.val} suffix={s.suf} /></div>
+            <motion.div key={i} initial={{ opacity: 0, y: 40 }} animate={inView ? { opacity: 1, y: 0 } : {}} transition={{ duration: 0.9, delay: i * 0.12, ease: SILK }} 
+            style={{ 
+              padding: "48px 36px", 
+              borderTop: "1px solid rgba(34,197,94,0.12)", 
+              borderRight: i < 3 ? "1px solid rgba(34,197,94,0.08)" : "none", 
+              background: "rgba(2,10,4,0.25)", /* 🔥 Glassmorphism base */
+              backdropFilter: "blur(16px)" /* 🔥 Glassmorphism blur */
+            }}>
+              <div style={{ fontSize: "clamp(40px,4.5vw,64px)", fontWeight: 700, fontFamily: "'Cormorant Garamond',serif", color: "#f0fdf4", lineHeight: 1, marginBottom: 12, letterSpacing: "-0.03em", textShadow: "0 4px 20px rgba(0,0,0,0.5)" }}><Counter to={s.val} suffix={s.suf} /></div>
               <div style={{ fontSize: 15, color: "#94a3b8", fontFamily: "'Barlow',sans-serif", fontWeight: 400, marginBottom: 6 }}>{s.label}</div>
-              <div style={{ fontSize: 11, color: "#334155", letterSpacing: "0.1em", fontFamily: "'Space Mono',monospace" }}>{s.sub}</div>
+              <div style={{ fontSize: 11, color: "#22c55e", letterSpacing: "0.1em", fontFamily: "'Space Mono',monospace" }}>{s.sub}</div>
             </motion.div>
           ))}
         </div>
