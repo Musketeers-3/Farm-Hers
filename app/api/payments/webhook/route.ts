@@ -9,12 +9,11 @@ async function sendPaymentNotification(orderData: any) {
   // Send notification to farmer about the token payment
   // orderData contains: poolId, cropName, quantity, pricePerQuintal, farmerId, buyerName, amount
   const notificationRef = await adminDb.collection("notifications").add({
-    recipientId: orderData.farmerId,
+    userId: orderData.farmerId,
     type: "payment",
     title: "Token Payment Received",
     message: `New order confirmed — buyer ${orderData.buyerName || "A buyer"} has paid ₹${orderData.tokenAmount} token for ${orderData.quantity} quintals of ${orderData.cropName} at ₹${orderData.pricePerQuintal}/quintal. Check your orders.`,
-    poolId: orderData.poolId,
-    orderId: orderData.orderId,
+    relatedId: orderData.orderId,
     read: false,
     createdAt: new Date().toISOString(),
   });

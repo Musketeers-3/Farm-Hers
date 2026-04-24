@@ -44,12 +44,11 @@ export async function POST(request: NextRequest) {
 
       // Send notification to buyer that farmer confirmed
       await adminDb.collection("notifications").add({
-        recipientId: buyerId,
+        userId: buyerId,
         type: "payment",
         title: "Order Confirmed!",
         message: "Your order is confirmed! Farmer has acknowledged the deal. Proceed with full payment via cheque/NEFT.",
-        poolId: poolId,
-        orderId: orderId,
+        relatedId: orderId,
         read: false,
         createdAt: now,
       });
@@ -77,12 +76,11 @@ export async function POST(request: NextRequest) {
 
       // Send notification to buyer about the dispute
       await adminDb.collection("notifications").add({
-        recipientId: buyerId,
+        userId: buyerId,
         type: "payment",
         title: "Payment Dispute Raised",
         message: "Farmer has raised a concern about payment. Please contact support or re-submit your payment reference.",
-        poolId: poolId,
-        orderId: orderId,
+        relatedId: orderId,
         read: false,
         createdAt: now,
       });
