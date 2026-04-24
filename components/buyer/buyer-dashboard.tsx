@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import {
   ArrowLeft, Search, Filter, Package, Gavel,
-  ShoppingCart, Bell, BarChart3, Sun, Moon,
+  ShoppingCart, Bell, BarChart3, Sun, Moon, LogOut,
 } from "lucide-react";
 import { useAppStore, useTranslation } from "@/lib/store";
 import { AgriLinkLogo } from "@/components/agrilink-logo";
@@ -52,7 +52,9 @@ const LIGHT = {
 
 export function BuyerDashboard({ activeTab = "pools" }: { activeTab?: string }) {
   const setUserRole = useAppStore((s) => s.setUserRole);
-  const router      = useRouter();
+  const setIsLoggedIn = useAppStore((s) => s.setIsLoggedIn);
+  const setUserProfile = useAppStore((s) => s.setUserProfile);
+  const router = useRouter();
   const t           = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -72,6 +74,13 @@ export function BuyerDashboard({ activeTab = "pools" }: { activeTab?: string }) 
       localStorage.setItem("buyer-theme", next ? "dark" : "light");
       return next;
     });
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setUserProfile(null);
+    setUserRole("farmer");
+    router.push("/onboarding");
   };
 
   const G = isDark ? DARK : LIGHT;
@@ -179,6 +188,18 @@ export function BuyerDashboard({ activeTab = "pools" }: { activeTab?: string }) 
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Farmer View</span>
+            </button>
+
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold text-white"
+              style={{
+                background: "rgba(220,38,38,0.2)",
+                border:     "1px solid rgba(220,38,38,0.4)",
+              }}
+              title="Logout"
+            >
+              <LogOut className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
