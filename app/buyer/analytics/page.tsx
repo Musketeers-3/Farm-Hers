@@ -109,9 +109,9 @@ function glassStyle(G: typeof DARK, extra?: React.CSSProperties): React.CSSPrope
     WebkitBackdropFilter: G.blur,
     border: `1px solid ${G.border}`,
     boxShadow: `
-      0 8px 32px rgba(0,0,0,0.35),
+      0 8px 32px rgba(92, 83, 83, 0.21),
       inset 0 1px 0 ${G.glassHighlight},
-      inset 0 0 0 1px rgba(255,255,255,0.03)
+      inset 0 0 0 1px rgba(2, 2, 2, 0.12)
     `,
     ...extra,
   };
@@ -155,11 +155,11 @@ export default function StrategicAnalyticsHub() {
           <>
             <div
               className="absolute inset-0 bg-cover bg-center bg-no-repeat scale-110"
-              style={{ backgroundImage: "url('/images/market-bg.jpg')" }}
+              style={{ backgroundImage: "url('https://i.pinimg.com/736x/56/8c/d8/568cd8b53ee916f5cd8683f95951f6bf.jpg')" }}
             />
             <div
               className="absolute inset-0"
-              style={{ backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}
+              style={{ backdropFilter: "blur(5px) brightness(0.2)", WebkitBackdropFilter: "blur(5px)" }}
             />
           </>
         )}
@@ -396,7 +396,7 @@ export default function StrategicAnalyticsHub() {
             {/* Top shimmer */}
             <div
               className="absolute top-0 left-0 right-0 h-px"
-              style={{ background: `linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent)` }}
+              style={{ background: `linear-gradient(90deg, transparent, rgba(64, 62, 62, 0.96), transparent)` }}
             />
 
             <h3

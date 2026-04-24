@@ -95,13 +95,16 @@ export function BuyerDashboard({ activeTab = "pools" }: { activeTab?: string }) 
         ) : (
           <>
             <div
-              className="absolute inset-0 bg-cover bg-center bg-no-repeat scale-110"
-              style={{ backgroundImage: "url('/images/market-bg.jpg')" }}
-            />
+  className="absolute inset-0 bg-cover bg-center bg-no-repeat scale-110"
+  style={{ backgroundImage: "url('https://i.pinimg.com/1200x/b1/74/9c/b1749c145e7ac9ff8a09b1364c5b1655.jpg')" }}
+              />
             <div
-              className="absolute inset-0"
-              style={{ backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}
-            />
+        className="absolute inset-0 backdrop-filter backdrop-saturate-150 backdrop-brightness-110 border border-white/10 shadow-inner"
+        style={{
+          backdropFilter: ' brightness(0.4) ', // Extra enhancement through CSS
+          
+        }}
+      />
           </>
         )}
         <div className="absolute inset-0" style={{ background: G.scrim }} />
@@ -204,7 +207,7 @@ export function BuyerDashboard({ activeTab = "pools" }: { activeTab?: string }) 
                 background:     G.card,
                 border:         `1px solid ${G.border}`,
                 backdropFilter: G.blur,
-                color:          "#ffffff",
+                color:          "#363232fc",
                 boxShadow:      "none",
               }}
             />
@@ -231,8 +234,8 @@ export function BuyerDashboard({ activeTab = "pools" }: { activeTab?: string }) 
                 scroll={false}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all duration-200"
                 style={isActive
-                  ? { background: G.accentDark, color: "#fff", border: `1px solid ${G.accentBorder}`, boxShadow: "0 2px 12px rgba(22,163,74,0.35)" }
-                  : { color: "rgba(255,255,255,0.60)", border: "1px solid transparent" }
+                  ? { background: G.accentDark, color: "#545454", border: `1px solid ${G.accentBorder}`, boxShadow: "0 2px 12px rgba(22,163,74,0.35)" }
+                  : { color: "rgba(255, 246, 246, 0.6)", border: "1px solid transparent" }
                 }
               >
                 <tab.icon className="w-4 h-4" />
