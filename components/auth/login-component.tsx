@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import { motion } from "framer-motion";
 
 interface LoginComponentProps {
   role: "farmer" | "buyer";
@@ -15,13 +14,12 @@ export function LoginComponent({
   role,
   onLogin,
   onSignupClick,
-  mousePos,
+  mousePos: _mousePos, // Prefixed to avoid unused variable errors while keeping the prop contract
   error,
   loading,
 }: LoginComponentProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
 
   return (
     <div className="w-full max-w-[420px] px-6 mx-auto">

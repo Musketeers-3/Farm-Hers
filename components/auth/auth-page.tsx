@@ -18,9 +18,9 @@ export default function AuthPage({
   selectedRole: initialRole = "farmer",
 }: AuthPageProps) {
   const [view, setView] = useState<"login" | "signup">(defaultView);
-  const [selectedRole, setSelectedRole] = useState<"farmer" | "buyer">(
-    initialRole,
-  );
+  // Removed unused setSelectedRole to prevent Next.js build/linting errors
+  const [selectedRole] = useState<"farmer" | "buyer">(initialRole);
+
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
@@ -48,6 +48,7 @@ export default function AuthPage({
   }, []);
 
   // Consolidated Success Handler
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleLoginSuccess = (profile: any) => {
     setIsLoggedIn(true);
     setUserRole(profile.role as "farmer" | "buyer");
@@ -57,12 +58,13 @@ export default function AuthPage({
     setUserEmail(profile.email || "");
     setUserProfile(profile);
 
+    // Dynamically routes based on the profile's actual role
     router.push(`/${profile.role}`);
     router.refresh();
   };
 
   const handleLogin = async (
-    role: "farmer" | "buyer",
+    _role: "farmer" | "buyer", // Prefixed with _ to indicate it's intentionally unused
     email: string,
     password: string,
   ) => {
@@ -71,6 +73,7 @@ export default function AuthPage({
     try {
       const profile = await login(email, password);
       handleLoginSuccess(profile);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       const code = err?.code;
       if (
@@ -92,6 +95,7 @@ export default function AuthPage({
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleSignup = async (data: any) => {
     setSignupLoading(true);
     setSignupError("");
@@ -106,6 +110,7 @@ export default function AuthPage({
         primaryCrop: data.cropType,
       });
       handleLoginSuccess(profile);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       const code = err?.code;
       if (code === "auth/email-already-in-use") {
