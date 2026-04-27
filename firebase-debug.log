@@ -1,0 +1,171 @@
+[debug] [2026-04-27T18:07:13.497Z] ----------------------------------------------------------------------
+[debug] [2026-04-27T18:07:13.500Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\Jujhar\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js deploy --only hosting
+[debug] [2026-04-27T18:07:13.501Z] CLI Version:   15.15.0
+[debug] [2026-04-27T18:07:13.501Z] Platform:      win32
+[debug] [2026-04-27T18:07:13.501Z] Node Version:  v24.13.0
+[debug] [2026-04-27T18:07:13.501Z] Time:          Mon Apr 27 2026 23:37:13 GMT+0530 (India Standard Time)
+[debug] [2026-04-27T18:07:13.501Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-04-27T18:07:16.107Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-04-27T18:07:16.107Z] > authorizing via signed-in user (varsha.cs.24@nitj.ac.in)
+[debug] [2026-04-27T18:07:16.107Z] [iam] checking project agrilink-fad4f for permissions ["firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2026-04-27T18:07:16.108Z] Checked if tokens are valid: true, expires at: 1777316619854
+[debug] [2026-04-27T18:07:16.109Z] Checked if tokens are valid: true, expires at: 1777316619854
+[debug] [2026-04-27T18:07:16.109Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/agrilink-fad4f:testIamPermissions [none]
+[debug] [2026-04-27T18:07:16.109Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/agrilink-fad4f:testIamPermissions  x-goog-user-project=agrilink-fad4f
+[debug] [2026-04-27T18:07:16.109Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/agrilink-fad4f:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-04-27T18:07:17.850Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/agrilink-fad4f:testIamPermissions 200
+[debug] [2026-04-27T18:07:17.851Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/agrilink-fad4f:testIamPermissions {"permissions":["firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-04-27T18:07:17.851Z] Checked if tokens are valid: true, expires at: 1777316619854
+[debug] [2026-04-27T18:07:17.851Z] Checked if tokens are valid: true, expires at: 1777316619854
+[debug] [2026-04-27T18:07:17.851Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/agrilink-fad4f [none]
+[debug] [2026-04-27T18:07:18.610Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/agrilink-fad4f 200
+[debug] [2026-04-27T18:07:18.610Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/agrilink-fad4f {"projectId":"agrilink-fad4f","projectNumber":"158239444366","displayName":"AgriLink","name":"projects/agrilink-fad4f","resources":{"hostingSite":"agrilink-fad4f"},"state":"ACTIVE","etag":"1_a9756355-0e59-4f2b-a3da-82dc798004d5"}
+[debug] [2026-04-27T18:07:21.640Z] defaultcredentials: writing to file C:\Users\Jujhar\AppData\Roaming\firebase\varsha_cs.24_nitj.ac.in_application_default_credentials.json
+[debug] [2026-04-27T18:07:21.642Z] Checked if tokens are valid: true, expires at: 1777316619854
+[debug] [2026-04-27T18:07:21.642Z] Checked if tokens are valid: true, expires at: 1777316619854
+[debug] [2026-04-27T18:07:21.642Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/agrilink-fad4f/sites pageToken=&pageSize=10
+[debug] [2026-04-27T18:07:23.086Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/agrilink-fad4f/sites 200
+[debug] [2026-04-27T18:07:23.086Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/agrilink-fad4f/sites {"sites":[{"name":"projects/agrilink-fad4f/sites/agrilink-fad4f","defaultUrl":"https://agrilink-fad4f.web.app","type":"DEFAULT_SITE"}]}
+[debug] [2026-04-27T18:07:23.086Z] Checked if tokens are valid: true, expires at: 1777316619854
+[debug] [2026-04-27T18:07:23.087Z] Checked if tokens are valid: true, expires at: 1777316619854
+[debug] [2026-04-27T18:07:23.087Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/agrilink-fad4f/sites 
+[debug] [2026-04-27T18:07:23.745Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/agrilink-fad4f/sites 200
+[debug] [2026-04-27T18:07:23.746Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/agrilink-fad4f/sites {"sites":[{"name":"projects/agrilink-fad4f/sites/agrilink-fad4f","defaultUrl":"https://agrilink-fad4f.web.app","type":"DEFAULT_SITE"}]}
+[debug] [2026-04-27T18:07:23.746Z] Checked if tokens are valid: true, expires at: 1777316619854
+[debug] [2026-04-27T18:07:23.746Z] Checked if tokens are valid: true, expires at: 1777316619854
+[debug] [2026-04-27T18:07:23.746Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/agrilink-fad4f/webApps/-/config [none]
+[debug] [2026-04-27T18:07:24.994Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/agrilink-fad4f/webApps/-/config 200
+[debug] [2026-04-27T18:07:24.994Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/agrilink-fad4f/webApps/-/config {"projectId":"agrilink-fad4f","appId":"1:158239444366:web:25ef7556a68af7ea8528df","storageBucket":"agrilink-fad4f.firebasestorage.app","apiKey":"AIzaSyBrQgmPMr5QvLO94CS32r-k0tMmIAq-FWo","authDomain":"agrilink-fad4f.firebaseapp.com","messagingSenderId":"158239444366","projectNumber":"158239444366","version":"2"}
+[info] 
+   Thank you for trying our early preview of Next.js support on Firebase Hosting.
+   During the preview, support is best-effort and breaking changes can be expected. Proceed with caution.
+   The integration is known to work with Next.js version 12 - 15.0. You may encounter errors.
+
+   Documentation: https://firebase.google.com/docs/hosting/frameworks/nextjs
+   File a bug: https://github.com/firebase/firebase-tools/issues/new?template=bug_report.md
+   Submit a feature request: https://github.com/firebase/firebase-tools/issues/new?template=feature_request.md
+
+   We'd love to learn from you. Express your interest in helping us shape the future of Firebase Hosting: https://goo.gle/41enW5X
+
+[debug] [2026-04-27T18:07:30.790Z] Checked if tokens are valid: true, expires at: 1777316619854
+[debug] [2026-04-27T18:07:30.790Z] Checked if tokens are valid: true, expires at: 1777316619854
+[debug] [2026-04-27T18:07:30.790Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/agrilink-fad4f/sites/agrilink-fad4f [none]
+[debug] [2026-04-27T18:07:32.036Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/agrilink-fad4f/sites/agrilink-fad4f 200
+[debug] [2026-04-27T18:07:32.036Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/agrilink-fad4f/sites/agrilink-fad4f {"name":"projects/agrilink-fad4f/sites/agrilink-fad4f","defaultUrl":"https://agrilink-fad4f.web.app","type":"DEFAULT_SITE"}
+[info] ⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of C:\Users\Jujhar\package-lock.json as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * C:\Users\Jujhar\Desktop\work\Web Dev\Farm-Hers\package-lock.json
+
+
+[info] ▲ Next.js 16.2.0 (Turbopack)
+
+[info] - Environments: .env.local
+
+
+[info]   Creating an optimized production build ...
+
+[info] ✓ Compiled successfully in 5.6s
+
+[info]   Skipping validation of types
+
+[info]   Finished TypeScript config validation in 12ms ...
+
+[info]   Collecting page data using 23 workers ...
+
+[info]   Generating static pages using 23 workers (0/35) ...
+
+[info]   Generating static pages using 23 workers (8/35) 
+
+[info]   Generating static pages using 23 workers (17/35) 
+
+[info]   Generating static pages using 23 workers (26/35) 
+
+[info] ✓ Generating static pages using 23 workers (35/35) in 599ms
+
+[info]   Finalizing page optimization ...
+
+[info] 
+
+[info] Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /api/demands
+├ ƒ /api/demands/[id]/join
+├ ƒ /api/notifications
+├ ƒ /api/notifications/[id]/read
+├ ƒ /api/parse-bid
+├ ƒ /api/payments/confirm-receipt
+├ ƒ /api/payments/create-order
+├ ƒ /api/payments/create-token-payment
+├ ƒ /api/payments/farmer-orders
+├ ƒ /api/payments/orders
+├ ƒ /api/payments/verify
+├ ƒ /api/payments/webhook
+├ ƒ /api/pools
+├ ƒ /api/pools/[id]
+├ ƒ /api/pools/[id]/close
+├ ƒ /api/pools/[id]/join
+├ ƒ /api/tts
+├ ƒ /api/vision
+├ ○ /auth
+├ ○ /buyer
+├ ● /buyer/[screen]
+│ ├ /buyer/pools
+│ ├ /buyer/auctions
+│ ├ /buyer/orders
+│ └ [+2 more paths]
+├ ○ /buyer/analytics
+├ ƒ /buyer/auctions/[id]
+├ ƒ /buyer/contract/[id]
+├ ○ /farmer
+├ ● /farmer/[screen]
+│ ├ /farmer/sell
+│ ├ /farmer/auction
+│ ├ /farmer/tracking
+│ └ [+4 more paths]
+├ ○ /login
+├ ○ /marketing
+├ ○ /onboarding
+└ ○ /signup
+
+
+○  (Static)   prerendered as static content
+●  (SSG)      prerendered as static HTML (uses generateStaticParams)
+ƒ  (Dynamic)  server-rendered on demand
+
+
+[info] Building a Cloud Function to run this application. This is needed due to:
+[info]  • use of fallback /buyer/[screen]
+[info]  • use of fallback /farmer/[screen]
+[info]  • non-static component /api/demands/[id]/join/route
+[info]  • non-static component /api/demands/route
+[info]  • non-static component /api/notifications/[id]/read/route
+[debug] [2026-04-27T18:07:44.514Z]  • non-static component /api/notifications/route
+[debug] [2026-04-27T18:07:44.514Z]  • non-static component /api/parse-bid/route
+[debug] [2026-04-27T18:07:44.514Z]  • non-static component /api/payments/confirm-receipt/route
+[debug] [2026-04-27T18:07:44.514Z]  • non-static component /api/payments/create-order/route
+[debug] [2026-04-27T18:07:44.514Z]  • non-static component /api/payments/create-token-payment/route
+[debug] [2026-04-27T18:07:44.514Z]  • non-static component /api/payments/farmer-orders/route
+[debug] [2026-04-27T18:07:44.514Z]  • non-static component /api/payments/orders/route
+[debug] [2026-04-27T18:07:44.514Z]  • non-static component /api/payments/verify/route
+[debug] [2026-04-27T18:07:44.514Z]  • non-static component /api/payments/webhook/route
+[debug] [2026-04-27T18:07:44.514Z]  • non-static component /api/pools/[id]/close/route
+[debug] [2026-04-27T18:07:44.514Z]  • non-static component /api/pools/[id]/join/route
+[debug] [2026-04-27T18:07:44.514Z]  • non-static component /api/pools/[id]/route
+[debug] [2026-04-27T18:07:44.514Z]  • non-static component /api/pools/route
+[debug] [2026-04-27T18:07:44.514Z]  • non-static component /api/tts/route
+[debug] [2026-04-27T18:07:44.514Z]  • non-static component /api/vision/route
+[debug] [2026-04-27T18:07:44.514Z]  • non-static component /buyer/auctions/[id]/page
+[debug] [2026-04-27T18:07:44.514Z]  • non-static component /buyer/contract/[id]/page
+[info]  • and 17 other reasons, use --debug to see more
+[info] 
+[debug] [2026-04-27T18:07:57.954Z] Checked if tokens are valid: true, expires at: 1777316619854
+[debug] [2026-04-27T18:07:57.954Z] Checked if tokens are valid: true, expires at: 1777316619854
+[debug] [2026-04-27T18:07:57.954Z] >>> [apiv2][query] GET https://firebasehosting.googleapis.com/v1beta1/projects/agrilink-fad4f/sites/agrilink-fad4f [none]
+[debug] [2026-04-27T18:07:59.117Z] <<< [apiv2][status] GET https://firebasehosting.googleapis.com/v1beta1/projects/agrilink-fad4f/sites/agrilink-fad4f 200
+[debug] [2026-04-27T18:07:59.117Z] <<< [apiv2][body] GET https://firebasehosting.googleapis.com/v1beta1/projects/agrilink-fad4f/sites/agrilink-fad4f {"name":"projects/agrilink-fad4f/sites/agrilink-fad4f","defaultUrl":"https://agrilink-fad4f.web.app","type":"DEFAULT_SITE"}
+[debug] [2026-04-27T18:08:02.382Z] Error: EPERM: operation not permitted, symlink 'C:\Users\Jujhar\Desktop\work\Web Dev\Farm-Hers\node_modules\firebase-admin' -> 'C:\Users\Jujhar\Desktop\work\Web Dev\Farm-Hers\.firebase\agrilink-fad4f\functions\dist\node_modules\firebase-admin-542bd98837528615'

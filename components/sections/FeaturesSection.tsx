@@ -1,9 +1,10 @@
 "use client";
-import { useRef } from "react";
+import { useRef, useLayoutEffect } from "react";
 import { motion, useInView } from "framer-motion";
 import { Mic, Users, ShieldCheck, TrendingUp, type LucideIcon } from "lucide-react";
 import LineReveal from "@/components/ui/LineReveal";
 import { SILK } from "@/components/ui/constants";
+import { getGsap } from "@/components/3d/gsapClient";
 
 interface Feature { index: number; tag: string; title: string; subtitle: string; body: string; icon: LucideIcon; accent: string; align: "left" | "right"; }
 const FEATURES: Feature[] = [
@@ -53,8 +54,40 @@ function HUDFeature({ feat }: { feat: Feature }) {
 }
 
 export default function FeaturesSection() {
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useLayoutEffect(() => {
+    if (!sectionRef.current) return;
+    const { gsap, ScrollTrigger } = getGsap();
+    const ctx = gsap.context(() => {
+      gsap.utils.toArray<HTMLElement>("[data-feature-card]").forEach((card, index) => {
+        gsap.fromTo(
+          card,
+          { y: 72, opacity: 0, rotateX: 10 },
+          {
+            y: 0,
+            opacity: 1,
+            rotateX: 0,
+            duration: 1,
+            ease: "power3.out",
+            delay: index * 0.06,
+            scrollTrigger: {
+              trigger: card,
+              start: "top 88%",
+              end: "bottom 15%",
+              scrub: 0.6,
+            },
+          }
+        );
+      });
+    }, sectionRef);
+
+    ScrollTrigger.refresh();
+    return () => ctx.revert();
+  }, []);
+
   return (
-    <section style={{ background: "transparent", padding: "80px 40px 160px", position: "relative", zIndex: 10 }}>
+    <section ref={sectionRef} style={{ background: "transparent", padding: "80px 40px 160px", position: "relative", zIndex: 10 }}>
       <div style={{ maxWidth: 1200, margin: "0 auto" }}>
         <div style={{ marginBottom: 120, textAlign: "center" }}>
           <LineReveal><div style={{ fontSize: 11, letterSpacing: "0.35em", color: "#22c55e", textTransform: "uppercase", fontFamily: "'Space Mono',monospace", marginBottom: 20 }}>Platform Pillars</div></LineReveal>
@@ -63,7 +96,7 @@ export default function FeaturesSection() {
         </div>
         
         {/* HUD Overlay Elements */}
-        {FEATURES.map((feat) => <HUDFeature key={feat.index} feat={feat} />)}
+        {FEATURES.map((feat) => <div key={feat.index} data-feature-card><HUDFeature feat={feat} /></div>)}
       </div>
     </section>
   );

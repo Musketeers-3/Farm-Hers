@@ -12,6 +12,7 @@ export const simVertexShader = /* glsl */ `
 export const simFragmentShader = /* glsl */ `
   uniform sampler2D uPositions;
   uniform float uTime;
+  uniform vec3 uMouse;
   varying vec2 vUv;
 
   vec4 permute(vec4 x){return mod(((x*34.0)+1.0)*x, 289.0);}
@@ -87,7 +88,11 @@ export const simFragmentShader = /* glsl */ `
   void main() {
     vec3 pos = texture2D(uPositions, vUv).xyz;
     vec3 velocity = curlNoise(pos * 0.18 + uTime * 0.08);
-    pos += velocity * 0.012;
+    vec3 toMouse = pos - uMouse;
+    float mouseDist = max(length(toMouse), 0.0001);
+    float mouseForce = smoothstep(4.0, 0.35, mouseDist) * 0.05;
+    pos += velocity * 0.013;
+    pos += normalize(toMouse) * mouseForce;
     if (length(pos) > 16.0) {
       pos = normalize(pos) * 2.5;
     }

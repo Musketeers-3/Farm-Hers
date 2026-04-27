@@ -50,6 +50,7 @@
 
 "use client";
 import dynamic from "next/dynamic";
+import MagneticCursor from "@/components/ui/MagneticCursor";
 
 // The ultimate SSR Firewall
 const FarmHersUniverse = dynamic(() => import("@/components/3d/FarmHersUniverse"), {
@@ -57,5 +58,10 @@ const FarmHersUniverse = dynamic(() => import("@/components/3d/FarmHersUniverse"
 });
 
 export default function Page() {
-  return <FarmHersUniverse />;
+  return (
+    <>
+      <MagneticCursor />
+      <FarmHersUniverse />
+    </>
+  );
 }

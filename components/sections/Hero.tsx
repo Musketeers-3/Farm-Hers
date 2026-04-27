@@ -1,9 +1,10 @@
 "use client";
-import { useRef, useState, useEffect, MouseEvent } from "react";
+import { useRef, useState, useEffect, useLayoutEffect, MouseEvent } from "react";
 import { motion, useSpring, useMotionValue } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import MagBtn from "@/components/ui/MagBtn";
 import { IMG, EXPO, SHARP, SILK } from "@/components/ui/constants";
+import { getGsap } from "@/components/3d/gsapClient";
 
 export default function Hero() {
   const ref = useRef<HTMLElement>(null);
@@ -24,6 +25,27 @@ export default function Hero() {
     return () => clearTimeout(t);
   }, []);
 
+  useLayoutEffect(() => {
+    if (!ref.current) return;
+    const { gsap } = getGsap();
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        "[data-hero-kicker], [data-hero-title], [data-hero-copy], [data-hero-cta]",
+        { y: 48, opacity: 0, filter: "blur(8px)" },
+        {
+          y: 0,
+          opacity: 1,
+          filter: "blur(0px)",
+          duration: 1.05,
+          ease: "power3.out",
+          stagger: 0.14,
+          delay: 0.2,
+        }
+      );
+    }, ref);
+    return () => ctx.revert();
+  }, []);
+
   // 🔥 THE FIX: Use native window routing to escape the WebGL Canvas Context trap
   const handleLaunch = () => {
     window.location.href = "/onboarding";
@@ -42,19 +64,19 @@ export default function Hero() {
         <img src={IMG.hero} alt="Golden wheat fields" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", opacity: 0.15 }} />
       </div>
       <motion.div style={{ position: "relative", zIndex: 10, padding: "0 60px 72px", width: "100%", pointerEvents: "none" }}>
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={loaded ? { opacity: 1, x: 0 } : {}} transition={{ duration: 0.9, ease: EXPO, delay: 1.6 }} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
+        <motion.div data-hero-kicker initial={{ opacity: 0, x: -20 }} animate={loaded ? { opacity: 1, x: 0 } : {}} transition={{ duration: 0.9, ease: EXPO, delay: 1.6 }} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
           <div style={{ width: 40, height: 1, background: "#22c55e" }} />
           <span style={{ fontSize: 11, letterSpacing: "0.35em", color: "#22c55e", textTransform: "uppercase", fontFamily: "'Space Mono',monospace" }}>The Agricultural Intelligence Platform</span>
         </motion.div>
         <div style={{ overflow: "hidden", marginBottom: 8 }}>
-          <motion.h1 initial={{ y: "100%" }} animate={loaded ? { y: "0%" } : {}} transition={{ duration: 1.1, ease: SILK, delay: 1.7 }} style={{ margin: 0, fontSize: "clamp(56px,9vw,128px)", fontWeight: 300, fontFamily: "'Cormorant Garamond',serif", color: "#f0fdf4", lineHeight: 0.92, letterSpacing: "-0.02em", textShadow: "0 10px 40px rgba(0,0,0,0.8)" }}>Future</motion.h1>
+          <motion.h1 data-hero-title initial={{ y: "100%" }} animate={loaded ? { y: "0%" } : {}} transition={{ duration: 1.1, ease: SILK, delay: 1.7 }} style={{ margin: 0, fontSize: "clamp(56px,9vw,128px)", fontWeight: 300, fontFamily: "'Cormorant Garamond',serif", color: "#f0fdf4", lineHeight: 0.92, letterSpacing: "-0.02em", textShadow: "0 10px 40px rgba(0,0,0,0.8)" }}>Future</motion.h1>
         </div>
         <div style={{ overflow: "hidden", marginBottom: 32 }}>
-          <motion.h1 initial={{ y: "100%" }} animate={loaded ? { y: "0%" } : {}} transition={{ duration: 1.1, ease: SILK, delay: 1.85 }} style={{ margin: 0, fontSize: "clamp(56px,9vw,128px)", fontWeight: 700, fontStyle: "italic", fontFamily: "'Cormorant Garamond',serif", background: "linear-gradient(135deg,#4ade80,#22c55e,#86efac)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", lineHeight: 0.92, letterSpacing: "-0.02em", textShadow: "0 10px 40px rgba(0,0,0,0.8)" }}>Harvest.</motion.h1>
+          <motion.h1 data-hero-title initial={{ y: "100%" }} animate={loaded ? { y: "0%" } : {}} transition={{ duration: 1.1, ease: SILK, delay: 1.85 }} style={{ margin: 0, fontSize: "clamp(56px,9vw,128px)", fontWeight: 700, fontStyle: "italic", fontFamily: "'Cormorant Garamond',serif", background: "linear-gradient(135deg,#4ade80,#22c55e,#86efac)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", lineHeight: 0.92, letterSpacing: "-0.02em", textShadow: "0 10px 40px rgba(0,0,0,0.8)" }}>Harvest.</motion.h1>
         </div>
         <motion.div initial={{ opacity: 0, y: 24 }} animate={loaded ? { opacity: 1, y: 0 } : {}} transition={{ duration: 1, ease: EXPO, delay: 2.15 }} style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: 32, pointerEvents: "auto" }}>
-          <p style={{ margin: 0, maxWidth: 460, fontSize: "clamp(15px,1.5vw,18px)", color: "rgba(240,253,244,0.8)", lineHeight: 1.65, fontFamily: "'Barlow',sans-serif", fontWeight: 300, letterSpacing: "0.02em", textShadow: "0 2px 10px rgba(0,0,0,0.8)" }}>Voice-native. Zero middlemen. Direct enterprise contracts.<br />Empowering 50M+ farmers with AI that speaks their language.</p>
-          <MagBtn onClick={handleLaunch} dataCursor="ENTER →" style={{ padding: "18px 48px", borderRadius: 999, background: "linear-gradient(135deg,#22c55e,#15803d)", border: "none", fontSize: 15, fontWeight: 700, color: "#fff", fontFamily: "'Barlow',sans-serif", display: "flex", alignItems: "center", gap: 10, letterSpacing: "0.04em", textTransform: "uppercase", boxShadow: "0 0 30px rgba(34,197,94,0.3)" }}>
+          <p data-hero-copy style={{ margin: 0, maxWidth: 460, fontSize: "clamp(15px,1.5vw,18px)", color: "rgba(240,253,244,0.8)", lineHeight: 1.65, fontFamily: "'Barlow',sans-serif", fontWeight: 300, letterSpacing: "0.02em", textShadow: "0 2px 10px rgba(0,0,0,0.8)" }}>Voice-native. Zero middlemen. Direct enterprise contracts.<br />Empowering 50M+ farmers with AI that speaks their language.</p>
+          <MagBtn data-hero-cta onClick={handleLaunch} dataCursor="ENTER →" style={{ padding: "18px 48px", borderRadius: 999, background: "linear-gradient(135deg,#22c55e,#15803d)", border: "none", fontSize: 15, fontWeight: 700, color: "#fff", fontFamily: "'Barlow',sans-serif", display: "flex", alignItems: "center", gap: 10, letterSpacing: "0.04em", textTransform: "uppercase", boxShadow: "0 0 30px rgba(34,197,94,0.3)" }}>
             Enter Platform <ArrowRight size={16} />
           </MagBtn>
         </motion.div>

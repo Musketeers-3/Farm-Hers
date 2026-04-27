@@ -1,6 +1,6 @@
 "use client";
 import { useMemo, useRef, useState } from "react";
-import { useFrame, createPortal } from "@react-three/fiber";
+import { useFrame, createPortal, useThree } from "@react-three/fiber";
 import { useFBO } from "@react-three/drei";
 import * as THREE from "three";
 import {
@@ -15,6 +15,7 @@ interface ParticleVortexProps {
 }
 
 export default function ParticleVortex({ size = 256 }: ParticleVortexProps) {
+  const { pointer, viewport } = useThree();
   const particlesPosition = useMemo(() => {
     const length = size * size;
     const particles = new Float32Array(length * 3);
@@ -67,6 +68,11 @@ export default function ParticleVortex({ size = 256 }: ParticleVortexProps) {
 
     simMaterialRef.current.uniforms.uTime.value = state.clock.elapsedTime;
     simMaterialRef.current.uniforms.uPositions.value = currentTarget.texture;
+    simMaterialRef.current.uniforms.uMouse.value.set(
+      pointer.x * viewport.width * 0.5,
+      pointer.y * viewport.height * 0.5,
+      0
+    );
 
     state.gl.setRenderTarget(nextTarget);
     state.gl.clear();
@@ -86,7 +92,11 @@ export default function ParticleVortex({ size = 256 }: ParticleVortexProps) {
             ref={simMaterialRef}
             vertexShader={simVertexShader}
             fragmentShader={simFragmentShader}
-            uniforms={{ uPositions: { value: initialPositions }, uTime: { value: 0 } }}
+            uniforms={{
+              uPositions: { value: initialPositions },
+              uTime: { value: 0 },
+              uMouse: { value: new THREE.Vector3(0, 0, 0) },
+            }}
           />
         </mesh>,
         scene,

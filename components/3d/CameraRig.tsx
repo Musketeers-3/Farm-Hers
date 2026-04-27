@@ -33,15 +33,17 @@ export default function CameraRig() {
   const scroll = useScroll();
   const curve = useMemo(() => createCameraCurve(), []);
   const tmpLook = useMemo(() => new THREE.Vector3(), []);
+  const smoothT = useMemo(() => ({ value: 0 }), []);
 
   useFrame(() => {
     // scroll.offset goes from 0 (top) to 1 (bottom) of the 11 pages
-    const t = THREE.MathUtils.clamp(scroll.offset, 0, 1);
-    const point = curve.getPointAt(t);
-    camera.position.lerp(point, 0.08); // Smooth positional tracking
+    const targetT = THREE.MathUtils.clamp(scroll.offset, 0, 1);
+    smoothT.value = THREE.MathUtils.damp(smoothT.value, targetT, 4.2, 1 / 60);
+    const point = curve.getPointAt(smoothT.value);
+    camera.position.lerp(point, 0.1); // Smooth positional tracking
 
     // Interpolate between the discrete look targets
-    const seg = t * (LOOK_TARGETS.length - 1);
+    const seg = smoothT.value * (LOOK_TARGETS.length - 1);
     const i = Math.floor(seg);
     const f = seg - i;
     const a = LOOK_TARGETS[i];
@@ -52,6 +54,11 @@ export default function CameraRig() {
     const currentLookAt = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).add(camera.position);
     currentLookAt.lerp(tmpLook, 0.05);
     camera.lookAt(currentLookAt);
+    camera.rotation.z = THREE.MathUtils.lerp(
+      camera.rotation.z,
+      Math.sin(smoothT.value * Math.PI * 5.0) * 0.012,
+      0.07
+    );
   });
 
   return null;
