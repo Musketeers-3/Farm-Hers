@@ -3,7 +3,10 @@
     "allow": [
       "mcp__ide__getDiagnostics",
       "Bash(npx tsc *)",
-      "Bash(npm install *)"
+      "Bash(npm install *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/api/quality-check -X POST -H \"Content-Type: application/json\" -d '{\"test\": true}')",
+      "Bash(curl *)",
+      "Bash(GEMINI_API_KEY_VISION=AIzaSyCH0Bym5rJk4W7BHCJR_04jsNtPsB4VjA0 node *)"
     ]
   }
 }

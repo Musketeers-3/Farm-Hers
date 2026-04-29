@@ -66,7 +66,7 @@ STRICT OUTPUT: Return ONLY valid JSON matching this schema exactly.
 
     const result = await ai.models.generateContent({
       // 🚀 THE FIX: The active, free-tier-friendly 2026 model alias
-      model: "gemini-2.5-flash-lite",
+      model: "gemini-2.5-flash",
       contents: systemPrompt,
       config: {
         temperature: 0.1,

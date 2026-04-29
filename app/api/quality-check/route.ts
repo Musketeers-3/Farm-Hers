@@ -11,7 +11,7 @@ export interface QualityCheckResult {
 
 export async function POST(req: Request) {
   try {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY_VISION;
     if (!apiKey) throw new Error("Missing GEMINI_API_KEY");
 
     const body = await req.json();
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
 {"grade":"A","moisture":"< 12%","foreignMatter":"< 1%","passed":true,"reason":"brief reason"}`;
 
     const result = await ai.models.generateContent({
-      model: "gemini-2.5-flash-lite",
+      model: "gemini-2.5-flash",
       contents: [
         {
           role: "user",
