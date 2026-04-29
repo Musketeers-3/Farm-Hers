@@ -225,39 +225,40 @@ export default function DedicatedAuctionRoom({
       </header>
 
       {/* 3. MAIN IMMERSIVE GRID */}
-      <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-8 h-[calc(100vh-80px)] flex flex-col">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full">
+      <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-6 lg:py-8 flex flex-col">
+        {/* Mobile: stacked layout, Desktop: side-by-side */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 flex-1">
           {/* LEFT COLUMN: Asset & Command Center */}
-          <div className="lg:col-span-7 flex flex-col gap-6">
+          <div className="lg:col-span-7 flex flex-col gap-4 lg:gap-6 order-2 lg:order-1">
             {/* Ultra-Premium Glass Hero */}
-            <div className="relative rounded-[2rem] p-8 border border-white/10 bg-white/5 backdrop-blur-2xl shadow-2xl overflow-hidden group">
+            <div className="relative rounded-2xl lg:rounded-[2rem] p-5 lg:p-8 border border-white/10 bg-white/5 backdrop-blur-2xl shadow-2xl overflow-hidden group">
               <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-50" />
 
-              <div className="relative z-10 flex justify-between items-start">
-                <div>
-                  <Badge className="bg-primary/20 text-primary hover:bg-primary/30 border border-primary/30 mb-4 px-3 py-1 backdrop-blur-md">
-                    <ShieldCheck className="w-4 h-4 mr-1.5" /> Verified Grade A
+              <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-start gap-4">
+                <div className="flex-1 min-w-0">
+                  <Badge className="bg-primary/20 text-primary hover:bg-primary/30 border border-primary/30 mb-3 lg:mb-4 px-2.5 lg:px-3 py-1 backdrop-blur-md text-xs lg:text-sm">
+                    <ShieldCheck className="w-3.5 h-3.5 lg:w-4 h-4 mr-1.5" /> Verified Grade A
                   </Badge>
-                  <h2 className="text-5xl lg:text-6xl font-serif font-black text-white tracking-tight capitalize drop-shadow-xl">
+                  <h2 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-serif font-black text-white tracking-tight capitalize drop-shadow-xl leading-tight">
                     {cropName}
                   </h2>
-                  <p className="text-2xl text-white/70 font-light mt-2">
+                  <p className="text-lg lg:text-2xl text-white/70 font-light mt-1 lg:mt-2">
                     {auctionDetails.quantity} Quintals Vol.
                   </p>
                 </div>
 
                 {/* Dynamic Timer Sphere */}
-                <div className="text-right">
-                  <div className="inline-block p-1 rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md">
+                <div className="text-right shrink-0">
+                  <div className="inline-block p-1 rounded-2xl lg:rounded-3xl bg-white/5 border border-white/10 backdrop-blur-md">
                     <div
                       className={cn(
-                        "px-6 py-4 rounded-2xl flex flex-col items-center",
+                        "px-4 lg:px-6 py-3 lg:py-4 rounded-xl lg:rounded-2xl flex flex-col items-center",
                         isUrgent ? "bg-red-500/20" : "bg-black/40",
                       )}
                     >
                       <Clock
                         className={cn(
-                          "w-6 h-6 mb-2",
+                          "w-5 h-5 lg:w-6 h-6 mb-1.5 lg:mb-2",
                           isUrgent
                             ? "text-red-400 animate-pulse"
                             : "text-white/50",
@@ -265,7 +266,7 @@ export default function DedicatedAuctionRoom({
                       />
                       <span
                         className={cn(
-                          "text-4xl font-mono font-black tracking-tighter",
+                          "text-2xl lg:text-4xl font-mono font-black tracking-tighter",
                           isUrgent ? "text-red-400" : "text-white",
                         )}
                       >
@@ -279,19 +280,19 @@ export default function DedicatedAuctionRoom({
 
             {/* Bidding Command Console */}
             {isAuctionActive ? (
-              <div className="rounded-[2rem] p-8 border border-white/10 bg-black/40 backdrop-blur-3xl shadow-2xl mt-auto">
-                <div className="grid grid-cols-2 gap-8 mb-8">
+              <div className="rounded-2xl lg:rounded-[2rem] p-5 lg:p-8 border border-white/10 bg-black/40 backdrop-blur-3xl shadow-2xl mt-auto">
+                <div className="grid grid-cols-2 gap-4 lg:gap-8 mb-6 lg:mb-8">
                   <div>
-                    <p className="text-sm font-bold text-white/40 uppercase tracking-widest mb-2">
+                    <p className="text-xs lg:text-sm font-bold text-white/40 uppercase tracking-widest mb-1 lg:mb-2">
                       Starting Base
                     </p>
-                    <p className="text-2xl font-mono text-white/70">
+                    <p className="text-xl lg:text-2xl font-mono text-white/70">
                       ₹{basePrice}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-primary uppercase tracking-widest mb-2 flex items-center gap-2">
-                      <Activity className="w-4 h-4 animate-pulse" /> Market
+                    <p className="text-xs lg:text-sm font-bold text-primary uppercase tracking-widest mb-1 lg:mb-2 flex items-center gap-1.5 lg:gap-2">
+                      <Activity className="w-3.5 h-3.5 lg:w-4 h-4 animate-pulse" /> Market
                       Price
                     </p>
                     <motion.div
@@ -300,28 +301,28 @@ export default function DedicatedAuctionRoom({
                       animate={{ scale: 1, y: 0 }}
                       className="flex items-start"
                     >
-                      <span className="text-2xl text-primary font-light mt-1 mr-1">
+                      <span className="text-lg lg:text-2xl text-primary font-light mt-1 mr-1">
                         ₹
                       </span>
-                      <p className="text-6xl font-mono font-black text-white tracking-tighter drop-shadow-[0_0_15px_rgba(30,77,43,0.5)]">
+                      <p className="text-4xl lg:text-6xl font-mono font-black text-white tracking-tighter drop-shadow-[0_0_15px_rgba(30,77,43,0.5)]">
                         {currentLeadingBid}
                       </p>
                     </motion.div>
                   </div>
                 </div>
 
-                <div className="flex gap-4">
+                <div className="flex gap-3 lg:gap-4">
                   <Button
                     onClick={() => handleManualBid(50)}
                     disabled={isBidding}
-                    className="flex-1 h-16 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xl font-bold backdrop-blur-md transition-all active:scale-95"
+                    className="flex-1 h-14 lg:h-16 rounded-xl lg:rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-lg lg:text-xl font-bold backdrop-blur-md transition-all active:scale-95"
                   >
                     +₹50
                   </Button>
                   <Button
                     onClick={() => handleManualBid(100)}
                     disabled={isBidding}
-                    className="flex-1 h-16 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xl font-bold backdrop-blur-md transition-all active:scale-95"
+                    className="flex-1 h-14 lg:h-16 rounded-xl lg:rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-lg lg:text-xl font-bold backdrop-blur-md transition-all active:scale-95"
                   >
                     +₹100
                   </Button>
@@ -329,51 +330,50 @@ export default function DedicatedAuctionRoom({
                     onClick={() => handleManualBid(250)}
                     disabled={isBidding}
                     className={cn(
-                      "flex-[2] h-16 rounded-2xl text-xl font-black transition-all active:scale-95 shadow-[0_0_30px_rgba(30,77,43,0.3)] border-0",
+                      "flex-[2] h-14 lg:h-16 rounded-xl lg:rounded-2xl text-lg lg:text-xl font-black transition-all active:scale-95 shadow-[0_0_30px_rgba(30,77,43,0.3)] border-0",
                       showSuccess
                         ? "bg-green-500 text-white"
                         : "bg-primary hover:bg-primary/90 text-white",
                     )}
                   >
                     {isBidding
-                      ? "EXECUTING..."
+                      ? "..."
                       : showSuccess
                         ? "BID ACCEPTED"
-                        : "MAX BID (+₹250)"}
+                        : "+₹250"}
                   </Button>
                 </div>
               </div>
             ) : (
-              <div className="rounded-[2rem] p-8 border border-green-500/30 bg-green-500/10 backdrop-blur-3xl shadow-2xl flex items-center justify-between mt-auto">
+              <div className="rounded-2xl lg:rounded-[2rem] p-5 lg:p-8 border border-green-500/30 bg-green-500/10 backdrop-blur-3xl shadow-2xl flex items-center justify-between mt-auto">
                 <div>
-                  <h3 className="text-3xl font-black text-white tracking-tight mb-2">
+                  <h3 className="text-2xl lg:text-3xl font-black text-white tracking-tight mb-2">
                     Contract Closed
                   </h3>
-                  <p className="text-green-400 font-bold text-xl">
+                  <p className="text-green-400 font-bold text-lg lg:text-xl">
                     Settled at ₹{currentLeadingBid}/q
                   </p>
                 </div>
-                <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center">
-                  <CheckCircle2 className="w-10 h-10 text-green-500" />
+                <div className="w-16 lg:w-20 h-16 lg:h-20 rounded-full bg-green-500/20 flex items-center justify-center">
+                  <CheckCircle2 className="w-8 lg:w-10 h-8 lg:h-10 text-green-500" />
                 </div>
               </div>
             )}
           </div>
 
           {/* RIGHT COLUMN: Bloomberg-style Feed */}
-          <div className="lg:col-span-5 h-full pb-8">
-            <div className="h-full rounded-[2rem] border border-white/10 bg-black/40 backdrop-blur-2xl flex flex-col overflow-hidden shadow-2xl">
-              <div className="p-6 border-b border-white/10 bg-white/5 flex justify-between items-center">
-                <h3 className="font-bold text-white/90 uppercase tracking-widest text-sm flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-primary" /> Live Order
-                  Book
+          <div className="lg:col-span-5 h-[400px] sm:h-[350px] lg:h-auto pb-8 lg:pb-0 order-1 lg:order-2">
+            <div className="h-full min-h-[350px] lg:min-h-0 rounded-2xl lg:rounded-[2rem] border border-white/10 bg-black/40 backdrop-blur-2xl flex flex-col overflow-hidden shadow-2xl">
+              <div className="p-4 lg:p-6 border-b border-white/10 bg-white/5 flex justify-between items-center">
+                <h3 className="font-bold text-white/90 uppercase tracking-widest text-xs lg:text-sm flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-primary" /> Live Order Book
                 </h3>
-                <div className="flex items-center gap-2 text-xs font-bold bg-white/10 px-3 py-1.5 rounded-full text-white/70">
+                <div className="flex items-center gap-2 text-xs font-bold bg-white/10 px-2.5 py-1.5 rounded-full text-white/70">
                   <Users className="w-3.5 h-3.5 text-primary" /> 47 Active
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
+              <div className="flex-1 overflow-y-auto p-3 lg:p-4 space-y-2 custom-scrollbar">
                 <AnimatePresence mode="popLayout">
                   {bids.map((bid) => (
                     <motion.div
@@ -383,25 +383,25 @@ export default function DedicatedAuctionRoom({
                       exit={{ opacity: 0, scale: 0.9 }}
                       transition={{ type: "spring", bounce: 0.4 }}
                       className={cn(
-                        "p-4 rounded-2xl flex justify-between items-center border",
+                        "p-3 lg:p-4 rounded-xl lg:rounded-2xl flex justify-between items-center border",
                         bid.isLeading
                           ? "bg-primary/20 border-primary/40 shadow-[0_0_20px_rgba(30,77,43,0.3)]"
                           : "bg-white/5 border-white/5",
                       )}
                     >
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-3 lg:gap-4">
                         <div
                           className={cn(
-                            "w-10 h-10 rounded-full flex items-center justify-center",
+                            "w-9 h-9 lg:w-10 lg:h-10 rounded-full flex items-center justify-center",
                             bid.isLeading
                               ? "bg-primary text-white"
                               : "bg-white/10 text-white/50",
                           )}
                         >
                           {bid.isLeading ? (
-                            <Trophy className="w-5 h-5" />
+                            <Trophy className="w-4.5 h-4.5 lg:w-5 h-5" />
                           ) : (
-                            <User className="w-5 h-5" />
+                            <User className="w-4.5 h-4.5 lg:w-5 h-5" />
                           )}
                         </div>
                         <div>
@@ -413,7 +413,7 @@ export default function DedicatedAuctionRoom({
                           >
                             {bid.bidder}
                           </p>
-                          <p className="text-[10px] text-white/40 font-mono mt-1">
+                          <p className="text-[10px] text-white/40 font-mono mt-0.5">
                             {bid.timestamp.toLocaleTimeString([], {
                               hour: "2-digit",
                               minute: "2-digit",
@@ -425,7 +425,7 @@ export default function DedicatedAuctionRoom({
                       <div className="text-right">
                         <p
                           className={cn(
-                            "text-xl font-mono font-black",
+                            "text-lg lg:text-xl font-mono font-black",
                             bid.isLeading ? "text-primary" : "text-white/50",
                           )}
                         >

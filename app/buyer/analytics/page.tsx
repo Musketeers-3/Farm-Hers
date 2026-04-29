@@ -172,9 +172,9 @@ export default function StrategicAnalyticsHub() {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex justify-between items-center mb-8 shrink-0"
+          className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 lg:mb-8 shrink-0"
         >
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 sm:gap-6">
             <button
               onClick={() => router.back()}
               className="p-3 rounded-full transition-all group"
@@ -183,24 +183,24 @@ export default function StrategicAnalyticsHub() {
               <ArrowLeft className="w-5 h-5 text-white/70 group-hover:text-white group-hover:-translate-x-1 transition-transform" />
             </button>
             <div>
-              <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3 text-white">
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2 sm:gap-3 text-white">
                 AgriLink{" "}
                 <span style={{ color: G.accent }} className="font-light">Terminal</span>
               </h1>
             </div>
           </div>
 
-          {/* Mandi & Commodity Controls */}
+          {/* Mandi & Commodity Controls - scrollable on mobile */}
           <div
-            className="flex items-center gap-4 p-1.5 rounded-full"
+            className="flex items-center gap-3 sm:gap-4 p-1.5 rounded-full overflow-x-auto w-full sm:w-auto"
             style={glassStyle(G)}
           >
-            <div className="flex px-2" style={{ borderRight: `1px solid ${G.border}` }}>
+            <div className="flex px-2 shrink-0" style={{ borderRight: `1px solid ${G.border}` }}>
               {["jalandhar", "khanna"].map((mandi) => (
                 <button
                   key={mandi}
                   onClick={() => setActiveMandi(mandi as any)}
-                  className="px-4 py-2 rounded-full text-xs font-bold uppercase transition-all flex items-center gap-2"
+                  className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs font-bold uppercase transition-all flex items-center gap-1.5 whitespace-nowrap"
                   style={activeMandi === mandi
                     ? { background: G.accentBg, color: "#fff", border: `1px solid ${G.accentBorder}` }
                     : { color: "rgba(255,255,255,0.40)", border: "1px solid transparent" }
@@ -210,12 +210,12 @@ export default function StrategicAnalyticsHub() {
                 </button>
               ))}
             </div>
-            <div className="flex gap-1 pr-1">
+            <div className="flex gap-1 pr-1 shrink-0">
               {["wheat", "rice", "both"].map((type) => (
                 <button
                   key={type}
                   onClick={() => setSelectedCommodity(type as any)}
-                  className="px-5 py-2 rounded-full text-xs font-bold uppercase transition-all"
+                  className="px-3 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs font-bold uppercase transition-all whitespace-nowrap"
                   style={selectedCommodity === type
                     ? { background: G.accentDark, color: "#fff", border: `1px solid ${G.accentBorder}`, boxShadow: "0 0 15px rgba(30,77,43,0.5)" }
                     : { color: "rgba(255,255,255,0.40)", background: "transparent", border: "1px solid transparent" }
