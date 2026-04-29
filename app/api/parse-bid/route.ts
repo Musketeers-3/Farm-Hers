@@ -219,7 +219,7 @@ STRICT OUTPUT: Return ONLY valid JSON matching this schema exactly.
         safeData.reply = language === "hi"
           ? "पूल खोल रहा हूं।"
           : "Opening pools.";
-      } else if (input.match(/profile|account|मेरा/i)) {
+      }. else if (input.match(/profile|account|मेरा/i)) {
         safeData.intent = "navigation";
         safeData.target = "profile";
         safeData.reply = language === "hi"
