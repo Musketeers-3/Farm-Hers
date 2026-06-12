@@ -6,12 +6,28 @@ const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || "";
 
 export async function POST(request: NextRequest) {
   try {
+    console.log("Creating Razorpay order with:", {
+      key_id: RAZORPAY_KEY_ID ? "set" : "missing",
+      key_secret: RAZORPAY_KEY_SECRET ? "set" : "missing"
+    });
+
     const { amount, receipt } = await request.json();
 
     if (!amount || amount < 100) {
       return NextResponse.json(
         { success: false, error: "Invalid amount" },
         { status: 400 },
+      );
+    }
+
+    if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
+      console.error("Razorpay credentials missing:", {
+        key_id: RAZORPAY_KEY_ID,
+        key_secret: RAZORPAY_KEY_SECRET
+      });
+      return NextResponse.json(
+        { success: false, error: "Payment gateway not configured" },
+        { status: 500 },
       );
     }
 
@@ -32,15 +48,17 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    console.log("Razorpay order created:", order.id);
+
     return NextResponse.json({
       success: true,
       orderId: order.id,
       amount: order.amount,
     });
-  } catch (error) {
-    console.error("Razorpay order creation error:", error);
+  } catch (error: any) {
+    console.error("Razorpay order creation error:", error.message || error);
     return NextResponse.json(
-      { success: false, error: "Failed to create payment order" },
+      { success: false, error: error.message || "Failed to create payment order" },
       { status: 500 },
     );
   }

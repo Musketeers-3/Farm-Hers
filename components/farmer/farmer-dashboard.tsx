@@ -11,7 +11,6 @@ import { MyFieldsCard } from "./my-fields-card";
 import { SearchBar } from "./search-bar";
 import { AIRecommendationCard } from "./ai-recommendation-card";
 
-
 import {
   Bell,
   MapPin,
@@ -133,9 +132,14 @@ function LocationPickerModal({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 flex items-center justify-center">
-                    <MapPin className="w-4 h-4 text-emerald-600 dark:text-emerald-400" strokeWidth={2.5} />
+                    <MapPin
+                      className="w-4 h-4 text-emerald-600 dark:text-emerald-400"
+                      strokeWidth={2.5}
+                    />
                   </div>
-                  <h2 className="text-[15px] font-black text-[#14532d] dark:text-emerald-300">Change Location</h2>
+                  <h2 className="text-[15px] font-black text-[#14532d] dark:text-emerald-300">
+                    Change Location
+                  </h2>
                 </div>
                 <button
                   onClick={onClose}
@@ -165,11 +169,19 @@ function LocationPickerModal({
                 disabled={isDetecting}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-100 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold text-sm hover:bg-emerald-100 dark:hover:bg-emerald-500/25 active:scale-[0.98] transition disabled:opacity-60"
               >
-                {isDetecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" strokeWidth={2.5} />}
+                {isDetecting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <MapPin className="w-4 h-4" strokeWidth={2.5} />
+                )}
                 {isDetecting ? "Detecting..." : "Auto-detect my location"}
               </button>
 
-              {geoError && <p className="text-xs text-red-500 text-center -mt-1 px-2">{geoError}</p>}
+              {geoError && (
+                <p className="text-xs text-red-500 text-center -mt-1 px-2">
+                  {geoError}
+                </p>
+              )}
 
               <button
                 onClick={handleConfirm}
@@ -195,7 +207,10 @@ export function CorporateDemandsBanner() {
     <motion.button
       whileHover={{ scale: 1.01 }}
       whileTap={{ scale: 0.98 }}
-      onClick={() => { setActiveScreen("demands"); router.push("/farmer/demands"); }}
+      onClick={() => {
+        setActiveScreen("demands");
+        router.push("/farmer/demands");
+      }}
       className="w-full relative overflow-hidden rounded-[32px] p-6 sm:p-8 text-left group
         border border-emerald-500/30 dark:border-white/[0.09]
         bg-emerald-500/10 dark:bg-white/[0.05]
@@ -211,8 +226,12 @@ export function CorporateDemandsBanner() {
           </div>
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <h3 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Corporate Demands</h3>
-              <span className="px-2 py-0.5 rounded-md bg-emerald-500 text-white text-[9px] font-black uppercase tracking-widest animate-pulse">Live</span>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">
+                Corporate Demands
+              </h3>
+              <span className="px-2 py-0.5 rounded-md bg-emerald-500 text-white text-[9px] font-black uppercase tracking-widest animate-pulse">
+                Live
+              </span>
             </div>
             <p className="text-sm font-medium text-slate-600 dark:text-white/50">
               Direct high-volume contracts from verified enterprise buyers.
@@ -242,7 +261,9 @@ export function FarmerDashboard() {
   const [earningsLoading, setEarningsLoading] = useState(true);
   const [locationModalOpen, setLocationModalOpen] = useState(false);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const isDark = resolvedTheme === "dark";
   const toggleDarkMode = () => setTheme(isDark ? "light" : "dark");
@@ -257,18 +278,28 @@ export function FarmerDashboard() {
         const snap = await getDocs(q);
         const now = new Date();
         const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const lastMonthStart = new Date(
+          now.getFullYear(),
+          now.getMonth() - 1,
+          1,
+        );
         const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
-        let thisTotal = 0, lastTotal = 0;
+        let thisTotal = 0,
+          lastTotal = 0;
         snap.docs.forEach((d) => {
           const data = d.data();
           if (data.status !== "payment-released") return;
           const createdAt = new Date(data.createdAt);
           if (createdAt >= thisMonthStart) thisTotal += data.totalAmount || 0;
-          else if (createdAt >= lastMonthStart && createdAt <= lastMonthEnd) lastTotal += data.totalAmount || 0;
+          else if (createdAt >= lastMonthStart && createdAt <= lastMonthEnd)
+            lastTotal += data.totalAmount || 0;
         });
         setEarnings(thisTotal);
-        setEarningsGrowth(lastTotal > 0 ? Math.round(((thisTotal - lastTotal) / lastTotal) * 1000) / 10 : null);
+        setEarningsGrowth(
+          lastTotal > 0
+            ? Math.round(((thisTotal - lastTotal) / lastTotal) * 1000) / 10
+            : null,
+        );
       } catch (err) {
         console.error("Failed to fetch earnings:", err);
       } finally {
@@ -285,7 +316,9 @@ export function FarmerDashboard() {
     if (user) {
       try {
         await updateDoc(doc(db, "users", user.uid), { location: newCity });
-      } catch (err) { console.error("Failed to save location:", err); }
+      } catch (err) {
+        console.error("Failed to save location:", err);
+      }
     }
   };
 
@@ -299,11 +332,12 @@ export function FarmerDashboard() {
 
   return (
     <div className="min-h-screen pb-28 lg:pb-8 relative overflow-x-hidden">
-
       {/* ── FIXED BACKGROUND ── */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         {/* Light mode: soft green gradient */}
-        <div className={`absolute inset-0 bg-gradient-to-b from-[#f0fdf4] to-white transition-opacity duration-500 ${mounted && isDark ? "opacity-0" : "opacity-100"}`} />
+        <div
+          className={`absolute inset-0 bg-gradient-to-b from-[#f0fdf4] to-white transition-opacity duration-500 ${mounted && isDark ? "opacity-0" : "opacity-100"}`}
+        />
 
         {/* Dark mode: farmers_bg.jpg with heavy scrim */}
         {mounted && isDark && (
@@ -321,7 +355,10 @@ export function FarmerDashboard() {
             {/* Radial vignette for depth */}
             <div
               className="absolute inset-0"
-              style={{ background: "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(6,20,8,0.3) 0%, rgba(2,8,3,0.7) 100%)" }}
+              style={{
+                background:
+                  "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(6,20,8,0.3) 0%, rgba(2,8,3,0.7) 100%)",
+              }}
             />
           </>
         )}
@@ -340,10 +377,17 @@ export function FarmerDashboard() {
                   className="w-10.5 h-10.5 rounded-2xl bg-white dark:bg-white/[0.07] flex items-center justify-center hover:bg-emerald-50 dark:hover:bg-white/[0.12] transition-all duration-200 shadow-sm border-0 dark:border dark:border-white/[0.08]"
                   aria-label="Toggle Dark Mode"
                 >
-                  {isDark
-                    ? <Sun className="w-5.5 h-5.5 text-emerald-300" strokeWidth={2} />
-                    : <Moon className="w-5.5 h-5.5 text-[#14532d]" strokeWidth={2} />
-                  }
+                  {isDark ? (
+                    <Sun
+                      className="w-5.5 h-5.5 text-emerald-300"
+                      strokeWidth={2}
+                    />
+                  ) : (
+                    <Moon
+                      className="w-5.5 h-5.5 text-[#14532d]"
+                      strokeWidth={2}
+                    />
+                  )}
                 </button>
               )}
 
@@ -355,7 +399,10 @@ export function FarmerDashboard() {
                 onClick={() => router.push("/farmer/notifications")}
                 className="relative w-10.5 h-10.5 rounded-2xl bg-[#f2f8f5] dark:bg-white/[0.07] flex items-center justify-center shadow-sm border-0 dark:border dark:border-white/[0.08]"
               >
-                <Bell className="w-5.5 h-5.5 text-[#14532d] dark:text-emerald-300" strokeWidth={2} />
+                <Bell
+                  className="w-5.5 h-5.5 text-[#14532d] dark:text-emerald-300"
+                  strokeWidth={2}
+                />
                 <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-[#f2f8f5] dark:border-transparent" />
               </button>
 
@@ -364,7 +411,10 @@ export function FarmerDashboard() {
                 className="w-10.5 h-10.5 rounded-2xl bg-[#f2f8f5] dark:bg-white/[0.07] flex items-center justify-center hover:bg-emerald-100 dark:hover:bg-white/[0.12] transition-all duration-200 shadow-sm border-0 dark:border dark:border-white/[0.08]"
                 aria-label="Profile"
               >
-                <User className="w-5.5 h-5.5 text-[#14532d] dark:text-emerald-300" strokeWidth={2} />
+                <User
+                  className="w-5.5 h-5.5 text-[#14532d] dark:text-emerald-300"
+                  strokeWidth={2}
+                />
               </button>
             </div>
           </div>
@@ -391,11 +441,17 @@ export function FarmerDashboard() {
                 onClick={() => setLocationModalOpen(true)}
                 className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-white dark:bg-white/[0.07] shadow-sm border-0 dark:border dark:border-white/[0.09] backdrop-blur-sm"
               >
-                <MapPin className="w-4 h-4 text-[#16a34a] dark:text-emerald-400" strokeWidth={2.5} />
+                <MapPin
+                  className="w-4 h-4 text-[#16a34a] dark:text-emerald-400"
+                  strokeWidth={2.5}
+                />
                 <span className="text-[13px] font-black text-[#14532d] dark:text-white truncate max-w-[110px]">
                   {userLocation || "Location"}
                 </span>
-                <ChevronDown className="w-3.5 h-3.5 text-[#15803d]/30 dark:text-white/25" strokeWidth={3} />
+                <ChevronDown
+                  className="w-3.5 h-3.5 text-[#15803d]/30 dark:text-white/25"
+                  strokeWidth={3}
+                />
               </motion.button>
             </div>
           </div>
@@ -405,7 +461,6 @@ export function FarmerDashboard() {
       {/* ── MAIN ── */}
       <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-
           {/* RIGHT SIDEBAR — glass container */}
           <div className="lg:col-span-5 flex flex-col order-1 lg:order-2 lg:sticky lg:top-36">
             <motion.div
@@ -418,7 +473,9 @@ export function FarmerDashboard() {
                 shadow-[0_20px_50px_rgba(0,0,0,0.06)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.6)]
                 p-2"
             >
-              <div className="mb-2"><SearchBar /></div>
+              <div className="mb-2">
+                <SearchBar />
+              </div>
 
               <div className="space-y-4 p-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-4">
@@ -445,20 +502,29 @@ export function FarmerDashboard() {
                         </p>
                       </div>
                       <p className="text-2xl font-black text-slate-800 dark:text-white">
-                        {earningsLoading ? "..." : earnings !== null ? formatEarnings(earnings) : "₹0"}
+                        {earningsLoading
+                          ? "..."
+                          : earnings !== null
+                            ? formatEarnings(earnings)
+                            : "₹0"}
                       </p>
                     </div>
                     <div className="flex flex-col items-end gap-1.5">
                       {!earningsLoading && earningsGrowth !== null && (
-                        <div className={`px-3 py-1 rounded-full text-xs font-black shadow-sm ${
-                          earningsGrowth >= 0
-                            ? "bg-white/80 dark:bg-emerald-400/15 text-emerald-700 dark:text-emerald-300"
-                            : "bg-red-50 dark:bg-red-400/15 text-red-600 dark:text-red-400"
-                        }`}>
-                          {earningsGrowth >= 0 ? "+" : ""}{earningsGrowth}%
+                        <div
+                          className={`px-3 py-1 rounded-full text-xs font-black shadow-sm ${
+                            earningsGrowth >= 0
+                              ? "bg-white/80 dark:bg-emerald-400/15 text-emerald-700 dark:text-emerald-300"
+                              : "bg-red-50 dark:bg-red-400/15 text-red-600 dark:text-red-400"
+                          }`}
+                        >
+                          {earningsGrowth >= 0 ? "+" : ""}
+                          {earningsGrowth}%
                         </div>
                       )}
-                      <span className="text-[10px] text-emerald-800/40 dark:text-white/25 font-black">vs last month</span>
+                      <span className="text-[10px] text-emerald-800/40 dark:text-white/25 font-black">
+                        vs last month
+                      </span>
                     </div>
                   </motion.button>
 
@@ -475,7 +541,6 @@ export function FarmerDashboard() {
             <CommoditiesGrid />
             <MyFieldsCard />
           </div>
-
         </div>
       </main>
 

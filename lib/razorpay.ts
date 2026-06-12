@@ -43,10 +43,11 @@ interface PaymentOptions {
   description?: string;
 }
 
-interface PaymentResult {
+export interface PaymentResult {
   success: boolean;
   paymentId?: string;
   orderId?: string;
+  signature?: string;
   error?: string;
 }
 
@@ -67,10 +68,20 @@ export async function initiatePayment(
       description: options.description || "Token Payment for Agricultural Deal",
       order_id: options.orderId,
       handler: (response: any) => {
+        // Razorpay handler receives the payment response with signature
         resolve({
           success: true,
           paymentId: response.razorpay_payment_id,
           orderId: response.razorpay_order_id,
+          signature: response.razorpay_signature,
+        });
+      },
+      // Handle payment failure
+      onFailure: (response: any) => {
+        console.log("Razorpay payment failed:", response);
+        resolve({
+          success: false,
+          error: response.error?.description || response.error?.reason || "Payment failed",
         });
       },
       prefill: {
@@ -139,4 +150,17 @@ export async function verifyPayment(
 
 export function isRazorpayConfigured(): boolean {
   return !!RAZORPAY_KEY_ID;
+}
+
+// Helper function to generate expected signature for verification
+export function generateSignature(
+  razorpayOrderId: string,
+  razorpayPaymentId: string,
+  razorpayKeySecret: string,
+): string {
+  const crypto = require("crypto");
+  return crypto
+    .createHmac("sha256", razorpayKeySecret)
+    .update(`${razorpayOrderId}|${razorpayPaymentId}`)
+    .digest("hex");
 }
