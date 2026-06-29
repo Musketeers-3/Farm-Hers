@@ -1,23 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/firebase";
-import { collection, addDoc, getDoc, doc, updateDoc } from "firebase/firestore";
+
+const BACKEND_API_URL = process.env.BACKEND_API_URL || 'http://localhost:5000/api';
 
 export async function POST(request: NextRequest) {
   try {
     const orderData = await request.json();
 
-    const ordersRef = collection(db, "paymentOrders");
-    const docRef = await addDoc(ordersRef, {
-      ...orderData,
-      status: orderData.status || "pending",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+    const response = await fetch(`${BACKEND_API_URL}/payments/orders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(orderData),
     });
 
-    return NextResponse.json({
-      success: true,
-      orderId: docRef.id,
-    });
+    const data = await response.json();
+    return NextResponse.json(data, { status: response.status });
   } catch (error) {
     console.error("Failed to create payment order:", error);
     return NextResponse.json(
@@ -33,17 +29,9 @@ export async function GET(request: NextRequest) {
     const orderId = searchParams.get("orderId");
 
     if (orderId) {
-      const orderDoc = await getDoc(doc(db, "paymentOrders", orderId));
-      if (orderDoc.exists()) {
-        return NextResponse.json({
-          success: true,
-          order: { id: orderDoc.id, ...orderDoc.data() },
-        });
-      }
-      return NextResponse.json(
-        { success: false, error: "Order not found" },
-        { status: 404 },
-      );
+      const response = await fetch(`${BACKEND_API_URL}/payments/orders?orderId=${orderId}`);
+      const data = await response.json();
+      return NextResponse.json(data, { status: response.status });
     }
 
     return NextResponse.json({
@@ -70,13 +58,14 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const orderRef = doc(db, "paymentOrders", orderId);
-    await updateDoc(orderRef, {
-      ...updates,
-      updatedAt: new Date().toISOString(),
+    const response = await fetch(`${BACKEND_API_URL}/payments/orders`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderId, updates }),
     });
 
-    return NextResponse.json({ success: true });
+    const data = await response.json();
+    return NextResponse.json(data, { status: response.status });
   } catch (error) {
     console.error("Failed to update payment order:", error);
     return NextResponse.json(

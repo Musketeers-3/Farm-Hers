@@ -1,6 +1,5 @@
 // lib/auction-engine.ts
-import { db } from "./firebase"; // Adjust import to your config
-import { doc, collection, runTransaction, serverTimestamp } from "firebase/firestore";
+import { auctionsAPI } from './api';
 
 export interface BidResult {
   success: boolean;
@@ -12,66 +11,105 @@ export interface BidResult {
  * Safely processes a live bid, preventing race conditions.
  * @param auctionId The ID of the active auction
  * @param buyerId The ID of the enterprise buyer placing the bid
+ * @param buyerName The name of the buyer
  * @param bidAmount The monetary value the buyer is trying to bid
  */
 export async function placeBidSafely(
-  auctionId: string, 
-  buyerId: string, 
+  auctionId: string,
+  buyerId: string,
+  buyerName: string,
   bidAmount: number
 ): Promise<BidResult> {
-  const auctionRef = doc(db, "auctions", auctionId);
-  const bidHistoryRef = doc(collection(auctionRef, "history"));
-
   try {
-    await runTransaction(db, async (transaction) => {
-      const auctionDoc = await transaction.get(auctionRef);
-      
-      if (!auctionDoc.exists()) {
-        throw new Error("Auction does not exist.");
-      }
-
-      const data = auctionDoc.data();
-      const currentHighestBid = data.currentBid || data.startingPrice;
-      const status = data.status;
-
-      // 1. Hard Constraints
-      if (status !== 'active') {
-        throw new Error("This auction has already closed.");
-      }
-
-      if (bidAmount <= currentHighestBid) {
-        throw new Error(`Bid rejected. The current highest bid is already ₹${currentHighestBid}.`);
-      }
-
-      // 2. The Atomic Write
-      // This only executes if the read data hasn't been changed by another thread
-      transaction.update(auctionRef, {
-        currentBid: bidAmount,
-        highestBidder: buyerId,
-        lastBidTime: serverTimestamp()
-      });
-
-      // 3. The Audit Trail
-      // We log every single bid to a subcollection for the scrolling UI history
-      transaction.set(bidHistoryRef, {
-        buyerId: buyerId,
-        amount: bidAmount,
-        timestamp: serverTimestamp(),
-        isLeading: true // Front-end uses this to style the text green
-      });
+    const result = await auctionsAPI.placeBid(auctionId, {
+      buyerId,
+      buyerName,
+      bidAmount,
     });
 
-    return { 
-      success: true, 
-      message: "Bid accepted successfully.",
-      newHighestBid: bidAmount
-    };
+    if (result.error) {
+      return {
+        success: false,
+        message: result.error,
+      };
+    }
 
-  } catch (error: any) {
-    console.error("Transaction failed: ", error);
-    return { 
-      success: false, 
-      message: error.message || "Failed to place bid due to high traffic. Try again."
+    return {
+      success: true,
+      message: result.message || 'Bid accepted successfully.',
+      newHighestBid: result.newHighestBid,
     };
+  } catch (error: any) {
+    console.error('Bid failed: ', error);
+    return {
+      success: false,
+      message: error.message || 'Failed to place bid due to high traffic. Try again.',
+    };
+  }
+}
+
+/**
+ * Creates a new auction
+ */
+export async function createAuction(auctionData: {
+  cropId: string;
+  cropName?: string;
+  farmerId: string;
+  farmerName?: string;
+  quantity: number;
+  startingPrice: number;
+  endTime: string;
+  location?: string;
+  description?: string;
+}) {
+  try {
+    const result = await auctionsAPI.create(auctionData);
+    return result;
+  } catch (error: any) {
+    console.error('Create auction failed: ', error);
+    throw error;
+  }
+}
+
+/**
+ * Gets all auctions (optionally filtered)
+ */
+export async function getAuctions(filters?: {
+  status?: string;
+  cropId?: string;
+  farmerId?: string;
+}) {
+  try {
+    const result = await auctionsAPI.getAll(filters || {});
+    return result.auctions || [];
+  } catch (error: any) {
+    console.error('Get auctions failed: ', error);
+    return [];
+  }
+}
+
+/**
+ * Gets a single auction by ID
+ */
+export async function getAuction(auctionId: string) {
+  try {
+    const result = await auctionsAPI.getById(auctionId);
+    return result.auction;
+  } catch (error: any) {
+    console.error('Get auction failed: ', error);
+    return null;
+  }
+}
+
+/**
+ * Gets live auctions
+ */
+export async function getLiveAuctions() {
+  try {
+    const result = await auctionsAPI.getLive();
+    return result.auctions || [];
+  } catch (error: any) {
+    console.error('Get live auctions failed: ', error);
+    return [];
   }
 }

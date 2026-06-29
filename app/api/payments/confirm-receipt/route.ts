@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase-admin";
+
+const BACKEND_API_URL = process.env.BACKEND_API_URL || 'http://localhost:5000/api';
 
 interface ConfirmReceiptRequest {
   poolId: string;
@@ -27,30 +28,43 @@ export async function POST(request: NextRequest) {
     const now = new Date().toISOString();
 
     if (confirmed) {
-      // Update payment status to awaiting offline payment
-      await adminDb.collection("tokenPayments").doc(orderId).update({
-        farmerConfirmed: true,
-        farmerConfirmedAt: now,
-        farmerNotes: notes || null,
-        status: "awaiting-offline",
+      // Update payment status via backend API
+      await fetch(`${BACKEND_API_URL}/payments/orders`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId,
+          updates: {
+            farmerConfirmed: true,
+            farmerConfirmedAt: now,
+            farmerNotes: notes || null,
+            status: "awaiting-offline",
+          },
+        }),
       });
 
-      // Update the pool status
-      await adminDb.collection("pools").doc(poolId).update({
-        farmerConfirmedPayment: true,
-        farmerConfirmedAt: now,
-        updatedAt: now,
+      // Update the pool status via backend API
+      await fetch(`${BACKEND_API_URL}/pools/${poolId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          farmerConfirmedPayment: true,
+          farmerConfirmedAt: now,
+          updatedAt: now,
+        }),
       });
 
-      // Send notification to buyer that farmer confirmed
-      await adminDb.collection("notifications").add({
-        userId: buyerId,
-        type: "payment",
-        title: "Order Confirmed!",
-        message: "Your order is confirmed! Farmer has acknowledged the deal. Proceed with full payment via cheque/NEFT.",
-        relatedId: orderId,
-        read: false,
-        createdAt: now,
+      // Send notification to buyer
+      await fetch(`${BACKEND_API_URL}/notifications`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: buyerId,
+          type: "payment",
+          title: "Order Confirmed!",
+          message: "Your order is confirmed! Farmer has acknowledged the deal. Proceed with full payment via cheque/NEFT.",
+          relatedId: orderId,
+        }),
       });
 
       return NextResponse.json({
@@ -60,29 +74,42 @@ export async function POST(request: NextRequest) {
       });
     } else {
       // Farmer denied receiving payment
-      await adminDb.collection("tokenPayments").doc(orderId).update({
-        farmerConfirmed: false,
-        farmerDeniedAt: now,
-        farmerNotes: notes || "Payment not received",
-        status: "payment-disputed",
+      await fetch(`${BACKEND_API_URL}/payments/orders`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId,
+          updates: {
+            farmerConfirmed: false,
+            farmerDeniedAt: now,
+            farmerNotes: notes || "Payment not received",
+            status: "payment-disputed",
+          },
+        }),
       });
 
       // Update the pool
-      await adminDb.collection("pools").doc(poolId).update({
-        farmerConfirmedPayment: false,
-        farmerDeniedAt: now,
-        updatedAt: now,
+      await fetch(`${BACKEND_API_URL}/pools/${poolId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          farmerConfirmedPayment: false,
+          farmerDeniedAt: now,
+          updatedAt: now,
+        }),
       });
 
       // Send notification to buyer about the dispute
-      await adminDb.collection("notifications").add({
-        userId: buyerId,
-        type: "payment",
-        title: "Payment Dispute Raised",
-        message: "Farmer has raised a concern about payment. Please contact support or re-submit your payment reference.",
-        relatedId: orderId,
-        read: false,
-        createdAt: now,
+      await fetch(`${BACKEND_API_URL}/notifications`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: buyerId,
+          type: "payment",
+          title: "Payment Dispute Raised",
+          message: "Farmer has raised a concern about payment. Please contact support or re-submit your payment reference.",
+          relatedId: orderId,
+        }),
       });
 
       return NextResponse.json({
@@ -113,23 +140,23 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const doc = await adminDb.collection("tokenPayments").doc(orderId).get();
+    const response = await fetch(`${BACKEND_API_URL}/payments/orders?orderId=${orderId}`);
+    const data = await response.json();
 
-    if (!doc.exists) {
+    if (!data.order) {
       return NextResponse.json(
         { error: "Payment not found" },
         { status: 404 },
       );
     }
 
-    const data = doc.data();
     return NextResponse.json({
-      orderId: doc.id,
-      status: data?.status,
-      farmerConfirmed: data?.farmerConfirmed || false,
-      farmerConfirmedAt: data?.farmerConfirmedAt || null,
-      farmerDeniedAt: data?.farmerDeniedAt || null,
-      farmerNotes: data?.farmerNotes || null,
+      orderId: data.order.id,
+      status: data.order.status,
+      farmerConfirmed: data.order.farmerConfirmed || false,
+      farmerConfirmedAt: data.order.farmerConfirmedAt || null,
+      farmerDeniedAt: data.order.farmerDeniedAt || null,
+      farmerNotes: data.order.farmerNotes || null,
     });
   } catch (error: any) {
     console.error("GET /api/payments/confirm-receipt error:", error);

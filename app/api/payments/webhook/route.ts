@@ -1,23 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { adminDb } from "@/lib/firebase-admin";
-import { FieldValue } from "firebase-admin/firestore";
+
+const BACKEND_API_URL = process.env.BACKEND_API_URL || 'http://localhost:5000/api';
 
 const RAZORPAY_WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || "";
 
 async function sendPaymentNotification(orderData: any) {
-  // Send notification to farmer about the token payment
-  // orderData contains: poolId, cropName, quantity, pricePerQuintal, farmerId, buyerName, amount
-  const notificationRef = await adminDb.collection("notifications").add({
-    userId: orderData.farmerId,
-    type: "payment",
-    title: "Token Payment Received",
-    message: `New order confirmed — buyer ${orderData.buyerName || "A buyer"} has paid ₹${orderData.tokenAmount} token for ${orderData.quantity} quintals of ${orderData.cropName} at ₹${orderData.pricePerQuintal}/quintal. Check your orders.`,
-    relatedId: orderData.orderId,
-    read: false,
-    createdAt: new Date().toISOString(),
-  });
-  return notificationRef.id;
+  try {
+    await fetch(`${BACKEND_API_URL}/notifications`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: orderData.farmerId,
+        type: "payment",
+        title: "Token Payment Received",
+        message: `New order confirmed — buyer ${orderData.buyerName || "A buyer"} has paid ₹${orderData.tokenAmount} token for ${orderData.quantity} quintals of ${orderData.cropName} at ₹${orderData.pricePerQuintal}/quintal. Check your orders.`,
+        relatedId: orderData.orderId,
+      }),
+    });
+  } catch (err) {
+    console.error("Failed to send payment notification:", err);
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -46,42 +49,56 @@ export async function POST(request: NextRequest) {
         const poolId = payment.notes?.poolId;
 
         if (orderId) {
-          // Store token payment in Firestore
-          const paymentRef = adminDb.collection("tokenPayments").doc(orderId);
-          await adminDb.runTransaction(async (tx) => {
-            const doc = await tx.get(paymentRef);
-            if (doc.exists) {
-              tx.update(paymentRef, {
-                status: "token-paid",
-                razorpayPaymentId: payment.id,
-                paidAt: new Date().toISOString(),
+          // Update or create payment order via backend API
+          try {
+            const response = await fetch(`${BACKEND_API_URL}/payments/orders?orderId=${orderId}`);
+            const data = await response.json();
+
+            if (data.order) {
+              await fetch(`${BACKEND_API_URL}/payments/orders`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  orderId,
+                  updates: {
+                    status: "token-paid",
+                    razorpayPaymentId: payment.id,
+                    paidAt: new Date().toISOString(),
+                  },
+                }),
               });
             } else {
               // Create new payment record if doesn't exist
-              tx.set(paymentRef, {
-                orderId: orderId,
-                poolId: poolId || orderId,
-                razorpayOrderId: payment.notes?.razorpay_order_id || "",
-                razorpayPaymentId: payment.id,
-                status: "token-paid",
-                paidAt: new Date().toISOString(),
-                createdAt: new Date().toISOString(),
+              await fetch(`${BACKEND_API_URL}/payments/orders`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  orderId: orderId,
+                  poolId: poolId || orderId,
+                  razorpayOrderId: payment.notes?.razorpay_order_id || "",
+                  razorpayPaymentId: payment.id,
+                  status: "token-paid",
+                  paidAt: new Date().toISOString(),
+                }),
               });
             }
-          });
+          } catch (err) {
+            console.error("Failed to update payment order:", err);
+          }
 
           // Find the pool to get farmer details
           if (poolId) {
             try {
-              const poolSnap = await adminDb.collection("pools").doc(poolId).get();
-              if (poolSnap.exists) {
-                const poolData = poolSnap.data();
+              const response = await fetch(`${BACKEND_API_URL}/pools/${poolId}`);
+              const data = await response.json();
+
+              if (data.pool) {
                 await sendPaymentNotification({
-                  farmerId: poolData?.creatorId,
-                  buyerName: poolData?.buyerName || "A buyer",
-                  cropName: poolData?.commodity || "Unknown",
-                  quantity: poolData?.filledQuantity || 1,
-                  pricePerQuintal: poolData?.pricePerUnit || 0,
+                  farmerId: data.pool.creatorId,
+                  buyerName: data.pool.buyerName || "A buyer",
+                  cropName: data.pool.commodity || "Unknown",
+                  quantity: data.pool.filledQuantity || 1,
+                  pricePerQuintal: data.pool.pricePerUnit || 0,
                   tokenAmount: payment.amount / 100,
                   poolId: poolId,
                   orderId: orderId,
@@ -100,11 +117,22 @@ export async function POST(request: NextRequest) {
         const orderId = payment.notes?.orderId;
 
         if (orderId) {
-          await adminDb.collection("tokenPayments").doc(orderId).update({
-            status: "failed",
-            error: payment.error_description || "Payment failed",
-            updatedAt: new Date().toISOString(),
-          });
+          try {
+            await fetch(`${BACKEND_API_URL}/payments/orders`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                orderId,
+                updates: {
+                  status: "failed",
+                  error: payment.error_description || "Payment failed",
+                  updatedAt: new Date().toISOString(),
+                },
+              }),
+            });
+          } catch (err) {
+            console.error("Failed to update payment status:", err);
+          }
         }
         break;
       }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase-admin";
+
+const BACKEND_API_URL = process.env.BACKEND_API_URL || 'http://localhost:5000/api';
 
 // POST /api/payments/create-token-payment
 // Creates a token payment record when buyer commits via Smart Escrow
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
       totalAmount,
       razorpayOrderId,
       razorpayPaymentId,
-      paymentMode, // "razorpay" or "smart_escrow"
+      paymentMode,
     } = body;
 
     if (!poolId || !buyerId || !farmerId || !tokenAmount) {
@@ -32,10 +33,8 @@ export async function POST(request: NextRequest) {
     const now = new Date().toISOString();
     const orderId = `TP_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    // Create the token payment record
-    const paymentRef = adminDb.collection("tokenPayments").doc(orderId);
-    await paymentRef.set({
-      orderId: orderId,
+    // Create payment order via backend API
+    const paymentOrderData = {
       poolId: poolId,
       buyerId: buyerId,
       buyerName: buyerName || "Unknown Buyer",
@@ -55,26 +54,38 @@ export async function POST(request: NextRequest) {
       paidAt: now,
       createdAt: now,
       updatedAt: now,
+    };
+
+    await fetch(`${BACKEND_API_URL}/payments/orders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(paymentOrderData),
     });
 
-    // Update the pool with buyer info and mark as token-paid
-    await adminDb.collection("pools").doc(poolId).update({
-      buyerId: buyerId,
-      buyerName: buyerName || "Unknown Buyer",
-      tokenAmount: tokenAmount,
-      status: "token-paid",
-      updatedAt: now,
+    // Update the pool with buyer info and mark as token-paid via backend API
+    await fetch(`${BACKEND_API_URL}/pools/${poolId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        buyerId: buyerId,
+        buyerName: buyerName || "Unknown Buyer",
+        tokenAmount: tokenAmount,
+        status: "token-paid",
+        updatedAt: now,
+      }),
     });
 
-    // Send notification to farmer
-    await adminDb.collection("notifications").add({
-      userId: farmerId,
-      type: "payment",
-      title: "New Order Confirmed",
-      message: `New order confirmed — buyer ${buyerName || "A buyer"} has paid ₹${tokenAmount} token for ${quantity || "some"} quintals of ${cropName || "crop"} at ₹${pricePerQuintal || 0}/quintal. Check your orders.`,
-      relatedId: orderId,
-      read: false,
-      createdAt: now,
+    // Send notification to farmer via backend API
+    await fetch(`${BACKEND_API_URL}/notifications`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: farmerId,
+        type: "payment",
+        title: "New Order Confirmed",
+        message: `New order confirmed — buyer ${buyerName || "A buyer"} has paid ₹${tokenAmount} token for ${quantity || "some"} quintals of ${cropName || "crop"} at ₹${pricePerQuintal || 0}/quintal. Check your orders.`,
+        relatedId: orderId,
+      }),
     });
 
     return NextResponse.json({

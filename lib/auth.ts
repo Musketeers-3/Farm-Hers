@@ -1,12 +1,4 @@
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  User,
-} from "firebase/auth";
-import { doc, setDoc, getDoc } from "firebase/firestore";
-import { auth, db } from "./firebase";
+import { authAPI } from './api';
 
 export interface UserProfile {
   uid: string;
@@ -20,66 +12,118 @@ export interface UserProfile {
   createdAt: string;
 }
 
-// Sign up — creates Firebase Auth user + saves profile to Firestore
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
+// Token management
+export function setToken(token: string) {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('token', token);
+  }
+}
+
+export function getToken(): string | null {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('token');
+  }
+  return null;
+}
+
+export function removeToken() {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('token');
+  }
+}
+
+// Sign up — creates user + saves profile to MongoDB
 export async function signUp(
   email: string,
   password: string,
   profile: Omit<UserProfile, "uid" | "createdAt">
 ): Promise<UserProfile> {
-  // Use phone as email if no email provided (Firebase requires email)
+  // Use phone as email if no email provided
   const authEmail = email || `${profile.phone}@agrilink.app`;
 
-  const userCredential = await createUserWithEmailAndPassword(auth, authEmail, password);
-  const uid = userCredential.user.uid;
-
-  const userProfile: UserProfile = {
-    ...profile,
-    uid,
+  const response = await authAPI.register({
     email: authEmail,
-    createdAt: new Date().toISOString(),
-  };
+    password,
+    fullName: profile.fullName,
+    phone: profile.phone,
+    location: profile.location,
+    role: profile.role,
+    farmSize: profile.farmSize,
+    primaryCrop: profile.primaryCrop,
+  });
 
-  // Save profile to Firestore under users/{uid}
-  await setDoc(doc(db, "users", uid), userProfile);
+  if (!response.token) {
+    throw new Error(response.error || 'Registration failed');
+  }
 
-  return userProfile;
+  // Store token
+  setToken(response.token);
+
+  return response.user;
 }
 
-// Login — signs in with Firebase Auth + fetches profile from Firestore
+// Login — signs in with credentials + fetches profile
 export async function login(
   emailOrPhone: string,
   password: string
 ): Promise<UserProfile> {
-  // Handle phone login by converting to the same format used at signup
-  const authEmail = emailOrPhone.includes("@")
-    ? emailOrPhone
-    : `${emailOrPhone}@agrilink.app`;
+  const response = await authAPI.login({
+    emailOrPhone,
+    password,
+  });
 
-  const userCredential = await signInWithEmailAndPassword(auth, authEmail, password);
-  const uid = userCredential.user.uid;
-
-  // Fetch profile from Firestore
-  const userDoc = await getDoc(doc(db, "users", uid));
-  if (!userDoc.exists()) {
-    throw new Error("User profile not found");
+  if (!response.token) {
+    throw new Error(response.error || 'Invalid credentials');
   }
 
-  return { ...userDoc.data(), uid } as UserProfile;
+  // Store token
+  setToken(response.token);
+
+  return response.user;
 }
 
 // Logout
 export async function logout(): Promise<void> {
-  await signOut(auth);
+  removeToken();
 }
 
-// Listen to auth state changes
-export function onAuthChange(callback: (user: User | null) => void) {
-  return onAuthStateChanged(auth, callback);
-}
-
-// Fetch user profile from Firestore
+// Fetch user profile
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
-  const userDoc = await getDoc(doc(db, "users", uid));
-  if (!userDoc.exists()) return null;
-  return { ...userDoc.data(), uid } as UserProfile;
+  try {
+    const response = await authAPI.getProfile();
+    if (response.error) {
+      return null;
+    }
+    return response;
+  } catch (error) {
+    console.error('Failed to get user profile:', error);
+    return null;
+  }
+}
+
+// Store user profile in localStorage
+export function setUserProfile(profile: UserProfile) {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('userProfile', JSON.stringify(profile));
+  }
+}
+
+// Get user profile from localStorage
+export function getStoredUserProfile(): UserProfile | null {
+  if (typeof window !== 'undefined') {
+    const stored = localStorage.getItem('userProfile');
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  }
+  return null;
+}
+
+// Clear user profile from localStorage
+export function clearUserProfile() {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('userProfile');
+  }
 }

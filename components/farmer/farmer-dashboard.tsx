@@ -30,15 +30,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import Image from "next/image";
-import { auth, db } from "@/lib/firebase";
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  doc,
-  updateDoc,
-} from "firebase/firestore";
+import { paymentsAPI, authAPI } from "@/lib/api";
+import { getToken } from "@/lib/auth";
 
 // ─── Location Picker Modal ────────────────────────────────────────────────────
 interface LocationPickerModalProps {
@@ -270,12 +263,11 @@ export function FarmerDashboard() {
 
   useEffect(() => {
     const fetchEarnings = async () => {
-      const user = auth.currentUser;
+      const user = useAppStore.getState().userProfile;
       if (!user) return;
       try {
-        const ordersRef = collection(db, "orders");
-        const q = query(ordersRef, where("farmerId", "==", user.uid));
-        const snap = await getDocs(q);
+        const result = await paymentsAPI.getFarmerOrders(user.uid);
+        const orders = result.orders || [];
         const now = new Date();
         const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
         const lastMonthStart = new Date(
@@ -286,13 +278,12 @@ export function FarmerDashboard() {
         const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
         let thisTotal = 0,
           lastTotal = 0;
-        snap.docs.forEach((d) => {
-          const data = d.data();
-          if (data.status !== "payment-released") return;
-          const createdAt = new Date(data.createdAt);
-          if (createdAt >= thisMonthStart) thisTotal += data.totalAmount || 0;
+        orders.forEach((order: any) => {
+          if (order.status !== "payment-released" && order.status !== "completed") return;
+          const createdAt = new Date(order.createdAt);
+          if (createdAt >= thisMonthStart) thisTotal += order.totalAmount || 0;
           else if (createdAt >= lastMonthStart && createdAt <= lastMonthEnd)
-            lastTotal += data.totalAmount || 0;
+            lastTotal += order.totalAmount || 0;
         });
         setEarnings(thisTotal);
         setEarningsGrowth(
@@ -312,10 +303,21 @@ export function FarmerDashboard() {
   const handleLocationChange = async (newCity: string) => {
     setUserLocation(newCity);
     setLocationModalOpen(false);
-    const user = auth.currentUser;
+    const user = useAppStore.getState().userProfile;
     if (user) {
       try {
-        await updateDoc(doc(db, "users", user.uid), { location: newCity });
+        // Update location via API - call the profile update endpoint
+        const token = getToken();
+        if (token) {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/auth/profile`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({ location: newCity }),
+          });
+        }
       } catch (err) {
         console.error("Failed to save location:", err);
       }

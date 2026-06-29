@@ -1,37 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase-admin";
+
+const BACKEND_API_URL = process.env.BACKEND_API_URL || 'http://localhost:5000/api';
 
 // POST /api/pools/[id]/close
 export async function POST(
-  req: NextRequest, 
-  { params }: { params: Promise<{ id: string }> } // ⚡ Next.js 15 Promise type
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { userId } = await req.json();
-    const { id } = await params; // ⚡ Await the params
+    const { id } = await params;
 
-    const poolRef = adminDb.collection("pools").doc(id);
-    const poolSnap = await poolRef.get();
-
-    if (!poolSnap.exists) {
-      return NextResponse.json({ error: "Pool not found" }, { status: 404 });
-    }
-
-    const pool = poolSnap.data()!;
-    
-    // Strict Authorization check
-    if (pool.creatorId !== userId) {
-      return NextResponse.json({ error: "Only the creator can close this pool" }, { status: 403 });
-    }
-
-    await poolRef.update({ 
-      status: "closed", 
-      updatedAt: new Date().toISOString() 
+    const response = await fetch(`${BACKEND_API_URL}/pools/${id}/close`, {
+      method: 'POST',
     });
-    
-    return NextResponse.json({ success: true });
 
+    const data = await response.json();
+    return NextResponse.json(data, { status: response.status });
   } catch (error: any) {
+    console.error("Pool close error:", error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

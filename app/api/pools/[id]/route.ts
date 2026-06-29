@@ -1,23 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase-admin";
-import { Pool } from "@/types/pool";
+
+const BACKEND_API_URL = process.env.BACKEND_API_URL || 'http://localhost:5000/api';
 
 // GET /api/pools/[id] — get a single pool by ID
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> } // 1. Type it as a Promise
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params; // 2. Await the params before using them
+    const { id } = await params;
 
-    const doc = await adminDb.collection("pools").doc(id).get();
+    const response = await fetch(`${BACKEND_API_URL}/pools/${id}`);
+    const data = await response.json();
 
-    if (!doc.exists) {
-      return NextResponse.json({ error: "Pool not found" }, { status: 404 });
-    }
-
-    const pool: Pool = { id: doc.id, ...(doc.data() as Omit<Pool, "id">) };
-    return NextResponse.json({ pool }, { status: 200 });
+    return NextResponse.json(data, { status: response.status });
   } catch (error: any) {
     console.error("GET /api/pools/[id] error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });

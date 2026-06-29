@@ -1,1 +1,0 @@
-self.__SSG_MANIFEST=new Set(["\u002Fbuyer\u002F[screen]","\u002Ffarmer\u002F[screen]"]);self.__SSG_MANIFEST_CB&&self.__SSG_MANIFEST_CB()

@@ -1,4 +1,4 @@
-import { adminDb } from "./firebase-admin";
+import { notificationsAPI } from "./api";
 import type { NotificationType } from "@/types/notifications";
 
 export async function createNotification(params: {
@@ -8,14 +8,13 @@ export async function createNotification(params: {
   message: string;
   relatedId?: string;
 }): Promise<string> {
-  const docRef = await adminDb.collection("notifications").add({
+  const result = await notificationsAPI.create({
     userId: params.userId,
     type: params.type,
     title: params.title,
     message: params.message,
-    relatedId: params.relatedId || null,
-    read: false,
-    createdAt: new Date().toISOString(),
+    relatedId: params.relatedId,
   });
-  return docRef.id;
+
+  return result.id;
 }

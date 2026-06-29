@@ -1,21 +1,33 @@
 // hooks/useCurrentUser.ts
 "use client";
 import { useEffect, useState } from "react";
-import { getAuth, onAuthStateChanged, User } from "firebase/auth";
-import app from "@/lib/firebase";
+import { getToken, getStoredUserProfile, setUserProfile, removeToken, clearUserProfile, type UserProfile } from "@/lib/auth";
 
 export function useCurrentUser() {
-  const [user, setUser] = useState<User | null>(null);
-  const [authReady, setAuthReady] = useState(false); // ADD
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
-    const auth = getAuth(app);
-    const unsub = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      setAuthReady(true); // ADD — fires once Firebase resolves
-    });
-    return () => unsub();
+    // Check for token and user profile in localStorage
+    const token = getToken();
+    const storedProfile = getStoredUserProfile();
+
+    if (token && storedProfile) {
+      setUser(storedProfile);
+    }
+    setAuthReady(true);
   }, []);
 
-  return { user, authReady }; // CHANGED — return object
+  // Function to update user state
+  const setUserData = (profile: UserProfile | null) => {
+    if (profile) {
+      setUserProfile(profile);
+    } else {
+      clearUserProfile();
+      removeToken();
+    }
+    setUser(profile);
+  };
+
+  return { user, authReady, setUserData };
 }

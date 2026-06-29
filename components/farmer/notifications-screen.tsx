@@ -18,16 +18,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
-import { db } from "@/lib/firebase";
-import {
-  collection,
-  query,
-  where,
-  onSnapshot,
-  updateDoc,
-  doc,
-  getDocs,
-} from "firebase/firestore";
+import { notificationsAPI } from "@/lib/api";
 import type { NotificationType } from "@/types/notifications";
 
 interface Notification {
@@ -87,65 +78,46 @@ export function NotificationsScreen() {
 
   useEffect(() => setIsMounted(true), []);
 
-  // Fetch real notifications from Firestore
+  // Fetch real notifications from MongoDB API
   useEffect(() => {
     if (!userProfile?.uid) return;
 
-    setLoading(true);
-    const notifQuery = query(
-      collection(db, "notifications"),
-      where("userId", "==", userProfile.uid),
-    );
-
-    const unsubscribe = onSnapshot(
-      notifQuery,
-      (snapshot) => {
-        const firestoreNotifs = snapshot.docs
-          .map((doc) => {
-            const data = doc.data();
-            return {
-              id: doc.id,
-              type: (data.type || "order") as Notification["type"],
-              title: data.title || "",
-              message: data.message || "",
-              time: data.createdAt ? timeAgo(data.createdAt) : "Just now",
-              read: data.read ?? false,
-              poolId: data.poolId,
-              orderId: data.orderId,
-              createdAt: data.createdAt,
-            };
-          })
-          .sort((a, b) => {
-            if (!a.createdAt) return 1;
-            if (!b.createdAt) return -1;
-            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-          });
-
-        setNotifications(firestoreNotifs);
-        setLoading(false);
-      },
-      (error) => {
+    const fetchNotifications = async () => {
+      setLoading(true);
+      try {
+        const result = await notificationsAPI.getAll({ userId: userProfile.uid });
+        const notifs = (result.notifications || []).map((n: any) => ({
+          id: n._id || n.id,
+          type: (n.type || "order") as Notification["type"],
+          title: n.title || "",
+          message: n.message || "",
+          time: n.createdAt ? timeAgo(n.createdAt) : "Just now",
+          read: n.read ?? false,
+          relatedId: n.relatedId || n.poolId || n.orderId,
+          createdAt: n.createdAt,
+        }));
+        setNotifications(notifs);
+      } catch (error) {
         console.error("Error fetching notifications:", error);
+      } finally {
         setLoading(false);
-      },
-    );
+      }
+    };
 
-    return () => unsubscribe();
+    fetchNotifications();
+
+    // Poll for new notifications every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
   }, [userProfile]);
 
   const markAllRead = async () => {
     if (!userProfile?.uid) return;
     try {
-      const notifQuery = query(
-        collection(db, "notifications"),
-        where("userId", "==", userProfile.uid),
-        where("read", "==", false),
-      );
-      const snapshot = await getDocs(notifQuery);
-      const updatePromises = snapshot.docs.map((docSnap) =>
-        updateDoc(doc(db, "notifications", docSnap.id), { read: true }),
-      );
-      await Promise.all(updatePromises);
+      const unreadNotifications = notifications.filter((n) => !n.read);
+      for (const notif of unreadNotifications) {
+        await notificationsAPI.markAsRead(notif.id);
+      }
     } catch (error) {
       console.error("Error marking all as read:", error);
     }
@@ -161,9 +133,9 @@ export function NotificationsScreen() {
       prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
     );
 
-    // Update in Firestore only for real documents
+    // Update in MongoDB API
     try {
-      await updateDoc(doc(db, "notifications", id), { read: true });
+      await notificationsAPI.markAsRead(id);
     } catch (error) {
       console.error("Error marking notification as read:", error);
     }

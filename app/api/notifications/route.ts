@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase-admin";
-import { createNotification } from "@/lib/notifications";
-import type { Notification, NotificationType } from "@/types/notifications";
+
+const BACKEND_API_URL = process.env.BACKEND_API_URL || 'http://localhost:5000/api';
 
 export async function GET(req: NextRequest) {
   try {
@@ -12,24 +11,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "userId is required" }, { status: 400 });
     }
 
-    let query: FirebaseFirestore.Query = adminDb
-      .collection("notifications")
-      .where("userId", "==", userId)
-      .orderBy("createdAt", "desc");
+    const params: Record<string, string> = { userId };
+    if (readFilter) params.read = readFilter;
 
-    if (readFilter === "true") {
-      query = query.where("read", "==", true);
-    } else if (readFilter === "false") {
-      query = query.where("read", "==", false);
-    }
+    const query = new URLSearchParams(params).toString();
+    const response = await fetch(`${BACKEND_API_URL}/notifications?${query}`);
+    const data = await response.json();
 
-    const snapshot = await query.get();
-    const notifications: Notification[] = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...(doc.data() as Omit<Notification, "id">),
-    }));
-
-    return NextResponse.json({ notifications }, { status: 200 });
+    return NextResponse.json({ notifications: data.notifications }, { status: 200 });
   } catch (error: any) {
     console.error("GET /api/notifications error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -39,18 +28,15 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { userId, type, title, message, relatedId } = body;
 
-    if (!userId || !type || !title || !message) {
-      return NextResponse.json(
-        { error: "userId, type, title, and message are required" },
-        { status: 400 },
-      );
-    }
+    const response = await fetch(`${BACKEND_API_URL}/notifications`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
 
-    const id = await createNotification({ userId, type, title, message, relatedId });
-
-    return NextResponse.json({ id, userId, type, title, message, relatedId, read: false, createdAt: new Date().toISOString() }, { status: 201 });
+    const data = await response.json();
+    return NextResponse.json(data, { status: response.status });
   } catch (error: any) {
     console.error("POST /api/notifications error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
