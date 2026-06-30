@@ -7,6 +7,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/lib/store";
 import type { Demand } from "@/types/demand";
+import { getAuthToken } from "@/lib/api-client";
 
 const G = {
   card: "rgba(18,14,8,0.72)",
@@ -72,9 +73,13 @@ export function BuyerDemands() {
     if (!form.cropId || !form.targetQuantity || !form.pricePerQuintal || !form.deadline) return;
     setSubmitting(true);
     try {
+      const token = getAuthToken();
       const res = await fetch("/api/demands", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
           cropId: form.cropId,
           targetQuantity: Number(form.targetQuantity),

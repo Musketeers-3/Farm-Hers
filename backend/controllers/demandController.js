@@ -1,5 +1,16 @@
 import Demand from '../models/Demand.js';
 
+// Helper to convert MongoDB _id to id in demand documents
+const normalizeDemand = (demand) => {
+  if (!demand) return demand;
+  const obj = demand.toObject ? demand.toObject() : demand;
+  return { ...obj, id: obj._id.toString() };
+};
+
+const normalizeDemands = (demands) => {
+  return demands.map(normalizeDemand);
+};
+
 export const getDemands = async (req, res) => {
   try {
     const { status } = req.query;
@@ -8,7 +19,7 @@ export const getDemands = async (req, res) => {
     if (status) query.status = status;
 
     const demands = await Demand.find(query).sort({ createdAt: -1 });
-    res.json({ demands });
+    res.json({ demands: normalizeDemands(demands) });
   } catch (error) {
     console.error('Get demands error:', error);
     res.status(500).json({ error: error.message });
@@ -21,7 +32,7 @@ export const getDemand = async (req, res) => {
     if (!demand) {
       return res.status(404).json({ error: 'Demand not found' });
     }
-    res.json({ demand });
+    res.json({ demand: normalizeDemand(demand) });
   } catch (error) {
     console.error('Get demand error:', error);
     res.status(500).json({ error: error.message });
@@ -30,7 +41,16 @@ export const getDemand = async (req, res) => {
 
 export const createDemand = async (req, res) => {
   try {
-    const { cropId, targetQuantity, pricePerQuintal, bonusPerQuintal, deadline, buyerId } = req.body;
+    // Extract user from JWT if authenticated
+    const user = req.user;
+    const { cropId, targetQuantity, pricePerQuintal, bonusPerQuintal, deadline, buyerId: bodyBuyerId } = req.body;
+
+    // Use JWT user info if authenticated, otherwise fall back to body data
+    const buyerId = user?.uid || bodyBuyerId;
+
+    if (!buyerId) {
+      return res.status(400).json({ error: 'Authentication required. Please login to create a demand.' });
+    }
 
     const now = new Date().toISOString();
 
@@ -49,7 +69,7 @@ export const createDemand = async (req, res) => {
     });
 
     await demand.save();
-    res.status(201).json({ id: demand._id.toString(), ...demand.toObject() });
+    res.status(201).json({ demand: normalizeDemand(demand) });
   } catch (error) {
     console.error('Create demand error:', error);
     res.status(500).json({ error: error.message });
@@ -86,7 +106,7 @@ export const joinDemand = async (req, res) => {
     }
 
     await demand.save();
-    res.json({ demand });
+    res.json({ demand: normalizeDemand(demand) });
   } catch (error) {
     console.error('Join demand error:', error);
     res.status(500).json({ error: error.message });

@@ -3,6 +3,12 @@ import { NextRequest, NextResponse } from "next/server";
 // Backend API URL - change this to your backend URL in production
 const BACKEND_API_URL = process.env.BACKEND_API_URL || 'http://localhost:5000/api';
 
+// Helper to get auth token from request
+const getAuthHeader = (req: NextRequest) => {
+  const authHeader = req.headers.get('authorization');
+  return authHeader || req.headers.get('Authorization');
+};
+
 // GET /api/pools?status=open&commodity=wheat&creatorRole=buyer
 export async function GET(req: NextRequest) {
   try {
@@ -32,10 +38,14 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+    const authHeader = getAuthHeader(req);
 
     const response = await fetch(`${BACKEND_API_URL}/pools`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(authHeader ? { 'Authorization': authHeader } : {})
+      },
       body: JSON.stringify(body),
     });
 

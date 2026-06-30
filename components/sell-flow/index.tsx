@@ -14,6 +14,7 @@ import { SelectPool } from "./select-pool";
 import { ConfirmationScreen } from "./confirmation-screen";
 import { type SellStep, stepOrder } from "./constants";
 import { cn } from "@/lib/utils";
+import { getAuthToken } from "@/lib/api-client";
 
 export function SellFlow() {
   const router = useRouter();
@@ -112,9 +113,13 @@ export function SellFlow() {
         if (chosenPool) {
           const remaining = chosenPool.targetQuantity - (chosenPool.filledQuantity || 0);
           const joinQty = Math.min(sellQuantity, remaining);
+          const token = getAuthToken();
           const res = await fetch(`/api/pools/${chosenPool.id}/join`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              ...(token ? { Authorization: `Bearer ${token}` } : {})
+            },
             body: JSON.stringify({ farmerId, farmerName, quantity: joinQty }),
           });
           const data = await res.json();

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useAppStore, useTranslation } from "@/lib/store";
 import { cn } from "@/lib/utils";
+import { getAuthToken } from "@/lib/api-client";
 
 interface SmartEscrowModalProps {
   poolDetails: {
@@ -117,9 +118,13 @@ export function SmartEscrowModal({
       const storeState = useAppStore.getState();
       const buyerId = storeState.userProfile?.uid || "demo-buyer";
       const buyerName = storeState.userProfile?.fullName || storeState.userName || "Demo Buyer";
+      const token = getAuthToken();
       await fetch("/api/payments/create-token-payment", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
           poolId: poolDetails.poolId,
           buyerId: buyerId,

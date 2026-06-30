@@ -2,11 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 
 const BACKEND_API_URL = process.env.BACKEND_API_URL || 'http://localhost:5000/api';
 
+// Helper to get auth token from request
+const getAuthHeader = (req: NextRequest) => {
+  const authHeader = req.headers.get('authorization');
+  return authHeader || req.headers.get('Authorization');
+};
+
 // GET /api/payments/farmer-orders?farmerId=xxx
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const farmerId = searchParams.get("farmerId");
+    const authHeader = getAuthHeader(request);
 
     if (!farmerId) {
       return NextResponse.json(
@@ -15,7 +22,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const response = await fetch(`${BACKEND_API_URL}/payments/farmer-orders/${farmerId}`);
+    const response = await fetch(`${BACKEND_API_URL}/payments/farmer-orders/${farmerId}`, {
+      headers: {
+        ...(authHeader ? { 'Authorization': authHeader } : {})
+      },
+    });
     const data = await response.json();
 
     return NextResponse.json(data, { status: response.status });

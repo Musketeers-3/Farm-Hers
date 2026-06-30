@@ -1,5 +1,16 @@
 import Pool from '../models/Pool.js';
 
+// Helper to convert MongoDB _id to id in pool documents
+const normalizePool = (pool) => {
+  if (!pool) return pool;
+  const obj = pool.toObject ? pool.toObject() : pool;
+  return { ...obj, id: obj._id.toString() };
+};
+
+const normalizePools = (pools) => {
+  return pools.map(normalizePool);
+};
+
 export const getPools = async (req, res) => {
   try {
     const { status, commodity, creatorRole } = req.query;
@@ -10,7 +21,7 @@ export const getPools = async (req, res) => {
     if (creatorRole) query.creatorRole = creatorRole;
 
     const pools = await Pool.find(query).sort({ createdAt: -1 });
-    res.json({ pools });
+    res.json({ pools: normalizePools(pools) });
   } catch (error) {
     console.error('Get pools error:', error);
     res.status(500).json({ error: error.message });
@@ -23,7 +34,7 @@ export const getPool = async (req, res) => {
     if (!pool) {
       return res.status(404).json({ error: 'Pool not found' });
     }
-    res.json({ pool });
+    res.json({ pool: normalizePool(pool) });
   } catch (error) {
     console.error('Get pool error:', error);
     res.status(500).json({ error: error.message });
@@ -32,10 +43,12 @@ export const getPool = async (req, res) => {
 
 export const createPool = async (req, res) => {
   try {
+    // Extract user from JWT if authenticated, otherwise use body data
+    const user = req.user;
     const {
-      creatorId,
-      creatorRole,
-      creatorName,
+      creatorId: bodyCreatorId,
+      creatorRole: bodyCreatorRole,
+      creatorName: bodyCreatorName,
       commodity,
       pricePerUnit,
       unit,
@@ -48,12 +61,25 @@ export const createPool = async (req, res) => {
       lng,
     } = req.body;
 
+    // Use JWT user info if authenticated, otherwise fall back to body data
+    const creatorId = user?.uid || bodyCreatorId;
+    const creatorRole = user?.role || bodyCreatorRole;
+    const creatorName = user?.fullName || bodyCreatorName || 'Unknown';
+
+    if (!creatorId) {
+      return res.status(400).json({ error: 'Authentication required. Please login to create a pool.' });
+    }
+
+    if (!creatorRole) {
+      return res.status(400).json({ error: 'Creator role is required.' });
+    }
+
     const now = new Date().toISOString();
 
     const pool = new Pool({
       creatorId,
       creatorRole,
-      creatorName: creatorName || 'Unknown',
+      creatorName,
       commodity,
       pricePerUnit: Number(pricePerUnit) || 0,
       unit: unit || 'quintal',
@@ -72,7 +98,7 @@ export const createPool = async (req, res) => {
     });
 
     await pool.save();
-    res.status(201).json({ id: pool._id.toString(), ...pool.toObject() });
+    res.status(201).json({ pool: normalizePool(pool) });
   } catch (error) {
     console.error('Create pool error:', error);
     res.status(500).json({ error: error.message });
@@ -91,7 +117,7 @@ export const updatePool = async (req, res) => {
       return res.status(404).json({ error: 'Pool not found' });
     }
 
-    res.json({ pool });
+    res.json({ pool: normalizePool(pool) });
   } catch (error) {
     console.error('Update pool error:', error);
     res.status(500).json({ error: error.message });
@@ -129,7 +155,7 @@ export const joinPool = async (req, res) => {
     }
 
     await pool.save();
-    res.json({ pool });
+    res.json({ pool: normalizePool(pool) });
   } catch (error) {
     console.error('Join pool error:', error);
     res.status(500).json({ error: error.message });
@@ -148,7 +174,7 @@ export const closePool = async (req, res) => {
       return res.status(404).json({ error: 'Pool not found' });
     }
 
-    res.json({ pool });
+    res.json({ pool: normalizePool(pool) });
   } catch (error) {
     console.error('Close pool error:', error);
     res.status(500).json({ error: error.message });

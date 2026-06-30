@@ -1,4 +1,5 @@
 import express from 'express';
+import { authMiddleware } from '../middleware/auth.js';
 import {
   createPaymentOrder,
   getPaymentOrder,
@@ -9,10 +10,10 @@ import {
 
 const router = express.Router();
 
-router.post('/orders', createPaymentOrder);
-router.get('/orders', getPaymentOrder);
-router.patch('/orders', updatePaymentOrder);
-router.get('/farmer-orders/:farmerId', getFarmerOrders);
-router.get('/buyer-orders/:buyerId', getBuyerOrders);
+router.post('/orders', authMiddleware, createPaymentOrder);
+router.get('/orders', authMiddleware, getPaymentOrder);
+router.patch('/orders', authMiddleware, updatePaymentOrder);
+router.get('/farmer-orders/:farmerId', authMiddleware, getFarmerOrders);
+router.get('/buyer-orders/:buyerId', authMiddleware, getBuyerOrders);
 
 export default router;

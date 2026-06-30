@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { getAuthToken } from "@/lib/api-client";
 import {
   Flame,
   MapPin,
@@ -196,13 +197,17 @@ export function BuyerPools({ isDark = true }: { isDark?: boolean }) {
   const handleTokenPaymentSuccess = async (paymentData: any) => {
     if (!pendingPoolDetails) return;
     const { pool, quantity } = pendingPoolDetails;
+    const token = getAuthToken();
 
     setIsProcessing(true);
     try {
       // Join the pool
       const res = await fetch(`/api/pools/${pool.id}/join`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
           buyerId: buyer.id,
           buyerName: buyer.name,
@@ -216,7 +221,10 @@ export function BuyerPools({ isDark = true }: { isDark?: boolean }) {
         try {
           await fetch("/api/payments/create-token-payment", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              ...(token ? { Authorization: `Bearer ${token}` } : {})
+            },
             body: JSON.stringify({
               poolId: pool.id,
               buyerId: buyer.id,
@@ -311,9 +319,13 @@ export function BuyerPools({ isDark = true }: { isDark?: boolean }) {
     }
     setCreating(true);
     try {
+      const token = getAuthToken();
       const res = await fetch("/api/pools", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
           ...form,
           pricePerUnit: Number(form.pricePerUnit),

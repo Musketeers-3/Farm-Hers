@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 
 const BACKEND_API_URL = process.env.BACKEND_API_URL || 'http://localhost:5000/api';
 
+// Helper to get auth token from request
+const getAuthHeader = (req: NextRequest) => {
+  const authHeader = req.headers.get('authorization');
+  return authHeader || req.headers.get('Authorization');
+};
+
 export async function GET(req: NextRequest) {
   try {
     const status = req.nextUrl.searchParams.get("status");
@@ -22,10 +28,14 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+    const authHeader = getAuthHeader(req);
 
     const response = await fetch(`${BACKEND_API_URL}/demands`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(authHeader ? { 'Authorization': authHeader } : {})
+      },
       body: JSON.stringify(body),
     });
 

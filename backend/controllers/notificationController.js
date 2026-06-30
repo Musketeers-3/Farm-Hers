@@ -1,5 +1,16 @@
 import Notification from '../models/Notification.js';
 
+// Helper to convert MongoDB _id to id in notification documents
+const normalizeNotification = (notification) => {
+  if (!notification) return notification;
+  const obj = notification.toObject ? notification.toObject() : notification;
+  return { ...obj, id: obj._id.toString() };
+};
+
+const normalizeNotifications = (notifications) => {
+  return notifications.map(normalizeNotification);
+};
+
 export const getNotifications = async (req, res) => {
   try {
     const { userId, read } = req.query;
@@ -10,7 +21,7 @@ export const getNotifications = async (req, res) => {
     if (read === 'false') query.read = false;
 
     const notifications = await Notification.find(query).sort({ createdAt: -1 });
-    res.json({ notifications });
+    res.json({ notifications: normalizeNotifications(notifications) });
   } catch (error) {
     console.error('Get notifications error:', error);
     res.status(500).json({ error: error.message });
@@ -33,8 +44,7 @@ export const createNotification = async (req, res) => {
 
     await notification.save();
     res.status(201).json({
-      id: notification._id.toString(),
-      ...notification.toObject(),
+      notification: normalizeNotification(notification),
     });
   } catch (error) {
     console.error('Create notification error:', error);
@@ -54,7 +64,7 @@ export const markAsRead = async (req, res) => {
       return res.status(404).json({ error: 'Notification not found' });
     }
 
-    res.json({ notification });
+    res.json({ notification: normalizeNotification(notification) });
   } catch (error) {
     console.error('Mark as read error:', error);
     res.status(500).json({ error: error.message });

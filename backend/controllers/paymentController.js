@@ -1,5 +1,16 @@
 import PaymentOrder from '../models/PaymentOrder.js';
 
+// Helper to convert MongoDB _id to id in payment order documents
+const normalizeOrder = (order) => {
+  if (!order) return order;
+  const obj = order.toObject ? order.toObject() : order;
+  return { ...obj, id: obj._id.toString() };
+};
+
+const normalizeOrders = (orders) => {
+  return orders.map(normalizeOrder);
+};
+
 export const createPaymentOrder = async (req, res) => {
   try {
     const orderData = req.body;
@@ -14,7 +25,7 @@ export const createPaymentOrder = async (req, res) => {
     await paymentOrder.save();
     res.status(201).json({
       success: true,
-      orderId: paymentOrder._id.toString(),
+      order: normalizeOrder(paymentOrder),
     });
   } catch (error) {
     console.error('Create payment order error:', error);
@@ -33,7 +44,7 @@ export const getPaymentOrder = async (req, res) => {
 
     res.json({
       success: true,
-      order: { id: order._id.toString(), ...order.toObject() },
+      order: normalizeOrder(order),
     });
   } catch (error) {
     console.error('Get payment order error:', error);
@@ -56,7 +67,7 @@ export const updatePaymentOrder = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Order not found' });
     }
 
-    res.json({ success: true });
+    res.json({ success: true, order: normalizeOrder(order) });
   } catch (error) {
     console.error('Update payment order error:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -68,7 +79,7 @@ export const getFarmerOrders = async (req, res) => {
     const { farmerId } = req.params;
 
     const orders = await PaymentOrder.find({ farmerId }).sort({ createdAt: -1 });
-    res.json({ orders });
+    res.json({ orders: normalizeOrders(orders) });
   } catch (error) {
     console.error('Get farmer orders error:', error);
     res.status(500).json({ error: error.message });
@@ -80,7 +91,7 @@ export const getBuyerOrders = async (req, res) => {
     const { buyerId } = req.params;
 
     const orders = await PaymentOrder.find({ buyerId }).sort({ createdAt: -1 });
-    res.json({ orders });
+    res.json({ orders: normalizeOrders(orders) });
   } catch (error) {
     console.error('Get buyer orders error:', error);
     res.status(500).json({ error: error.message });

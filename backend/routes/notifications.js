@@ -1,4 +1,5 @@
 import express from 'express';
+import { authMiddleware } from '../middleware/auth.js';
 import {
   getNotifications,
   createNotification,
@@ -7,8 +8,8 @@ import {
 
 const router = express.Router();
 
-router.get('/', getNotifications);
-router.post('/', createNotification);
-router.post('/:id/read', markAsRead);
+router.get('/', authMiddleware, getNotifications);
+router.post('/', authMiddleware, createNotification);
+router.post('/:id/read', authMiddleware, markAsRead);
 
 export default router;

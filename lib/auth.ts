@@ -12,7 +12,7 @@ export interface UserProfile {
   createdAt: string;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
 
 // Token management
 export function setToken(token: string) {
@@ -61,6 +61,9 @@ export async function signUp(
   // Store token
   setToken(response.token);
 
+  // Store user profile for persistence across refreshes
+  setUserProfile(response.user);
+
   return response.user;
 }
 
@@ -80,6 +83,9 @@ export async function login(
 
   // Store token
   setToken(response.token);
+
+  // Store user profile for persistence across refreshes
+  setUserProfile(response.user);
 
   return response.user;
 }

@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import Image from "next/image";
+import { getAuthToken } from "@/lib/api-client";
 import {
   ArrowLeft,
   Loader2,
@@ -83,9 +84,13 @@ export function FarmerOrdersScreen() {
   const handleConfirmReceipt = async (order: PendingOrder) => {
     setActionLoading(order.orderId);
     try {
+      const token = getAuthToken();
       const res = await fetch("/api/payments/confirm-receipt", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
           poolId: order.poolId,
           orderId: order.orderId,
@@ -111,9 +116,13 @@ export function FarmerOrdersScreen() {
   const handlePaymentNotReceived = async (order: PendingOrder) => {
     setActionLoading(order.orderId);
     try {
+      const token = getAuthToken();
       const res = await fetch("/api/payments/confirm-receipt", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
           poolId: order.poolId,
           orderId: order.orderId,

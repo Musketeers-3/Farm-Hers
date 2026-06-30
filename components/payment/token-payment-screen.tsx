@@ -18,6 +18,7 @@ import {
   Clock,
 } from "lucide-react";
 import { useAppStore, useTranslation } from "@/lib/store";
+import { getAuthToken } from "@/lib/api-client";
 import { createRazorpayOrder, initiatePayment, verifyPayment, isRazorpayConfigured } from "@/lib/razorpay";
 import { TOKEN_AMOUNTS, type TokenAmount } from "@/types/payment";
 import { cn } from "@/lib/utils";
@@ -420,9 +421,13 @@ async function callVerificationEndpoint(
   buyerName: string
 ): Promise<PaymentVerificationResult> {
   try {
+    const token = getAuthToken();
     const response = await fetch("/api/payments/verify", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
       body: JSON.stringify({
         razorpayOrderId,
         razorpayPaymentId,

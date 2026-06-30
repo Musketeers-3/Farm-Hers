@@ -1,4 +1,15 @@
-import Auction from '../models/Auction.js';
+import Auction from "../models/Auction.js";
+
+// Helper to convert MongoDB _id to id in auction documents
+const normalizeAuction = (auction) => {
+  if (!auction) return auction;
+  const obj = auction.toObject ? auction.toObject() : auction;
+  return { ...obj, id: obj._id.toString() };
+};
+
+const normalizeAuctions = (auctions) => {
+  return auctions.map(normalizeAuction);
+};
 
 export const getAuctions = async (req, res) => {
   try {
@@ -10,9 +21,9 @@ export const getAuctions = async (req, res) => {
     if (farmerId) query.farmerId = farmerId;
 
     const auctions = await Auction.find(query).sort({ createdAt: -1 });
-    res.json({ auctions });
+    res.json({ auctions: normalizeAuctions(auctions) });
   } catch (error) {
-    console.error('Get auctions error:', error);
+    console.error("Get auctions error:", error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -21,22 +32,24 @@ export const getAuction = async (req, res) => {
   try {
     const auction = await Auction.findById(req.params.id);
     if (!auction) {
-      return res.status(404).json({ error: 'Auction not found' });
+      return res.status(404).json({ error: "Auction not found" });
     }
-    res.json({ auction });
+    res.json({ auction: normalizeAuction(auction) });
   } catch (error) {
-    console.error('Get auction error:', error);
+    console.error("Get auction error:", error);
     res.status(500).json({ error: error.message });
   }
 };
 
 export const createAuction = async (req, res) => {
   try {
+    // Extract user from JWT if authenticated
+    const user = req.user;
     const {
       cropId,
       cropName,
-      farmerId,
-      farmerName,
+      farmerId: bodyFarmerId,
+      farmerName: bodyFarmerName,
       quantity,
       startingPrice,
       endTime,
@@ -44,20 +57,28 @@ export const createAuction = async (req, res) => {
       description,
     } = req.body;
 
+    // Use JWT user info if authenticated, otherwise fall back to body data
+    const farmerId = user?.uid || bodyFarmerId;
+    const farmerName = user?.fullName || bodyFarmerName || "Unknown";
+
+    if (!farmerId) {
+      return res.status(400).json({ error: 'Authentication required. Please login to create an auction.' });
+    }
+
     const now = new Date().toISOString();
 
     const auction = new Auction({
       cropId,
       cropName: cropName || cropId,
       farmerId,
-      farmerName: farmerName || 'Unknown',
+      farmerName,
       quantity: Number(quantity),
       startingPrice: Number(startingPrice),
       currentBid: Number(startingPrice),
       highestBidderId: null,
       highestBidderName: null,
       endTime,
-      status: 'live',
+      status: "live",
       location: location || null,
       description: description || null,
       bidHistory: [],
@@ -66,9 +87,9 @@ export const createAuction = async (req, res) => {
     });
 
     await auction.save();
-    res.status(201).json({ id: auction._id.toString(), ...auction.toObject() });
+    res.status(201).json({ auction: normalizeAuction(auction) });
   } catch (error) {
-    console.error('Create auction error:', error);
+    console.error("Create auction error:", error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -80,11 +101,13 @@ export const placeBid = async (req, res) => {
 
     const auction = await Auction.findById(id);
     if (!auction) {
-      return res.status(404).json({ error: 'Auction not found' });
+      return res.status(404).json({ error: "Auction not found" });
     }
 
-    if (auction.status !== 'live') {
-      return res.status(400).json({ error: 'This auction has already closed.' });
+    if (auction.status !== "live") {
+      return res
+        .status(400)
+        .json({ error: "This auction has already closed." });
     }
 
     const currentHighestBid = auction.currentBid || auction.startingPrice;
@@ -97,14 +120,14 @@ export const placeBid = async (req, res) => {
     }
 
     // Update previous leading bid to not leading
-    auction.bidHistory.forEach(bid => {
+    auction.bidHistory.forEach((bid) => {
       bid.isLeading = false;
     });
 
     // Add new bid to history
     auction.bidHistory.push({
       buyerId,
-      buyerName: buyerName || 'Unknown',
+      buyerName: buyerName || "Unknown",
       amount: bidAmount,
       timestamp: new Date(),
       isLeading: true,
@@ -113,24 +136,19 @@ export const placeBid = async (req, res) => {
     // Update auction with new highest bid
     auction.currentBid = bidAmount;
     auction.highestBidderId = buyerId;
-    auction.highestBidderName = buyerName || 'Unknown';
+    auction.highestBidderName = buyerName || "Unknown";
     auction.updatedAt = new Date();
 
     await auction.save();
 
     res.json({
       success: true,
-      message: 'Bid accepted successfully.',
+      message: "Bid accepted successfully.",
       newHighestBid: bidAmount,
-      auction: {
-        id: auction._id.toString(),
-        currentBid: auction.currentBid,
-        highestBidderId: auction.highestBidderId,
-        highestBidderName: auction.highestBidderName,
-      },
+      auction: normalizeAuction(auction),
     });
   } catch (error) {
-    console.error('Place bid error:', error);
+    console.error("Place bid error:", error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -143,19 +161,19 @@ export const endAuction = async (req, res) => {
     const auction = await Auction.findByIdAndUpdate(
       id,
       {
-        status: status || 'ended',
+        status: status || "ended",
         updatedAt: new Date(),
       },
-      { new: true }
+      { new: true },
     );
 
     if (!auction) {
-      return res.status(404).json({ error: 'Auction not found' });
+      return res.status(404).json({ error: "Auction not found" });
     }
 
-    res.json({ auction });
+    res.json({ auction: normalizeAuction(auction) });
   } catch (error) {
-    console.error('End auction error:', error);
+    console.error("End auction error:", error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -164,19 +182,21 @@ export const getFarmerAuctions = async (req, res) => {
   try {
     const { farmerId } = req.params;
     const auctions = await Auction.find({ farmerId }).sort({ createdAt: -1 });
-    res.json({ auctions });
+    res.json({ auctions: normalizeAuctions(auctions) });
   } catch (error) {
-    console.error('Get farmer auctions error:', error);
+    console.error("Get farmer auctions error:", error);
     res.status(500).json({ error: error.message });
   }
 };
 
 export const getLiveAuctions = async (req, res) => {
   try {
-    const auctions = await Auction.find({ status: 'live' }).sort({ createdAt: -1 });
-    res.json({ auctions });
+    const auctions = await Auction.find({ status: "live" }).sort({
+      createdAt: -1,
+    });
+    res.json({ auctions: normalizeAuctions(auctions) });
   } catch (error) {
-    console.error('Get live auctions error:', error);
+    console.error("Get live auctions error:", error);
     res.status(500).json({ error: error.message });
   }
 };

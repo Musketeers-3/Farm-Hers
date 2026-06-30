@@ -1,4 +1,5 @@
 import express from 'express';
+import { authMiddleware } from '../middleware/auth.js';
 import {
   getPools,
   getPool,
@@ -12,9 +13,9 @@ const router = express.Router();
 
 router.get('/', getPools);
 router.get('/:id', getPool);
-router.post('/', createPool);
-router.put('/:id', updatePool);
-router.post('/:poolId/join', joinPool);
-router.post('/:id/close', closePool);
+router.post('/', authMiddleware, createPool);
+router.put('/:id', authMiddleware, updatePool);
+router.post('/:poolId/join', authMiddleware, joinPool);
+router.post('/:id/close', authMiddleware, closePool);
 
 export default router;

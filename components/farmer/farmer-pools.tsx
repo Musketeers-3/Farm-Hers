@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { getAuthToken } from "@/lib/api-client";
 import {
   ArrowLeft, Users, Search, PlusCircle, MapPin,
   Clock, Target, Sprout, CheckCircle2, TrendingUp,
@@ -72,9 +73,13 @@ export default function FarmerPools() {
     if (!form.commodity || !form.pricePerUnit || !form.targetQuantity) return;
     setActionLoading(true);
     try {
+      const token = getAuthToken();
       const res = await fetch("/api/pools", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
           commodity:      form.commodity,
           pricePerUnit:   Number(form.pricePerUnit),
@@ -101,9 +106,13 @@ export default function FarmerPools() {
     if (!joining.pool || !joining.qty) return;
     setActionLoading(true);
     try {
+      const token = getAuthToken();
       await fetch(`/api/pools/${joining.pool.id}/join`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({ farmerId, farmerName, quantity: Number(joining.qty) }),
       });
       setJoining({ pool: null, qty: "" });
