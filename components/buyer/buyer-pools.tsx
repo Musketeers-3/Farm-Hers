@@ -218,6 +218,7 @@ export function BuyerPools({ isDark = true }: { isDark?: boolean }) {
 
       if (res.ok) {
         // Create payment order via backend API to trigger notification
+        const cropDetails = crops.find((c) => c.id === pool.commodity) || crops[0];
         try {
           await fetch("/api/payments/create-token-payment", {
             method: "POST",
@@ -246,7 +247,7 @@ export function BuyerPools({ isDark = true }: { isDark?: boolean }) {
         }
 
         // Create local payment order
-        const cropDetails = crops.find((c) => c.id === pool.commodity) || crops[0];
+        
         addPaymentOrder({
           id: `PAY-${Date.now()}`,
           cropId: pool.commodity || "",

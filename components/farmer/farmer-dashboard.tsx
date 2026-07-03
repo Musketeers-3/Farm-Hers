@@ -309,7 +309,7 @@ export function FarmerDashboard() {
         // Update location via API - call the profile update endpoint
         const token = getToken();
         if (token) {
-          await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/auth/profile`, {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/auth/profile`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',

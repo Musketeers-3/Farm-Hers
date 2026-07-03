@@ -12,7 +12,10 @@ export interface UserProfile {
   createdAt: string;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
+// Use the base URL without /api suffix - we append /api in each call
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
+  ? `${process.env.NEXT_PUBLIC_API_URL}/api`
+  : 'http://localhost:5001/api';
 
 // Token management
 export function setToken(token: string) {

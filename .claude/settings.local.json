@@ -8,7 +8,10 @@
       "Bash(curl *)",
       "Bash(GEMINI_API_KEY_VISION=AIzaSyCH0Bym5rJk4W7BHCJR_04jsNtPsB4VjA0 node *)",
       "Bash(node *)",
-      "WebFetch(domain:dashboard.razorpay.com)"
+      "WebFetch(domain:dashboard.razorpay.com)",
+      "Bash(npm run *)",
+      "Bash(timeout 5 npm start)",
+      "Bash(pkill -f \"node server.js\")"
     ]
   }
 }

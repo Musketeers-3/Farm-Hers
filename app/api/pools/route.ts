@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 // Backend API URL - change this to your backend URL in production
-const BACKEND_API_URL = process.env.BACKEND_API_URL || 'http://localhost:5000/api';
+const BACKEND_API_URL = process.env.BACKEND_API_URL || 'http://localhost:5001/api';
 
 // Helper to get auth token from request
 const getAuthHeader = (req: NextRequest) => {

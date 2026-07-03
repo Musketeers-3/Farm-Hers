@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const BACKEND_API_URL = process.env.BACKEND_API_URL || 'http://localhost:5000/api';
+const BACKEND_API_URL = process.env.BACKEND_API_URL || 'http://localhost:5001/api';
 
 // POST /api/payments/create-token-payment
 // Creates a token payment record when buyer commits via Smart Escrow
